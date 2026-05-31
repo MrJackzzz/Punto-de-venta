@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Proveedores{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+    <h2 style="color:var(--primary);">Proveedores</h2>
+    <button class="btn btn-primary" onclick="openModal('supplierModal')">+ Nuevo Proveedor</button>
+</div>
+
+<div class="card">
+    <div class="search-box">
+        <input type="text" id="supplierSearch" class="form-control" placeholder="Buscar por nombre, teléfono, email, contacto..." oninput="filterSuppliers()">
+    </div>
+    <div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Contacto</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Dirección</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="suppliersBody">
+            {% for s in suppliers %}
+            <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td>{{ s.contact or '-' }}</td>
+                <td>{{ s.phone or '-' }}</td>
+                <td>{{ s.email or '-' }}</td>
+                <td>{{ s.address or '-' }}</td>
+                <td class="table-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="editSupplier({{ s.id }}, '{{ s.name|e }}', '{{ s.contact|e }}', '{{ s.phone|e }}', '{{ s.email|e }}', '{{ s.address|e }}')">Editar</button>
+                    {% if current_user.role == 'admin' %}
+                    <form method="POST" action="{{ url_for('supplier_delete', id=s.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ s.name }}?')">Eliminar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align:center;color:var(--gray);">No hay proveedores registrados</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<script>
+function filterSuppliers() {
+    const q = document.getElementById('supplierSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#suppliersBody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+}
+</script>
+
+<div id="supplierModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="supplierModalTitle">Nuevo Proveedor</span>
+            <button class="modal-close" onclick="closeModal('supplierModal')">&times;</button>
+        </div>
+        <form id="supplierForm" method="POST" action="/suppliers/add">
+            <div class="form-group">
+                <label for="s_name">Nombre</label>
+                <input type="text" id="s_name" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="s_contact">Contacto</label>
+                <input type="text" id="s_contact" name="contact" class="form-control">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="s_phone">Teléfono</label>
+                    <input type="text" id="s_phone" name="phone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="s_email">Email</label>
+                    <input type="email" id="s_email" name="email" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="s_address">Dirección</label>
+                <textarea id="s_address" name="address" class="form-control" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Guardar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function editSupplier(id, name, contact, phone, email, address) {
+    document.getElementById('supplierModalTitle').textContent = 'Editar Proveedor';
+    document.getElementById('supplierForm').action = '/suppliers/edit/' + id;
+    document.getElementById('s_name').value = name;
+    document.getElementById('s_contact').value = contact;
+    document.getElementById('s_phone').value = phone;
+    document.getElementById('s_email').value = email;
+    document.getElementById('s_address').value = address;
+    openModal('supplierModal');
+}
+
+
+</script>
+{% endblock %}

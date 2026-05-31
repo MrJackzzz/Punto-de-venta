@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket #{{ sale.id }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            color: #000;
+            font-size: 13px;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .ticket {
+            max-width: 300px;
+            width: 100%;
+        }
+        .header { text-align: center; margin-bottom: 10px; }
+        .header h1 { font-size: 18px; font-weight: 900; }
+        .header p { font-size: 11px; color: #555; }
+        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+        .row { display: flex; justify-content: space-between; padding: 3px 0; }
+        .item { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+        .item-name { flex: 1; }
+        .item-qty { text-align: center; width: 40px; }
+        .item-price { text-align: right; width: 80px; }
+        .total { font-size: 16px; font-weight: 700; text-align: right; margin: 5px 0; }
+        .footer { text-align: center; margin-top: 10px; font-size: 11px; color: #555; }
+        .print-btn { text-align: center; margin-top: 20px; }
+        .print-btn button {
+            background: #3d5a80; color: #fff; border: none;
+            padding: 10px 24px; border-radius: 8px; font-size: 14px;
+            cursor: pointer;
+        }
+        .print-btn button:hover { background: #2a4a6e; }
+        @media print {
+            .print-btn { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        <div class="header">
+            {% if logo_url %}
+            <img src="{{ url_for('static', filename=logo_url) }}" style="height:32px;">
+            {% endif %}
+            <h1>{{ business_name }}</h1>
+            <p>Ticket #{{ sale.id }}</p>
+            <p>{{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p>Atendió: {{ sale.user.username }}</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row" style="font-weight:700;">
+            <span>Producto</span>
+            <span style="width:40px;text-align:center;">Cant</span>
+            <span style="width:80px;text-align:right;">Subtotal</span>
+        </div>
+
+        <div class="divider"></div>
+
+        {% for item in items %}
+        <div class="item">
+            <span class="item-name">{{ item.product.name }}</span>
+            <span class="item-qty">{{ item.quantity }}</span>
+            <span class="item-price">${{ "%.2f"|format(item.subtotal) }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="divider"></div>
+
+        <div class="total">TOTAL: ${{ "%.2f"|format(sale.total) }}</div>
+
+        <div class="row"><span>Método de pago:</span><span>{{ {'cash':'Efectivo','card':'Tarjeta','transfer':'Transferencia'}.get(sale.payment_method, sale.payment_method) }}</span></div>
+        {% if sale.payment_method == 'cash' %}
+        <div class="row"><span>Recibido:</span><span>${{ "%.2f"|format(sale.amount_paid) }}</span></div>
+        <div class="row"><span>Vuelto:</span><span>${{ "%.2f"|format(sale.change_amount) }}</span></div>
+        {% endif %}
+
+        {% if sale.customer_email %}
+        <div class="divider"></div>
+        <div class="row"><span>Email:</span><span>{{ sale.customer_email }}</span></div>
+        {% endif %}
+
+        <div class="footer">
+            <p>¡Gracias por su compra!</p>
+        </div>
+
+        <div class="print-btn">
+            <button onclick="window.print()">🖨 Imprimir Ticket</button>
+            <br><br>
+            <button onclick="window.close()" style="background:#6c757d;">Cerrar</button>
+        </div>
+    </div>
+</body>
+</html>

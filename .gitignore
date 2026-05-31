@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+instance/
+*.zip
+*.ps1
+.vscode/
+app_error.txt
+app_output.txt

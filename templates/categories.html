@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Categorías{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+    <h2 style="color:var(--primary);">Categorías de Productos</h2>
+    <button class="btn btn-primary" onclick="openModal('catModal')">+ Nueva Categoría</button>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr><th>Nombre</th><th>Productos</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+            {% for c in categories %}
+            <tr>
+                <td><strong>{{ c.name }}</strong></td>
+                <td>{{ c.products|length }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('category_delete', id=c.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ c.name }}? Los productos pasarán a "Sin categoría".')">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" style="text-align:center;color:var(--gray);">Sin categorías creadas</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="catModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>Nueva Categoría</span>
+            <button class="modal-close" onclick="closeModal('catModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('category_add') }}">
+            <div class="form-group">
+                <label for="name">Nombre de la categoría</label>
+                <input type="text" id="name" name="name" class="form-control" required autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Crear</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

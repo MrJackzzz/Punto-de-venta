@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block title %}Vender{% endblock %}
+{% block content %}
+<h2 style="color:var(--primary);margin-bottom:1.5rem;">Punto de Venta</h2>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">Buscar Producto</div>
+        <div class="search-box">
+            <input type="text" id="searchInput" class="form-control" placeholder="Escaneá o escribí código/nombre..." autofocus>
+        </div>
+        <div id="searchResults" style="max-height:300px;overflow-y:auto;"></div>
+
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="manualCode">O ingresá código manualmente</label>
+                    <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
+                </div>
+                <div class="form-group">
+                    <label for="manualQty">Cantidad</label>
+                    <input type="number" id="manualQty" class="form-control" value="1" min="1">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="addByCode()" style="width:100%;">Agregar al Carrito</button>
+            <p style="font-size:0.8rem;color:var(--gray);margin-top:0.5rem;">💡 Usá la Cantidad de arriba antes de agregar desde la búsqueda o el código manual</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Carrito</div>
+        <div id="cartItems" style="max-height:300px;overflow-y:auto;">
+            <p style="color:var(--gray);text-align:center;padding:2rem;">Carrito vacío</p>
+        </div>
+        <div class="cart-total" id="cartTotal">$0.00</div>
+
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
+            <div class="form-group">
+                <label for="paymentMethod">Método de Pago</label>
+                <select id="paymentMethod" class="form-control" onchange="toggleCashFields()">
+                    <option value="cash">Efectivo</option>
+                    <option value="card">Tarjeta</option>
+                    <option value="transfer">Transferencia</option>
+                </select>
+            </div>
+            <div id="cashFields">
+                <div class="form-group">
+                    <label for="amountPaid">Monto recibido ($)</label>
+                    <input type="number" id="amountPaid" class="form-control" step="0.01" min="0" placeholder="0.00" oninput="calculateChange()">
+                </div>
+                <div id="changeDisplay" class="change-display"></div>
+            </div>
+            <div class="form-group">
+                <label for="customerEmail">Enviar ticket por email (opcional)</label>
+                <input type="email" id="customerEmail" class="form-control" placeholder="cliente@email.com">
+            </div>
+            <button class="btn btn-success" onclick="checkout()" style="width:100%;padding:0.8rem;font-size:1.1rem;" id="checkoutBtn">
+                Cobrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="ticketModal" class="modal">
+    <div class="modal-content" style="max-width:400px;">
+        <div class="modal-header">
+            <span>✅ Venta Exitosa</span>
+            <button class="modal-close" onclick="closeTicketModal()">&times;</button>
+        </div>
+        <div id="ticketContent" data-business-name="{{ business_name }}" style="font-family:'Courier New',monospace;font-size:13px;background:#f9f9f9;padding:1rem;border-radius:8px;margin-bottom:1rem;"></div>
+        <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="printTicket()" style="flex:1;">🖨 Imprimir</button>
+            <button class="btn btn-secondary" onclick="closeTicketModal()" style="flex:1;">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let cart = [];
+
+function toggleCashFields() {
+    const method = document.getElementById('paymentMethod').value;
+    document.getElementById('cashFields').style.display = method === 'cash' ? 'block' : 'none';
+    document.getElementById('amountPaid').required = method === 'cash';
+}
+
+function calculateChange() {
+    const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const change = paid - total;
+    const el = document.getElementById('changeDisplay');
+    if (paid >= total && paid > 0) {
+        el.textContent = 'Vuelto: $' + change.toFixed(2);
+        el.style.color = 'var(--success)';
+    } else if (paid > 0) {
+        el.textContent = 'Faltan: $' + Math.abs(change).toFixed(2);
+        el.style.color = 'var(--accent)';
+    } else {
+        el.textContent = '';
+    }
+}
+
+function getQty() {
+    return parseInt(document.getElementById('manualQty').value) || 1;
+}
+
+function addToCart(product) {
+    const qty = getQty();
+    const existing = cart.find(item => item.product_id === product.id);
+    if (existing) {
+        existing.quantity += qty;
+        existing.subtotal = existing.quantity * existing.unit_price;
+    } else {
+        cart.push({
+            product_id: product.id,
+            code: product.code,
+            name: product.name,
+            unit_price: product.price,
+            quantity: qty,
+            subtotal: product.price * qty
+        });
+    }
+    renderCart();
+}
+
+function addByCode() {
+    const code = document.getElementById('manualCode').value.trim();
+    const qty = getQty();
+    if (!code) { alert('Escribí un código de producto'); return; }
+    fetch('/api/product/' + encodeURIComponent(code))
+        .then(r => r.json())
+        .then(product => {
+            const existing = cart.find(item => item.product_id === product.id);
+            if (existing) {
+                existing.quantity += qty;
+                existing.subtotal = existing.quantity * existing.unit_price;
+            } else {
+                cart.push({
+                    product_id: product.id,
+                    code: product.code,
+                    name: product.name,
+                    unit_price: product.price,
+                    quantity: qty,
+                    subtotal: product.price * qty
+                });
+            }
+            renderCart();
+            document.getElementById('manualCode').value = '';
+            document.getElementById('manualQty').value = '1';
+        })
+        .catch(() => alert('Producto no encontrado'));
+}
+
+function changeQty(index, delta) {
+    cart[index].quantity = Math.max(1, cart[index].quantity + delta);
+    cart[index].subtotal = cart[index].quantity * cart[index].unit_price;
+    renderCart();
+}
+
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+let lastSaleData = null;
+
+function showTicket(data) {
+    lastSaleData = data;
+    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'};
+    const now = new Date();
+    const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+    let itemsHtml = '';
+    data.items.forEach(item => {
+        itemsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">
+            <span style="flex:1;">${item.product_name}</span>
+            <span style="width:30px;text-align:center;">${item.quantity}</span>
+            <span style="width:70px;text-align:right;">$${item.subtotal.toFixed(2)}</span>
+        </div>`;
+    });
+    const bizName = '{{ business_name }}';
+    document.getElementById('ticketContent').innerHTML = `
+        <div style="text-align:center;margin-bottom:8px;">
+            <strong style="font-size:16px;">${bizName}</strong><br>
+            <span style="font-size:11px;color:#555;">Ticket #${data.sale_id}</span><br>
+            <span style="font-size:11px;color:#555;">${timeStr}</span><br>
+            <span style="font-size:11px;color:#555;">Atendió: ${data.user}</span>
+        </div>
+        <div style="border-top:1px dashed #999;margin:6px 0;"></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:12px;">
+            <span style="flex:1;">Producto</span>
+            <span style="width:30px;text-align:center;">Cant</span>
+            <span style="width:70px;text-align:right;">Subtotal</span>
+        </div>
+        <div style="border-top:1px dashed #999;margin:6px 0;"></div>
+        ${itemsHtml}
+        <div style="border-top:1px dashed #999;margin:6px 0;"></div>
+        <div style="text-align:right;font-size:15px;font-weight:700;margin:4px 0;">TOTAL: $${data.total.toFixed(2)}</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+            <span>Método de pago:</span>
+            <span>${methodNames[data.payment_method] || data.payment_method}</span>
+        </div>
+        ${data.payment_method === 'cash' ? `
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+            <span>Recibido:</span><span>$${data.amount_paid.toFixed(2)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+            <span>Vuelto:</span><span style="color:green;font-weight:700;">$${data.change.toFixed(2)}</span>
+        </div>` : ''}
+        ${data.customer_email ? `<div style="border-top:1px dashed #999;margin:6px 0;"></div><div style="font-size:11px;">Email: ${data.customer_email}</div>` : ''}
+        <div style="text-align:center;margin-top:8px;font-size:11px;color:#555;">¡Gracias por su compra!</div>
+    `;
+    openModal('ticketModal');
+    if (typeof playBeep === 'function') playBeep();
+}
+
+function printTicket() {
+    if (!lastSaleData) return;
+    const win = window.open('/ticket/' + lastSaleData.sale_id, '_blank');
+    if (win) {
+        win.onload = function() { setTimeout(function() { win.print(); }, 300); };
+    }
+}
+
+function closeTicketModal() {
+    closeModal('ticketModal');
+    lastSaleData = null;
+}
+
+function renderCart() {
+    const el = document.getElementById('cartItems');
+    const totalEl = document.getElementById('cartTotal');
+    if (cart.length === 0) {
+        el.innerHTML = '<p style="color:var(--gray);text-align:center;padding:2rem;">Carrito vacío</p>';
+        totalEl.textContent = '$0.00';
+        return;
+    }
+    el.innerHTML = cart.map((item, i) => `
+        <div class="cart-item">
+            <div class="info">
+                <div class="name">${item.name}</div>
+                <div class="price">$${item.unit_price.toFixed(2)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <button class="btn btn-sm btn-secondary" onclick="changeQty(${i}, -1)" style="font-weight:bold;">−</button>
+                <span style="font-weight:600;min-width:24px;text-align:center;">${item.quantity}</span>
+                <button class="btn btn-sm btn-secondary" onclick="changeQty(${i}, 1)" style="font-weight:bold;">+</button>
+                <strong>$${item.subtotal.toFixed(2)}</strong>
+                <button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">&times;</button>
+            </div>
+        </div>
+    `).join('');
+    const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    totalEl.textContent = '$' + total.toFixed(2);
+    calculateChange();
+}
+
+function checkout() {
+    if (cart.length === 0) { alert('Carrito vacío'); return; }
+    const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const method = document.getElementById('paymentMethod').value;
+    const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
+
+    if (method === 'cash' && paid < total) {
+        alert('El monto recibido es menor al total');
+        return;
+    }
+
+    document.getElementById('checkoutBtn').disabled = true;
+    document.getElementById('checkoutBtn').textContent = 'Procesando...';
+
+    const email = document.getElementById('customerEmail').value.trim();
+
+    fetch('/sell/checkout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            items: cart.map(item => ({
+                product_id: item.product_id,
+                quantity: item.quantity
+            })),
+            payment_method: method,
+            amount_paid: method === 'cash' ? paid : total,
+            customer_email: email
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('checkoutBtn').disabled = false;
+        document.getElementById('checkoutBtn').textContent = 'Cobrar';
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        showTicket(data);
+        cart = [];
+        renderCart();
+        document.getElementById('amountPaid').value = '';
+        document.getElementById('customerEmail').value = '';
+    })
+    .catch(err => {
+        alert('Error al procesar venta');
+        document.getElementById('checkoutBtn').disabled = false;
+        document.getElementById('checkoutBtn').textContent = 'Cobrar';
+    });
+}
+
+document.getElementById('manualCode').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addByCode();
+});
+
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const firstResult = document.querySelector('#searchResults > div');
+        if (firstResult) firstResult.click();
+    }
+});
+
+document.getElementById('searchInput').addEventListener('input', function() {
+    const q = this.value.trim();
+    const results = document.getElementById('searchResults');
+    if (q.length < 1) { results.innerHTML = ''; return; }
+    fetch('/api/products/search?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(products => {
+            if (products.length === 0) {
+                results.innerHTML = '<p style="padding:0.5rem;color:var(--gray);">Sin resultados</p>';
+                return;
+            }
+            results.innerHTML = products.map(p => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;border-bottom:1px solid var(--secondary);cursor:pointer;" onclick="addToCart({id:${p.id},code:'${p.code}',name:'${p.name}',price:${p.price}})">
+                    <div>
+                        <strong>${p.name}</strong>
+                        <small style="color:var(--gray);"> (${p.code})</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <div>$${p.price.toFixed(2)}</div>
+                        <small style="color:var(--gray);">Stock: ${p.stock}</small>
+                    </div>
+                </div>
+            `).join('');
+        });
+});
+
+toggleCashFields();
+</script>
+{% endblock %}

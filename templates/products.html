@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Productos{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+    <h2 style="color:var(--primary);">Productos</h2>
+    <button class="btn btn-primary" onclick="openModal('productModal')">+ Nuevo Producto</button>
+</div>
+
+<div class="card">
+    <div class="search-box">
+        <input type="text" id="productSearch" class="form-control" placeholder="Buscar por código o nombre..." oninput="filterProducts()">
+        <select id="categoryFilter" class="form-control" style="max-width:200px;" onchange="filterProducts()">
+            <option value="">Todas las categorías</option>
+            {% for c in categories %}
+            <option value="{{ c.name|lower }}">{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Moneda</th>
+                    <th>Stock</th>
+                    <th>Proveedor</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="productsBody">
+                {% for p in products %}
+                <tr>
+                    <td><strong>{{ p.code }}</strong></td>
+                    <td>{{ p.name }}</td>
+                    <td style="font-size:0.85rem;color:var(--gray);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ p.description or '' }}">{{ p.description[:40] + '...' if p.description and p.description|length > 40 else p.description or '-' }}</td>
+                    <td>{% if p.category %}<span class="badge" style="background:var(--secondary);color:var(--dark);">{{ p.category.name }}</span>{% else %}-{% endif %}</td>
+                    <td>${{ "%.2f"|format(p.price) }}</td>
+                    <td>{{ p.currency }}</td>
+                    <td>
+                        {% if p.stock < low_stock_threshold %}
+                        <span style="color:var(--accent);font-weight:600;">{{ p.stock }}</span>
+                        {% else %}
+                        {{ p.stock }}
+                        {% endif %}
+                    </td>
+                    <td>{{ p.supplier.name if p.supplier else '-' }}</td>
+                    <td class="table-actions">
+                        {% if current_user.can_edit_products() %}
+                        <button class="btn btn-sm btn-secondary" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }})">Editar</button>
+                        {% endif %}
+                        {% if current_user.role == 'admin' %}
+                        <form method="POST" action="{{ url_for('product_delete', id=p.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ p.name }}?')">Eliminar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" style="text-align:center;color:var(--gray);">No hay productos registrados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="productModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="productModalTitle">Nuevo Producto</span>
+            <button class="modal-close" onclick="closeModal('productModal')">&times;</button>
+        </div>
+        <form id="productForm" method="POST" action="/products/add">
+            <div class="form-group">
+                <label for="code">Código (Código de barras / SKU)</label>
+                <input type="text" id="code" name="code" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="name">Nombre del Producto</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cost">Costo</label>
+                    <input type="number" id="cost" name="cost" class="form-control" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="markup_percentage">% Ganancia</label>
+                    <input type="number" id="markup_percentage" name="markup_percentage" class="form-control" step="0.01" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="currency">Moneda</label>
+                    <select id="currency" name="currency" class="form-control">
+                        <option value="ARS">ARS - Peso Argentino</option>
+                        <option value="USD">USD - Dólar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="BRL">BRL - Real</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="stock">Stock</label>
+                    <input type="number" id="stock" name="stock" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category_id">Categoría</label>
+                    <select id="category_id" name="category_id" class="form-control">
+                        <option value="">Sin categoría</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="supplier_id">Proveedor</label>
+                    <select id="supplier_id" name="supplier_id" class="form-control">
+                        <option value="">Sin proveedor</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" name="description" class="form-control" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Guardar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function editProduct(id, code, name, cost, markup, currency, stock, supplierId, description, categoryId) {
+    document.getElementById('productModalTitle').textContent = 'Editar Producto';
+    document.getElementById('productForm').action = '/products/edit/' + id;
+    document.getElementById('code').value = code;
+    document.getElementById('name').value = name;
+    document.getElementById('cost').value = cost;
+    document.getElementById('markup_percentage').value = markup;
+    document.getElementById('currency').value = currency;
+    document.getElementById('stock').value = stock;
+    document.getElementById('supplier_id').value = supplierId || '';
+    document.getElementById('category_id').value = categoryId || '';
+    document.getElementById('description').value = description;
+    openModal('productModal');
+}
+
+function filterProducts() {
+    const q = document.getElementById('productSearch').value.toLowerCase();
+    const cat = document.getElementById('categoryFilter').value;
+    const rows = document.querySelectorAll('#productsBody tr');
+    rows.forEach(row => {
+        if (row.cells.length < 2) return;
+        const code = (row.cells[0].textContent || '').toLowerCase();
+        const name = (row.cells[1].textContent || '').toLowerCase();
+        const rowCat = (row.cells[3].textContent || '').toLowerCase().trim();
+        const matchesSearch = code.includes(q) || name.includes(q);
+        const matchesCat = !cat || rowCat === cat;
+        row.style.display = matchesSearch && matchesCat ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
