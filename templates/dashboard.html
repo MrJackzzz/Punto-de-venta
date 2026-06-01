@@ -26,10 +26,12 @@
     <div class="card">
         <div class="card-header">Ventas de los Últimos 7 Días</div>
         <canvas id="salesChart" height="180"></canvas>
+        <p id="salesEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin datos de ventas</p>
     </div>
     <div class="card">
         <div class="card-header">Productos Más Vendidos (Este Mes)</div>
         <canvas id="topProductsChart" height="180"></canvas>
+        <p id="topEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin ventas este mes</p>
     </div>
 </div>
 
@@ -84,11 +86,11 @@ function loadCharts() {
             if (salesChart) salesChart.destroy();
             if (!d.labels || d.labels.length === 0) {
                 document.getElementById('salesChart').style.display = 'none';
-                document.querySelector('#salesChart').parentElement.innerHTML +=
-                    '<p style="text-align:center;color:var(--gray);padding:2rem;">Sin datos de ventas</p>';
+                document.getElementById('salesEmpty').style.display = 'block';
                 return;
             }
             document.getElementById('salesChart').style.display = 'block';
+            document.getElementById('salesEmpty').style.display = 'none';
             salesChart = new Chart(document.getElementById('salesChart'), {
                 type: 'bar',
                 data: { labels: d.labels, datasets: [{
@@ -112,11 +114,11 @@ function loadCharts() {
             if (topChart) topChart.destroy();
             if (!d.labels || d.labels.length === 0) {
                 document.getElementById('topProductsChart').style.display = 'none';
-                document.querySelector('#topProductsChart').parentElement.innerHTML +=
-                    '<p style="text-align:center;color:var(--gray);padding:2rem;">Sin ventas este mes</p>';
+                document.getElementById('topEmpty').style.display = 'block';
                 return;
             }
             document.getElementById('topProductsChart').style.display = 'block';
+            document.getElementById('topEmpty').style.display = 'none';
             topChart = new Chart(document.getElementById('topProductsChart'), {
                 type: 'doughnut',
                 data: {
