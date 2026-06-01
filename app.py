@@ -288,7 +288,7 @@ def chart_sales_week():
 @app.route('/api/chart/top-products')
 @login_required
 def chart_top_products():
-    month_start = datetime.now(timezone.utc).replace(day=1)
+    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     results = db.session.query(
         Product.name, func.sum(SaleItem.quantity).label('total_qty')
     ).join(SaleItem, Product.id == SaleItem.product_id
