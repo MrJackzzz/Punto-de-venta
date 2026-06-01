@@ -288,12 +288,19 @@ def chart_sales_week():
 @app.route('/api/chart/top-products')
 @login_required
 def chart_top_products():
-    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(timezone.utc)
+    month = request.args.get('month', type=int, default=today.month)
+    year = request.args.get('year', type=int, default=today.year)
+    month_start = datetime(year, month, 1, tzinfo=timezone.utc)
+    if month == 12:
+        month_end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        month_end = datetime(year, month + 1, 1, tzinfo=timezone.utc)
     results = db.session.query(
         Product.name, func.sum(SaleItem.quantity).label('total_qty')
     ).join(SaleItem, Product.id == SaleItem.product_id
     ).join(Sale, SaleItem.sale_id == Sale.id
-    ).filter(Sale.created_at >= month_start
+    ).filter(Sale.created_at >= month_start, Sale.created_at < month_end
     ).group_by(Product.id).order_by(func.sum(SaleItem.quantity).desc()).limit(5).all()
     return jsonify({
         'labels': [r.name for r in results],

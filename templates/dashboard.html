@@ -29,9 +29,18 @@
         <p id="salesEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin datos de ventas</p>
     </div>
     <div class="card">
-        <div class="card-header">Productos Más Vendidos (Este Mes)</div>
+        <div class="card-header">Productos Más Vendidos</div>
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;">
+            <select id="topMonth" class="form-control" style="max-width:140px;" onchange="loadTopChart()">
+                <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+            </select>
+            <select id="topYear" class="form-control" style="max-width:100px;" onchange="loadTopChart()"></select>
+        </div>
         <canvas id="topProductsChart" height="180"></canvas>
-        <p id="topEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin ventas este mes</p>
+        <p id="topEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin ventas en ese período</p>
     </div>
 </div>
 
@@ -79,7 +88,7 @@
 <script>
 let salesChart, topChart;
 
-function loadCharts() {
+function loadSalesChart() {
     fetch('/api/chart/sales-week')
         .then(r => r.json())
         .then(d => {
@@ -107,8 +116,12 @@ function loadCharts() {
                 }
             });
         });
+}
 
-    fetch('/api/chart/top-products')
+function loadTopChart() {
+    const m = document.getElementById('topMonth').value;
+    const y = document.getElementById('topYear').value;
+    fetch('/api/chart/top-products?month=' + m + '&year=' + y)
         .then(r => r.json())
         .then(d => {
             if (topChart) topChart.destroy();
@@ -156,7 +169,20 @@ function refreshStats() {
         });
 }
 
-loadCharts();
+(function initDashboard() {
+    const selYear = document.getElementById('topYear');
+    const now = new Date();
+    for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        if (y === now.getFullYear()) opt.selected = true;
+        selYear.appendChild(opt);
+    }
+    document.getElementById('topMonth').value = now.getMonth() + 1;
+    loadSalesChart();
+    loadTopChart();
+})();
+
 setInterval(refreshStats, 5000);
 </script>
 {% endblock %}
