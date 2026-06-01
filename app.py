@@ -10,7 +10,7 @@ from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambiame-en-produccion')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sistema.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///sistema.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
