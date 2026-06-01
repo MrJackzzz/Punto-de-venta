@@ -82,6 +82,13 @@ function loadCharts() {
         .then(r => r.json())
         .then(d => {
             if (salesChart) salesChart.destroy();
+            if (!d.labels || d.labels.length === 0) {
+                document.getElementById('salesChart').style.display = 'none';
+                document.querySelector('#salesChart').parentElement.innerHTML +=
+                    '<p style="text-align:center;color:var(--gray);padding:2rem;">Sin datos de ventas</p>';
+                return;
+            }
+            document.getElementById('salesChart').style.display = 'block';
             salesChart = new Chart(document.getElementById('salesChart'), {
                 type: 'bar',
                 data: { labels: d.labels, datasets: [{
@@ -103,6 +110,13 @@ function loadCharts() {
         .then(r => r.json())
         .then(d => {
             if (topChart) topChart.destroy();
+            if (!d.labels || d.labels.length === 0) {
+                document.getElementById('topProductsChart').style.display = 'none';
+                document.querySelector('#topProductsChart').parentElement.innerHTML +=
+                    '<p style="text-align:center;color:var(--gray);padding:2rem;">Sin ventas este mes</p>';
+                return;
+            }
+            document.getElementById('topProductsChart').style.display = 'block';
             topChart = new Chart(document.getElementById('topProductsChart'), {
                 type: 'doughnut',
                 data: {
