@@ -118,32 +118,48 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% set perm_labels = {
-                        'can_view_products':'Ver productos',
-                        'can_add_products':'Agregar productos',
-                        'can_edit_products':'Editar productos',
-                        'can_manage_products':'Eliminar productos',
-                        'can_view_suppliers':'Ver proveedores',
-                        'can_add_suppliers':'Agregar proveedores',
-                        'can_edit_suppliers':'Editar proveedores',
-                        'can_delete_suppliers':'Eliminar proveedores',
-                        'can_view_categories':'Ver categorías',
-                        'can_add_categories':'Agregar categorías',
-                        'can_edit_categories':'Editar categorías',
-                        'can_delete_categories':'Eliminar categorías',
-                        'can_manage_users':'Gestionar usuarios',
-                        'can_view_history':'Ver historial',
-                        'can_sell':'Vender / Cobrar',
-                        'can_view_charts':'Ver gráficos del inicio'
-                    } %}
+                    {% set perm_groups = [
+                        ('📦 Productos', [
+                            ('can_view_products','Ver productos'),
+                            ('can_add_products','Agregar productos'),
+                            ('can_edit_products','Editar productos'),
+                            ('can_manage_products','Eliminar productos'),
+                        ]),
+                        ('🤝 Proveedores', [
+                            ('can_view_suppliers','Ver proveedores'),
+                            ('can_add_suppliers','Agregar proveedores'),
+                            ('can_edit_suppliers','Editar proveedores'),
+                            ('can_delete_suppliers','Eliminar proveedores'),
+                        ]),
+                        ('🏷️ Categorías', [
+                            ('can_view_categories','Ver categorías'),
+                            ('can_add_categories','Agregar categorías'),
+                            ('can_edit_categories','Editar categorías'),
+                            ('can_delete_categories','Eliminar categorías'),
+                        ]),
+                        ('👤 Usuarios', [
+                            ('can_manage_users','Gestionar usuarios'),
+                        ]),
+                        ('📊 Reportes', [
+                            ('can_view_history','Ver historial / Ganancias / Ranking'),
+                            ('can_view_charts','Ver gráficos del inicio'),
+                        ]),
+                        ('💰 Ventas', [
+                            ('can_sell','Vender / Cobrar'),
+                        ]),
+                    ] %}
                     {% set default_perms = {
                         'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true},
                         'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true},
                         'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true}
                     } %}
-                    {% for pk, plabel in perm_labels.items() %}
+                    {% for group_name, perms in perm_groups %}
+                    <tr style="background:var(--light);font-weight:600;">
+                        <td colspan="4" style="padding:0.5rem 1rem;font-size:0.9rem;color:var(--primary);">{{ group_name }}</td>
+                    </tr>
+                    {% for pk, plabel in perms %}
                     <tr>
-                        <td>{{ plabel }}</td>
+                        <td style="padding-left:2rem;">{{ plabel }}</td>
                         {% for role in ['admin','supervisor','user'] %}
                         {% set checked = role_perms.get(role, {}).get(pk, default_perms[role][pk]) %}
                         <td style="text-align:center;">
@@ -152,6 +168,7 @@
                         </td>
                         {% endfor %}
                     </tr>
+                    {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
