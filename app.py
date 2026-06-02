@@ -966,16 +966,26 @@ def api_history():
         'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass'
     }
 
-    return jsonify({
-        'logs': [{
+    log_list = []
+    for log in logs:
+        entry = {
             'id': log.id,
             'user': log.user.username,
             'role': log.user.role,
             'action': action_map.get(log.action, log.action),
             'action_key': log.action,
             'description': log.description,
-            'time': log.created_at.strftime('%d/%m/%Y %H:%M')
-        } for log in logs],
+            'time': log.created_at.strftime('%d/%m/%Y %H:%M'),
+        }
+        if log.action == 'sale' and '#' in log.description:
+            try:
+                entry['sale_id'] = int(log.description.split('#')[1].split(' ')[0])
+            except (IndexError, ValueError):
+                pass
+        log_list.append(entry)
+
+    return jsonify({
+        'logs': log_list,
         'summary': {
             'total_logs': len(logs),
             'total_sales_amount': round(total_sales_amount, 2),
@@ -1002,6 +1012,30 @@ def api_stats():
         'low_stock': low_stock,
         'today_sales': today_sales,
         'low_stock_threshold': threshold
+    })
+
+
+@app.route('/api/sale/<int:sale_id>/items')
+@login_required
+def api_sale_items(sale_id):
+    if not current_user.can_view_history():
+        return jsonify({'error': 'Permiso denegado'}), 403
+    sale = db.session.get(Sale, sale_id)
+    if not sale:
+        return jsonify({'error': 'Venta no encontrada'}), 404
+    items = [{
+        'product_name': item.product.name if item.product else 'Eliminado',
+        'quantity': item.quantity,
+        'unit_price': item.unit_price,
+        'subtotal': item.subtotal
+    } for item in sale.items]
+    return jsonify({
+        'id': sale.id,
+        'user': sale.user.username,
+        'total': sale.total,
+        'payment_method': sale.payment_method,
+        'date': sale.created_at.strftime('%d/%m/%Y %H:%M'),
+        'items': items
     })
 
 
