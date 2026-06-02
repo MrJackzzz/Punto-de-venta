@@ -11,7 +11,11 @@ function closeModal(id) {
 }
 
 function toggleMenu() {
-    document.getElementById('mainNav').classList.toggle('open');
+    document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function toggleMobileMenu() {
+    document.getElementById('mobileNav').classList.toggle('open');
 }
 
 document.addEventListener('click', function(e) {
