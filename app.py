@@ -1420,11 +1420,10 @@ def settings():
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-        keys = ['owner_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password',
-                'low_stock_threshold', 'default_currency', 'business_name',
-                'backup_interval', 'critical_stock_threshold', 'mp_access_token',
-                'backup_max_count']
-        for key in keys:
+        # Only save keys that are actually present in the form (each form has its own fields)
+        for key in request.form:
+            if key in ('csrf_token',):  # skip any non-config keys if needed
+                continue
             val = request.form.get(key, '').strip()
             config = Config.query.filter_by(key=key).first()
             if config:
