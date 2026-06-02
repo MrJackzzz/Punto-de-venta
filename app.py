@@ -2,6 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
 from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category
 from datetime import datetime, timezone, timedelta
+AR_TZ = timezone(timedelta(hours=-3))
+
+
+def to_ar(dt):
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func
 import os, csv, io, json, smtplib, shutil, zipfile, subprocess
@@ -9,6 +16,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
+app.jinja_env.globals['to_ar'] = to_ar
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambiame-en-produccion')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///sistema.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -35,7 +43,7 @@ def inject_globals():
     return {
         'business_name': get_config('business_name', 'NexoControl'),
         'logo_url': get_config('logo_filename', ''),
-        'now': datetime.now
+        'now': lambda: datetime.now(AR_TZ)
     }
 
 db.init_app(app)
@@ -464,7 +472,7 @@ def history_export():
     }
     for log in logs:
         writer.writerow([
-            log.created_at.strftime('%d/%m/%Y %H:%M'),
+            to_ar(log.created_at).strftime('%d/%m/%Y %H:%M'),
             log.user.username, log.user.role,
             action_map.get(log.action, log.action), log.description
         ])
@@ -557,7 +565,7 @@ def profits():
         total_profit += profit
         items_detail.append({
             'id': s.id,
-            'date': s.created_at.strftime('%d/%m/%Y %H:%M'),
+            'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
             'user': s.user.username,
             'items_count': s.items.count(),
             'revenue': revenue,
@@ -611,7 +619,7 @@ def profits_pdf():
         total_profit += profit
         items_detail.append({
             'id': s.id,
-            'date': s.created_at.strftime('%d/%m/%Y %H:%M'),
+            'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
             'user': s.user.username,
             'items_count': s.items.count(),
             'revenue': revenue,
@@ -1087,7 +1095,7 @@ def api_history():
             'action': action_map.get(log.action, log.action),
             'action_key': log.action,
             'description': log.description,
-            'time': log.created_at.strftime('%d/%m/%Y %H:%M'),
+            'time': to_ar(log.created_at).strftime('%d/%m/%Y %H:%M'),
         }
         if log.action == 'sale' and '#' in log.description:
             try:
@@ -1121,7 +1129,7 @@ def api_log_detail(id):
         'role': log.user.role,
         'action': log.action,
         'description': log.description,
-        'time': log.created_at.strftime('%d/%m/%Y %H:%M'),
+        'time': to_ar(log.created_at).strftime('%d/%m/%Y %H:%M'),
     }
     if log.action == 'product_edit':
         # Parse "NombreProducto: Campo: viejo → nuevo, Campo2: viejo → nuevo"
@@ -1191,7 +1199,7 @@ def api_sale_items(sale_id):
         'user': sale.user.username,
         'total': sale.total,
         'payment_method': sale.payment_method,
-        'date': sale.created_at.strftime('%d/%m/%Y %H:%M'),
+        'date': to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M'),
         'items': items
     })
 
@@ -1228,7 +1236,7 @@ def send_ticket_email(sale, sale_items, customer_email=None):
             <p style="margin:5px 0 0;font-size:13px;">Ticket #{sale.id}</p>
         </div>
         <div style="background:#f9f9f9;padding:15px;border:1px solid #ddd;">
-            <p style="font-size:12px;color:#555;">{sale.created_at.strftime('%d/%m/%Y %H:%M')} | Atendió: {sale.user.username}</p>
+            <p style="font-size:12px;color:#555;">{to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M')} | Atendió: {sale.user.username}</p>
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <tr style="font-weight:700;border-bottom:2px solid #ddd;">
                     <td style="padding:5px;">Producto</td>

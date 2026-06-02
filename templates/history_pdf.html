@@ -40,7 +40,7 @@
         <tbody>
             {% for log in logs %}
             <tr>
-                <td>{{ log.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ to_ar(log.created_at).strftime('%d/%m/%Y %H:%M') }}</td>
                 <td>{{ log.user.username }}</td>
                 <td><span class="badge badge-{{ log.user.role }}">{{ log.user.role|upper }}</span></td>
                 <td>{{ action_map.get(log.action, log.action) }}</td>

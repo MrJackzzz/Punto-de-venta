@@ -51,7 +51,7 @@
             {% endif %}
             <h1>{{ business_name }}</h1>
             <p>Ticket #{{ sale.id }}</p>
-            <p>{{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p>{{ to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M') }}</p>
             <p>Atendió: {{ sale.user.username }}</p>
         </div>
 

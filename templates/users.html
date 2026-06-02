@@ -29,7 +29,7 @@
                     <span class="badge badge-inactive">Inactivo</span>
                     {% endif %}
                 </td>
-                <td>{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
+                <td>{{ to_ar(u.created_at).strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
                 <td class="table-actions">
                     {% if current_user.role == 'admin' and u.id != current_user.id %}
                     <form method="POST" action="{{ url_for('user_toggle', id=u.id) }}" style="display:inline;">
