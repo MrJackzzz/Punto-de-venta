@@ -116,6 +116,27 @@
 </div>
 
 <div class="card">
+    <div class="card-header">⚠️ Backups Automáticos</div>
+    <form method="POST" action="{{ url_for('save_backup_config') }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="backup_interval">Intervalo entre backups (horas)</label>
+                <input type="number" id="backup_interval" name="backup_interval" class="form-control"
+                       value="{{ configs.get('backup_interval', '0') }}" min="0" step="1">
+                <small style="color:var(--gray);">Poner 0 para desactivar backups automáticos</small>
+            </div>
+            <div class="form-group">
+                <label for="backup_max_count">Máximo de backups a conservar</label>
+                <input type="number" id="backup_max_count" name="backup_max_count" class="form-control"
+                       value="{{ configs.get('backup_max_count', '20') }}" min="0" step="1">
+                <small style="color:var(--gray);">Poner 0 para conservar todos. Cuando se supera este número, se borran los más viejos.</small>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Guardar Configuración de Backups</button>
+    </form>
+</div>
+
+<div class="card">
     <div class="card-header">Permisos por Rol</div>
     <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
         Activá o desactivá permisos específicos para cada rol. Los cambios son inmediatos.

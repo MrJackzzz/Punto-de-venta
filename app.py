@@ -1336,7 +1336,8 @@ def settings():
     if request.method == 'POST':
         keys = ['owner_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password',
                 'low_stock_threshold', 'default_currency', 'business_name',
-                'backup_interval', 'critical_stock_threshold', 'mp_access_token']
+                'backup_interval', 'critical_stock_threshold', 'mp_access_token',
+                'backup_max_count']
         for key in keys:
             val = request.form.get(key, '').strip()
             config = Config.query.filter_by(key=key).first()
@@ -1357,6 +1358,25 @@ def settings():
         except (json.JSONDecodeError, TypeError):
             role_perms[role] = {}
     return render_template('settings.html', configs=configs, role_perms=role_perms)
+
+
+@app.route('/settings/backup-config', methods=['POST'])
+@login_required
+def save_backup_config():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('settings'))
+    for key in ['backup_interval', 'backup_max_count']:
+        val = request.form.get(key, '').strip()
+        config = Config.query.filter_by(key=key).first()
+        if config:
+            config.value = val
+        else:
+            db.session.add(Config(key=key, value=val))
+    db.session.commit()
+    flash('Configuración de backups guardada.', 'success')
+    trim_backups()
+    return redirect(url_for('settings'))
 
 
 @app.route('/settings/permissions', methods=['POST'])
@@ -1435,6 +1455,19 @@ BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 
+def trim_backups():
+    max_count = int(get_config('backup_max_count', '0'))
+    if max_count <= 0:
+        return
+    files = sorted([f for f in os.listdir(BACKUP_DIR) if f.startswith('backup_') and f.endswith('.zip')], reverse=True)
+    while len(files) > max_count:
+        old = files.pop()
+        try:
+            os.remove(os.path.join(BACKUP_DIR, old))
+        except OSError:
+            pass
+
+
 def auto_backup_check():
     interval = int(get_config('backup_interval', '0'))
     if interval <= 0:
@@ -1471,8 +1504,7 @@ def auto_backup_check():
                 os.remove(dst)
     except Exception:
         pass
-
-
+    trim_backups()
 @app.route('/backups')
 @login_required
 def backups():
@@ -1529,6 +1561,7 @@ def backup_create():
             flash('pg_dump no está instalado en el servidor.', 'danger')
         except Exception as e:
             flash(f'Error: {str(e)[:200]}', 'danger')
+    trim_backups()
     return redirect(url_for('backups'))
 
 
