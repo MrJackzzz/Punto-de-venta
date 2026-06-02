@@ -40,6 +40,35 @@
         <div class="sum-item dark"><div class="val">{{ "%.1f"|format(total_margin) }}%</div><div class="lbl">Margen</div></div>
     </div>
     {% if items %}
+    {% if product_breakdown %}
+    <h2 style="font-size:13px;color:#3d5a80;margin:16px 0 8px;">📦 Desglose por Producto</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Unids.</th>
+                <th>Ingreso</th>
+                <th>Costo</th>
+                <th>Ganancia</th>
+                <th>Margen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in product_breakdown %}
+            <tr>
+                <td><strong>{{ p.name }}</strong></td>
+                <td>{{ p.qty }}</td>
+                <td>${{ "%.2f"|format(p.revenue) }}</td>
+                <td>${{ "%.2f"|format(p.cost) }}</td>
+                <td class="{% if p.profit >= 0 %}pos{% else %}neg{% endif %}">${{ "%.2f"|format(p.profit) }}</td>
+                <td>{{ "%.1f"|format(p.margin) }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div style="margin-bottom:16px;"></div>
+    {% endif %}
+    <h2 style="font-size:13px;color:#3d5a80;margin:0 0 8px;">📋 Detalle por Venta</h2>
     <table>
         <thead>
             <tr>

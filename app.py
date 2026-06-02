@@ -641,6 +641,7 @@ def profits_pdf():
         return redirect(url_for('dashboard'))
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
+    product_id = request.args.get('product_id', type=int)
     query = Sale.query
     if date_from:
         try:
@@ -656,15 +657,48 @@ def profits_pdf():
             pass
     sales = query.order_by(Sale.created_at.desc()).all()
 
+    if product_id:
+        filtered = []
+        for s in sales:
+            if s.items.filter_by(product_id=product_id).count() > 0:
+                filtered.append(s)
+        sales = filtered
+
     total_revenue = 0
     total_cost = 0
     total_profit = 0
     items_detail = []
+    product_totals = {}
+
     for s in sales:
-        revenue = s.total
-        cost = 0
-        for item in s.items:
-            cost += item.product.cost * item.quantity if item.product else 0
+        if product_id:
+            filtered_items = s.items.filter_by(product_id=product_id).all()
+            if not filtered_items:
+                continue
+            revenue = sum(i.subtotal for i in filtered_items)
+            cost = sum(i.product.cost * i.quantity for i in filtered_items if i.product)
+            for i in filtered_items:
+                pid = i.product_id
+                if pid not in product_totals:
+                    product_totals[pid] = {'name': i.product.name if i.product else f'#{pid}',
+                                           'qty': 0, 'revenue': 0, 'cost': 0}
+                product_totals[pid]['qty'] += i.quantity
+                product_totals[pid]['revenue'] += i.subtotal
+                product_totals[pid]['cost'] += i.product.cost * i.quantity if i.product else 0
+        else:
+            revenue = s.total
+            cost = 0
+            for item in s.items:
+                c = item.product.cost * item.quantity if item.product else 0
+                cost += c
+                pid = item.product_id
+                if pid not in product_totals:
+                    product_totals[pid] = {'name': item.product.name if item.product else f'#{pid}',
+                                           'qty': 0, 'revenue': 0, 'cost': 0}
+                product_totals[pid]['qty'] += item.quantity
+                product_totals[pid]['revenue'] += item.subtotal
+                product_totals[pid]['cost'] += c
+
         profit = revenue - cost
         total_revenue += revenue
         total_cost += cost
@@ -673,19 +707,34 @@ def profits_pdf():
             'id': s.id,
             'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
             'user': s.user.username,
-            'items_count': s.items.count(),
+            'items_count': len(filtered_items) if product_id else s.items.count(),
             'revenue': revenue,
             'cost': cost,
             'profit': profit,
             'margin': (profit / revenue * 100) if revenue > 0 else 0
         })
 
+    product_breakdown = []
+    for pid, data in product_totals.items():
+        pprofit = data['revenue'] - data['cost']
+        product_breakdown.append({
+            'product_id': pid,
+            'name': data['name'],
+            'qty': data['qty'],
+            'revenue': data['revenue'],
+            'cost': data['cost'],
+            'profit': pprofit,
+            'margin': (pprofit / data['revenue'] * 100) if data['revenue'] > 0 else 0
+        })
+    product_breakdown.sort(key=lambda x: x['qty'], reverse=True)
+
     margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
     biz_name = get_config('business_name', 'NexoControl')
     return render_template('profits_pdf.html', items=items_detail,
                            total_revenue=total_revenue, total_cost=total_cost,
                            total_profit=total_profit, total_margin=margin,
-                           date_from=date_from, date_to=date_to, biz_name=biz_name)
+                           date_from=date_from, date_to=date_to, biz_name=biz_name,
+                           product_breakdown=product_breakdown)
 
 
 @app.route('/top-products')
