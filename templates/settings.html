@@ -98,6 +98,21 @@
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">Guardar Configuración</button>
     </form>
+
+    <div class="card-header" style="margin-top:1.5rem;">💳 Mercado Pago</div>
+    <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
+        Configurá el <strong>Access Token</strong> de Mercado Pago para generar pagos QR dinámicos.
+        Creá una aplicación en <a href="https://www.mercadopago.com.ar/developers" target="_blank" style="color:var(--primary);">Mercado Pago Developers</a> y copiá tu Access Token acá.
+    </p>
+    <form method="POST">
+        <div class="form-group">
+            <label for="mp_access_token">Access Token (producción)</label>
+            <input type="text" id="mp_access_token" name="mp_access_token" class="form-control"
+                   value="{{ configs.get('mp_access_token', '') }}" placeholder="APP_USR-xxxxxxxxxx-xxxxxx-xxxxxxxxxxxx-xxxxxxxx">
+            <small style="color:var(--gray);display:block;margin-top:0.3rem;">Empieza con APP_USR-... Lo encontrás en Credenciales → Access Token</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar Access Token</button>
+    </form>
 </div>
 
 <div class="card">

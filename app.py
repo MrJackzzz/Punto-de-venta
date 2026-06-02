@@ -753,6 +753,98 @@ def checkout():
     })
 
 
+@app.route('/api/create-mp-payment', methods=['POST'])
+@login_required
+def create_mp_payment():
+    if not current_user.can_sell():
+        return jsonify({'error': 'Permiso denegado'}), 403
+
+    access_token = get_config('mp_access_token', '')
+    if not access_token:
+        return jsonify({'error': 'Mercado Pago no configurado. Andá a Config → Mercado Pago'}), 400
+
+    data = request.get_json()
+    sale_id = data.get('sale_id')
+    total = data.get('total')
+    description = data.get('description', 'Venta Punto de Venta')
+
+    if not sale_id or not total:
+        return jsonify({'error': 'Faltan datos'}), 400
+
+    try:
+        import requests
+        resp = requests.post('https://api.mercadopago.com/checkout/preferences', json={
+            'items': [{
+                'title': description,
+                'quantity': 1,
+                'unit_price': float(total),
+                'currency_id': 'ARS'
+            }],
+            'back_urls': {
+                'success': request.host_url.rstrip('/') + url_for('mp_success', sale_id=sale_id),
+                'failure': request.host_url.rstrip('/') + url_for('sell'),
+                'pending': request.host_url.rstrip('/') + url_for('sell')
+            },
+            'auto_return': 'approved',
+            'notification_url': request.host_url.rstrip('/') + url_for('mp_webhook'),
+            'external_reference': str(sale_id)
+        }, headers={
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        })
+        data = resp.json()
+        if 'id' not in data:
+            return jsonify({'error': 'Error de Mercado Pago: ' + str(data.get('message', 'desconocido'))}), 400
+
+        return jsonify({
+            'success': True,
+            'payment_id': data['id'],
+            'init_point': data['init_point'],
+            'sandbox_init_point': data.get('sandbox_init_point', '')
+        })
+    except Exception as e:
+        return jsonify({'error': 'Error al conectar con Mercado Pago: ' + str(e)[:100]}), 500
+
+
+@app.route('/mp-success/<int:sale_id>')
+@login_required
+def mp_success(sale_id):
+    flash('Pago procesado. Verificá el estado en el historial.', 'success')
+    return redirect(url_for('sell'))
+
+
+@app.route('/api/mp-webhook', methods=['POST'])
+def mp_webhook():
+    try:
+        data = request.get_json()
+        if data and data.get('type') == 'payment':
+            payment_id = data.get('data', {}).get('id')
+            if payment_id:
+                access_token = get_config('mp_access_token', '')
+                if access_token:
+                    import requests
+                    resp = requests.get(f'https://api.mercadopago.com/v1/payments/{payment_id}',
+                                        headers={'Authorization': f'Bearer {access_token}'})
+                    pay = resp.json()
+                    if pay.get('status') == 'approved':
+                        sale_id = pay.get('external_reference')
+                        if sale_id:
+                            try:
+                                sale_id = int(sale_id)
+                            except (ValueError, TypeError):
+                                sale_id = None
+                            if sale_id:
+                                sale = db.session.get(Sale, sale_id)
+                                if sale:
+                                    sale.payment_method = 'mercadopago'
+                                    db.session.commit()
+                    elif pay.get('status') == 'rejected':
+                        pass
+    except Exception:
+        pass
+    return '', 200
+
+
 @app.route('/ticket/<int:id>')
 @login_required
 def ticket(id):
@@ -1119,7 +1211,7 @@ def settings():
     if request.method == 'POST':
         keys = ['owner_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password',
                 'low_stock_threshold', 'default_currency', 'business_name',
-                'backup_interval', 'critical_stock_threshold']
+                'backup_interval', 'critical_stock_threshold', 'mp_access_token']
         for key in keys:
             val = request.form.get(key, '').strip()
             config = Config.query.filter_by(key=key).first()

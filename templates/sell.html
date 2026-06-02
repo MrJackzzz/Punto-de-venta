@@ -39,8 +39,9 @@
                 <label for="paymentMethod">Método de Pago</label>
                 <select id="paymentMethod" class="form-control" onchange="toggleCashFields()">
                     <option value="cash">Efectivo</option>
-                    <option value="card">Tarjeta</option>
+                    <option value="card">Tarjeta (POSNet)</option>
                     <option value="transfer">Transferencia</option>
+                    <option value="mercadopago">Mercado Pago (QR)</option>
                 </select>
             </div>
             <div id="cashFields">
@@ -179,6 +180,16 @@ function showTicket(data) {
         </div>`;
     });
     const bizName = '{{ business_name }}';
+    let extraHtml = '';
+    if (data.mp_init_point) {
+        extraHtml = `
+            <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #999;text-align:center;">
+                <p style="font-size:12px;font-weight:600;margin-bottom:6px;">💳 Pagá con Mercado Pago</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.mp_init_point)}" style="width:150px;height:150px;border-radius:8px;" alt="QR MP">
+                <p style="font-size:11px;color:#555;margin-top:6px;word-break:break-all;">${data.mp_init_point}</p>
+            </div>
+        `;
+    }
     document.getElementById('ticketContent').innerHTML = `
         <div style="text-align:center;margin-bottom:8px;">
             <strong style="font-size:16px;">${bizName}</strong><br>
@@ -208,6 +219,7 @@ function showTicket(data) {
             <span>Vuelto:</span><span style="color:green;font-weight:700;">$${data.change.toFixed(2)}</span>
         </div>` : ''}
         ${data.customer_email ? `<div style="border-top:1px dashed #999;margin:6px 0;"></div><div style="font-size:11px;">Email: ${data.customer_email}</div>` : ''}
+        ${extraHtml}
         <div style="text-align:center;margin-top:8px;font-size:11px;color:#555;">¡Gracias por su compra!</div>
     `;
     openModal('ticketModal');
@@ -216,7 +228,7 @@ function showTicket(data) {
 
 function shareWhatsApp() {
     if (!lastSaleData) return;
-    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'};
+    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia', 'mercadopago': 'Mercado Pago'};
     const bizName = document.getElementById('ticketContent').dataset.businessName || '{{ business_name }}';
     const now = new Date();
     const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
@@ -228,6 +240,9 @@ function shareWhatsApp() {
     msg += `Método: ${methodNames[lastSaleData.payment_method] || lastSaleData.payment_method}`;
     if (lastSaleData.payment_method === 'cash') {
         msg += `%0ARecibido: $${lastSaleData.amount_paid.toFixed(2)}%0AVuelto: $${lastSaleData.change.toFixed(2)}`;
+    }
+    if (lastSaleData.mp_init_point) {
+        msg += `%0A%0A💳 Pagá aquí: ${lastSaleData.mp_init_point}`;
     }
     window.open('https://wa.me/?text=' + msg, '_blank');
 }
@@ -310,7 +325,29 @@ function checkout() {
             alert('Error: ' + data.error);
             return;
         }
-        showTicket(data);
+        if (method === 'mercadopago') {
+            fetch('/api/create-mp-payment', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sale_id: data.sale_id,
+                    total: data.total
+                })
+            })
+            .then(r => r.json())
+            .then(mp => {
+                if (mp.error) {
+                    alert('Error MP: ' + mp.error);
+                    showTicket(data);
+                } else {
+                    data.mp_init_point = mp.init_point;
+                    showTicket(data);
+                }
+            })
+            .catch(() => showTicket(data));
+        } else {
+            showTicket(data);
+        }
         cart = [];
         renderCart();
         document.getElementById('amountPaid').value = '';
