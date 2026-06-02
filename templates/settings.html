@@ -38,9 +38,15 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="low_stock_threshold">Stock mínimo (alerta de stock bajo)</label>
-                <input type="number" id="low_stock_threshold" name="low_stock_threshold" class="form-control"
-                       value="{{ configs.get('low_stock_threshold', '10') }}" min="1">
+            <input type="number" id="low_stock_threshold" name="low_stock_threshold" class="form-control"
+                   value="{{ configs.get('low_stock_threshold', '10') }}" min="1">
                 <small style="color:var(--gray);">Productos por debajo de esta cantidad se marcan en rojo</small>
+            </div>
+            <div class="form-group">
+                <label for="critical_stock_threshold">Stock crítico (alerta por email)</label>
+                <input type="number" id="critical_stock_threshold" name="critical_stock_threshold" class="form-control"
+                       value="{{ configs.get('critical_stock_threshold', '5') }}" min="1">
+                <small style="color:var(--gray);">Al llegar a este valor, la app envía un email al dueño listando los productos críticos</small>
             </div>
             <div class="form-group">
                 <label for="default_currency">Moneda por defecto</label>
@@ -117,17 +123,23 @@
                         'can_add_products':'Agregar productos',
                         'can_edit_products':'Editar productos',
                         'can_manage_products':'Eliminar productos',
-                        'can_manage_suppliers':'Gestionar proveedores',
+                        'can_view_suppliers':'Ver proveedores',
+                        'can_add_suppliers':'Agregar proveedores',
+                        'can_edit_suppliers':'Editar proveedores',
+                        'can_delete_suppliers':'Eliminar proveedores',
+                        'can_view_categories':'Ver categorías',
+                        'can_add_categories':'Agregar categorías',
+                        'can_edit_categories':'Editar categorías',
+                        'can_delete_categories':'Eliminar categorías',
                         'can_manage_users':'Gestionar usuarios',
                         'can_view_history':'Ver historial',
                         'can_sell':'Vender / Cobrar',
-                        'can_access_categories':'Acceder a categorías',
                         'can_view_charts':'Ver gráficos del inicio'
                     } %}
                     {% set default_perms = {
-                        'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_manage_suppliers':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_access_categories':true,'can_view_charts':true},
-                        'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_manage_suppliers':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_access_categories':true,'can_view_charts':true},
-                        'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_manage_suppliers':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_access_categories':false,'can_view_charts':true}
+                        'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true},
+                        'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true},
+                        'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true}
                     } %}
                     {% for pk, plabel in perm_labels.items() %}
                     <tr>

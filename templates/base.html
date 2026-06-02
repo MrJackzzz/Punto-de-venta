@@ -24,10 +24,10 @@
             <a href="{{ url_for('products') }}">Productos</a>
             {% endif %}
             <a href="{{ url_for('sell') }}">Vender</a>
-            {% if current_user.can_manage_suppliers() %}
+            {% if current_user.can_view_suppliers() %}
             <a href="{{ url_for('suppliers') }}">Proveedores</a>
             {% endif %}
-            {% if current_user.can_access_categories() %}
+            {% if current_user.can_view_categories() %}
             <a href="{{ url_for('categories') }}">Categorías</a>
             {% endif %}
             {% if current_user.can_manage_users() %}
@@ -35,6 +35,8 @@
             {% endif %}
             {% if current_user.can_view_history() %}
             <a href="{{ url_for('history') }}">Historial</a>
+            <a href="{{ url_for('profits') }}">Ganancias</a>
+            <a href="{{ url_for('top_products') }}">Ranking</a>
             {% endif %}
             {% if current_user.role == 'admin' %}
             <a href="{{ url_for('backups') }}">Backups</a>

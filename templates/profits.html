@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Ganancias{% endblock %}
+{% block content %}
+<h2 style="color:var(--primary);margin-bottom:1.5rem;">📊 Reporte de Ganancias</h2>
+
+<div class="card">
+    <div class="card-header">🔍 Filtros</div>
+    <form method="GET">
+        <div class="form-row" style="grid-template-columns:1fr 1fr auto auto;align-items:end;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Desde</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Hasta</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Filtrar</button>
+            <a href="/profits/pdf?date_from={{ date_from }}&date_to={{ date_to }}" target="_blank" class="btn btn-secondary" style="align-self:flex-end;display:inline-flex;align-items:center;gap:0.3rem;">📄 PDF</a>
+        </div>
+    </form>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:1rem;">
+    <div class="stat-card success">
+        <div class="number">${{ "%.2f"|format(total_revenue) }}</div>
+        <div class="label">💰 Ingresos</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="number">${{ "%.2f"|format(total_cost) }}</div>
+        <div class="label">📦 Costos</div>
+    </div>
+    <div class="stat-card" style="border-left-color:var(--primary);">
+        <div class="number" style="color:var(--primary);">${{ "%.2f"|format(total_profit) }}</div>
+        <div class="label">📈 Ganancia Neta</div>
+    </div>
+    <div class="stat-card" style="border-left-color:var(--dark);">
+        <div class="number" style="color:var(--dark);">{{ "%.1f"|format(total_margin) }}%</div>
+        <div class="label">🎯 Margen</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">📋 Detalle por Venta</div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Items</th>
+                    <th>Ingreso</th>
+                    <th>Costo</th>
+                    <th>Ganancia</th>
+                    <th>Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in items %}
+                <tr>
+                    <td><strong>{{ i.id }}</strong></td>
+                    <td>{{ i.date }}</td>
+                    <td>{{ i.user }}</td>
+                    <td>{{ i.items_count }}</td>
+                    <td>${{ "%.2f"|format(i.revenue) }}</td>
+                    <td>${{ "%.2f"|format(i.cost) }}</td>
+                    <td style="color:{% if i.profit >= 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
+                        {% if i.profit >= 0 %}+{% endif %}${{ "%.2f"|format(i.profit) }}
+                    </td>
+                    <td>{{ "%.1f"|format(i.margin) }}%</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align:center;color:var(--gray);padding:2rem;">Sin ventas en este período</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

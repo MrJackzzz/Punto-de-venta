@@ -46,7 +46,8 @@
     </div>
     <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
         <button class="btn btn-sm btn-secondary" onclick="clearFilters()">Limpiar filtros</button>
-        <a href="javascript:exportCSV()" class="btn btn-sm btn-primary" style="margin-left:auto;">📥 Exportar CSV</a>
+        <a href="javascript:exportCSV()" class="btn btn-sm btn-primary">📥 CSV</a>
+        <a href="javascript:exportPDF()" class="btn btn-sm btn-secondary">📄 PDF</a>
         <span style="font-size:0.85rem;color:var(--gray);align-self:center;" id="resultCount"></span>
     </div>
 </div>
@@ -147,6 +148,10 @@ function clearFilters() {
 
 function exportCSV() {
     window.location.href = '/history/export?' + getFilters().toString();
+}
+
+function exportPDF() {
+    window.open('/history/pdf?' + getFilters().toString(), '_blank');
 }
 
 applyFilters();

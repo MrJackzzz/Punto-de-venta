@@ -68,9 +68,10 @@
             <button class="modal-close" onclick="closeTicketModal()">&times;</button>
         </div>
         <div id="ticketContent" data-business-name="{{ business_name }}" style="font-family:'Courier New',monospace;font-size:13px;background:#f9f9f9;padding:1rem;border-radius:8px;margin-bottom:1rem;"></div>
-        <div style="display:flex;gap:0.5rem;">
-            <button class="btn btn-primary" onclick="printTicket()" style="flex:1;">🖨 Imprimir</button>
-            <button class="btn btn-secondary" onclick="closeTicketModal()" style="flex:1;">Cerrar</button>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="printTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
+            <button class="btn btn-success" onclick="shareWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
+            <button class="btn btn-secondary" onclick="closeTicketModal()" style="flex:1;min-width:80px;">Cerrar</button>
         </div>
     </div>
 </div>
@@ -211,6 +212,24 @@ function showTicket(data) {
     `;
     openModal('ticketModal');
     if (typeof playBeep === 'function') playBeep();
+}
+
+function shareWhatsApp() {
+    if (!lastSaleData) return;
+    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'};
+    const bizName = document.getElementById('ticketContent').dataset.businessName || '{{ business_name }}';
+    const now = new Date();
+    const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+    let msg = `*${bizName}*%0ATicket #${lastSaleData.sale_id}%0A${timeStr}%0AAtendió: ${lastSaleData.user}%0A%0A`;
+    lastSaleData.items.forEach(item => {
+        msg += `${item.product_name} x${item.quantity} = $${item.subtotal.toFixed(2)}%0A`;
+    });
+    msg += `%0A*TOTAL: $${lastSaleData.total.toFixed(2)}*%0A`;
+    msg += `Método: ${methodNames[lastSaleData.payment_method] || lastSaleData.payment_method}`;
+    if (lastSaleData.payment_method === 'cash') {
+        msg += `%0ARecibido: $${lastSaleData.amount_paid.toFixed(2)}%0AVuelto: $${lastSaleData.change.toFixed(2)}`;
+    }
+    window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
 function printTicket() {

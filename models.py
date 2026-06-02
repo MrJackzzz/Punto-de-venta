@@ -50,6 +50,18 @@ class User(UserMixin, db.Model):
     def can_manage_suppliers(self):
         return self._role_perm('can_manage_suppliers', self.role in ('admin', 'supervisor'))
 
+    def can_view_suppliers(self):
+        return self._role_perm('can_view_suppliers', self.role in ('admin', 'supervisor'))
+
+    def can_add_suppliers(self):
+        return self._role_perm('can_add_suppliers', self.role in ('admin', 'supervisor'))
+
+    def can_edit_suppliers(self):
+        return self._role_perm('can_edit_suppliers', self.role in ('admin', 'supervisor'))
+
+    def can_delete_suppliers(self):
+        return self._role_perm('can_delete_suppliers', self.role in ('admin', 'supervisor'))
+
     def can_view_history(self):
         return self._role_perm('can_view_history', self.role in ('admin', 'supervisor'))
 
@@ -58,6 +70,18 @@ class User(UserMixin, db.Model):
 
     def can_access_categories(self):
         return self._role_perm('can_access_categories', self.role == 'admin')
+
+    def can_view_categories(self):
+        return self._role_perm('can_view_categories', self.role in ('admin', 'supervisor'))
+
+    def can_add_categories(self):
+        return self._role_perm('can_add_categories', self.role in ('admin', 'supervisor'))
+
+    def can_edit_categories(self):
+        return self._role_perm('can_edit_categories', self.role in ('admin', 'supervisor'))
+
+    def can_delete_categories(self):
+        return self._role_perm('can_delete_categories', self.role in ('admin', 'supervisor'))
 
     def can_view_charts(self):
         return self._role_perm('can_view_charts', True)

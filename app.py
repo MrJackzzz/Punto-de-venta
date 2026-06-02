@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
 from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category
 from datetime import datetime, timezone, timedelta
 from werkzeug.utils import secure_filename
@@ -34,12 +34,24 @@ def get_config(key, default=''):
 def inject_globals():
     return {
         'business_name': get_config('business_name', 'NexoControl'),
-        'logo_url': get_config('logo_filename', '')
+        'logo_url': get_config('logo_filename', ''),
+        'now': datetime.now
     }
 
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+login_manager.anonymous_user = AnonymousUserMixin
+
+# Add permission methods to AnonymousUserMixin that return False
+_perm_methods = ['can_view_products','can_add_products','can_edit_products','can_manage_products',
+                 'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
+                 'can_manage_users','can_view_history','can_sell',
+                 'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
+                 'can_view_charts']
+for _m in _perm_methods:
+    if not hasattr(AnonymousUserMixin, _m):
+        setattr(AnonymousUserMixin, _m, lambda self: False)
 
 
 @login_manager.user_loader
@@ -73,6 +85,62 @@ def supervisor_required(f):
             return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated
+
+
+def check_critical_stock():
+    try:
+        critical = int(get_config('critical_stock_threshold', '5'))
+        if critical <= 0:
+            return
+        triggered = Product.query.filter(Product.stock <= critical).all()
+        if not triggered:
+            return
+        owner_email = get_config('owner_email', '')
+        if not owner_email or not can_send_email():
+            return
+        biz_name = get_config('business_name', 'Mi Negocio')
+        items_html = ''.join(
+            f'<tr><td>{p.code}</td><td>{p.name}</td><td style="color:red;font-weight:bold;">{p.stock}</td></tr>'
+            for p in triggered
+        )
+        html = f'''<h2>⚠️ Stock Crítico - {biz_name}</h2>
+<p>Los siguientes productos tienen stock por debajo del nivel crítico ({critical}):</p>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+<tr style="background:#ee6c4d;color:white;"><th>Código</th><th>Producto</th><th>Stock</th></tr>{items_html}</table>
+<p><small>Este es un mensaje automático de {biz_name}.</small></p>'''
+        send_email(owner_email, f'⚠️ Stock Crítico - {biz_name}', html)
+        log_movement(
+            User.query.filter_by(role='admin').first(),
+            'system', f'Alerta stock crítico enviada a {owner_email}'
+        )
+    except Exception:
+        pass
+
+
+def can_send_email():
+    return bool(get_config('smtp_host', '') and get_config('smtp_user', '') and get_config('smtp_password', ''))
+
+
+def send_email(to, subject, html_body):
+    try:
+        smtp_host = get_config('smtp_host', '')
+        smtp_port = int(get_config('smtp_port', '587'))
+        smtp_user = get_config('smtp_user', '')
+        smtp_password = get_config('smtp_password', '')
+        if not smtp_host or not smtp_user:
+            return False
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = smtp_user
+        msg['To'] = to
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+        return True
+    except Exception:
+        return False
 
 
 @app.route('/')
@@ -118,6 +186,7 @@ def get_low_stock_threshold():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    check_critical_stock()
     threshold = get_low_stock_threshold()
     total_products = Product.query.count()
     categories = Category.query.count()
@@ -231,7 +300,7 @@ def product_delete(id):
 @app.route('/categories')
 @login_required
 def categories():
-    if not current_user.can_access_categories():
+    if not current_user.can_view_categories():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('dashboard'))
     cats = Category.query.order_by(Category.name).all()
@@ -241,7 +310,7 @@ def categories():
 @app.route('/categories/add', methods=['POST'])
 @login_required
 def category_add():
-    if not current_user.can_access_categories():
+    if not current_user.can_add_categories():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('categories'))
     name = request.form.get('name', '').strip()
@@ -256,7 +325,7 @@ def category_add():
 @app.route('/categories/delete/<int:id>', methods=['POST'])
 @login_required
 def category_delete(id):
-    if not current_user.can_access_categories():
+    if not current_user.can_delete_categories():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('categories'))
     cat = db.session.get(Category, id)
@@ -266,6 +335,25 @@ def category_delete(id):
         db.session.commit()
         log_movement(current_user, 'category_delete', f'Categoría eliminada: {cat.name}')
         flash('Categoría eliminada.', 'success')
+    return redirect(url_for('categories'))
+
+
+@app.route('/categories/edit/<int:id>', methods=['POST'])
+@login_required
+def category_edit(id):
+    if not current_user.can_edit_categories():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('categories'))
+    cat = db.session.get(Category, id)
+    if not cat:
+        flash('Categoría no encontrada.', 'danger')
+        return redirect(url_for('categories'))
+    name = request.form.get('name', '').strip()
+    if name and name != cat.name and not Category.query.filter_by(name=name).first():
+        cat.name = name
+        db.session.commit()
+        log_movement(current_user, 'category_edit', f'Categoría renombrada: {name}')
+        flash('Categoría actualizada.', 'success')
     return redirect(url_for('categories'))
 
 
@@ -364,6 +452,188 @@ def history_export():
     return Response(output.getvalue(), mimetype='text/csv',
                     headers={'Content-Disposition': 'attachment; filename=historial.csv',
                              'Content-Type': 'text/csv; charset=utf-8'})
+
+
+@app.route('/history/pdf')
+@login_required
+def history_pdf():
+    if not current_user.can_view_history():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    user_id = request.args.get('user_id', type=int)
+    action = request.args.get('action', '').strip()
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
+
+    query = MovementLog.query
+
+    if user_id:
+        query = query.filter(MovementLog.user_id == user_id)
+    if action:
+        query = query.filter(MovementLog.action == action)
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(MovementLog.created_at >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(MovementLog.created_at <= dt_to)
+        except ValueError:
+            pass
+
+    logs = query.order_by(MovementLog.created_at.desc()).limit(500).all()
+    biz_name = get_config('business_name', 'NexoControl')
+    action_map = {
+        'login': 'Inicio Sesion', 'logout': 'Cierre Sesion',
+        'product_create': 'Crear Producto', 'product_edit': 'Editar Producto',
+        'product_delete': 'Eliminar Producto', 'sale': 'Venta',
+        'supplier_create': 'Crear Proveedor', 'supplier_edit': 'Editar Proveedor',
+        'supplier_delete': 'Eliminar Proveedor', 'user_create': 'Crear Usuario',
+        'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass'
+    }
+    return render_template('history_pdf.html', logs=logs, biz_name=biz_name, action_map=action_map,
+                           date_from=date_from, date_to=date_to)
+
+
+@app.route('/profits')
+@login_required
+def profits():
+    if not current_user.can_view_history():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    query = Sale.query
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(Sale.created_at >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(Sale.created_at <= dt_to)
+        except ValueError:
+            pass
+    sales = query.order_by(Sale.created_at.desc()).all()
+
+    total_revenue = 0
+    total_cost = 0
+    total_profit = 0
+    items_detail = []
+    for s in sales:
+        revenue = s.total
+        cost = 0
+        for item in s.items:
+            cost += item.product.cost * item.quantity if item.product else 0
+        profit = revenue - cost
+        total_revenue += revenue
+        total_cost += cost
+        total_profit += profit
+        items_detail.append({
+            'id': s.id,
+            'date': s.created_at.strftime('%d/%m/%Y %H:%M'),
+            'user': s.user.username,
+            'items_count': s.items.count(),
+            'revenue': revenue,
+            'cost': cost,
+            'profit': profit,
+            'margin': (profit / revenue * 100) if revenue > 0 else 0
+        })
+
+    margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+    return render_template('profits.html', items=items_detail,
+                           total_revenue=total_revenue, total_cost=total_cost,
+                           total_profit=total_profit, total_margin=margin,
+                           date_from=date_from, date_to=date_to)
+
+
+@app.route('/profits/pdf')
+@login_required
+def profits_pdf():
+    if not current_user.can_view_history():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    query = Sale.query
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(Sale.created_at >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(Sale.created_at <= dt_to)
+        except ValueError:
+            pass
+    sales = query.order_by(Sale.created_at.desc()).all()
+
+    total_revenue = 0
+    total_cost = 0
+    total_profit = 0
+    items_detail = []
+    for s in sales:
+        revenue = s.total
+        cost = 0
+        for item in s.items:
+            cost += item.product.cost * item.quantity if item.product else 0
+        profit = revenue - cost
+        total_revenue += revenue
+        total_cost += cost
+        total_profit += profit
+        items_detail.append({
+            'id': s.id,
+            'date': s.created_at.strftime('%d/%m/%Y %H:%M'),
+            'user': s.user.username,
+            'items_count': s.items.count(),
+            'revenue': revenue,
+            'cost': cost,
+            'profit': profit,
+            'margin': (profit / revenue * 100) if revenue > 0 else 0
+        })
+
+    margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+    biz_name = get_config('business_name', 'NexoControl')
+    return render_template('profits_pdf.html', items=items_detail,
+                           total_revenue=total_revenue, total_cost=total_cost,
+                           total_profit=total_profit, total_margin=margin,
+                           date_from=date_from, date_to=date_to, biz_name=biz_name)
+
+
+@app.route('/top-products')
+@login_required
+def top_products():
+    if not current_user.can_view_products():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    query = db.session.query(
+        Product.id, Product.name, Product.code,
+        func.sum(SaleItem.quantity).label('total_qty'),
+        func.sum(SaleItem.subtotal).label('total_amount')
+    ).join(SaleItem, Product.id == SaleItem.product_id
+    ).join(Sale, SaleItem.sale_id == Sale.id)
+    if date_from:
+        try:
+            query = query.filter(Sale.created_at >= datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            query = query.filter(Sale.created_at <= datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc))
+        except ValueError:
+            pass
+    results = query.group_by(Product.id).order_by(func.sum(SaleItem.quantity).desc()).all()
+    return render_template('top_products.html', products=results, date_from=date_from, date_to=date_to)
 
 
 @app.route('/sell')
@@ -497,7 +767,7 @@ def ticket(id):
 @app.route('/suppliers')
 @login_required
 def suppliers():
-    if not current_user.can_manage_suppliers():
+    if not current_user.can_view_suppliers():
         flash('No tienes permiso.', 'danger')
         return redirect(url_for('dashboard'))
     suppliers_list = Supplier.query.order_by(Supplier.name).all()
@@ -507,7 +777,7 @@ def suppliers():
 @app.route('/suppliers/add', methods=['POST'])
 @login_required
 def supplier_add():
-    if not current_user.can_manage_suppliers():
+    if not current_user.can_add_suppliers():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('suppliers'))
     supplier = Supplier(
@@ -527,7 +797,7 @@ def supplier_add():
 @app.route('/suppliers/edit/<int:id>', methods=['POST'])
 @login_required
 def supplier_edit(id):
-    if not current_user.can_manage_suppliers():
+    if not current_user.can_edit_suppliers():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('suppliers'))
     supplier = db.session.get(Supplier, id)
@@ -548,8 +818,8 @@ def supplier_edit(id):
 @app.route('/suppliers/delete/<int:id>', methods=['POST'])
 @login_required
 def supplier_delete(id):
-    if current_user.role != 'admin':
-        flash('Solo Admin puede eliminar.', 'danger')
+    if not current_user.can_delete_suppliers():
+        flash('Permiso denegado.', 'danger')
         return redirect(url_for('suppliers'))
     supplier = db.session.get(Supplier, id)
     if supplier:
@@ -798,33 +1068,11 @@ def send_ticket_email(sale, sale_items, customer_email=None):
     if not recipients:
         return
 
-    smtp_host = Config.query.filter_by(key='smtp_host').first()
-    smtp_port = Config.query.filter_by(key='smtp_port').first()
-    smtp_user = Config.query.filter_by(key='smtp_user').first()
-    smtp_pass = Config.query.filter_by(key='smtp_password').first()
-
-    host = smtp_host.value if smtp_host else ''
-    port = int(smtp_port.value) if smtp_port and smtp_port.value else 587
-    user = smtp_user.value if smtp_user else ''
-    pwd = smtp_pass.value if smtp_pass else ''
-
-    if not host or not user or not pwd:
-        return
-
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'Ticket #{sale.id} - NexoControl'
-        msg['From'] = user
-        msg['To'] = ', '.join(recipients)
-        msg.attach(MIMEText(html, 'html'))
-
-        server = smtplib.SMTP(host, port)
-        server.starttls()
-        server.login(user, pwd)
-        server.sendmail(user, recipients, msg.as_string())
-        server.quit()
-    except Exception as e:
-        print(f'Error sending email: {e}')
+    for to in recipients:
+        try:
+            send_email(to, f'Tu Ticket #{sale.id} - {biz_name}', html)
+        except Exception:
+            pass
 
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -837,7 +1085,7 @@ def settings():
     if request.method == 'POST':
         keys = ['owner_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password',
                 'low_stock_threshold', 'default_currency', 'business_name',
-                'backup_interval']
+                'backup_interval', 'critical_stock_threshold']
         for key in keys:
             val = request.form.get(key, '').strip()
             config = Config.query.filter_by(key=key).first()
@@ -867,8 +1115,11 @@ def save_permissions():
         flash('Solo Admin.', 'danger')
         return redirect(url_for('settings'))
     perm_keys = ['can_view_products', 'can_add_products', 'can_edit_products',
-                 'can_manage_products', 'can_manage_suppliers', 'can_manage_users',
-                 'can_view_history', 'can_sell', 'can_access_categories',
+                 'can_manage_products',
+                 'can_view_suppliers', 'can_add_suppliers', 'can_edit_suppliers', 'can_delete_suppliers',
+                 'can_manage_users',
+                 'can_view_history', 'can_sell',
+                 'can_view_categories', 'can_add_categories', 'can_edit_categories', 'can_delete_categories',
                  'can_view_charts']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
@@ -1092,19 +1343,39 @@ def init_app():
             'default_currency': 'ARS',
             'default_markup': '30',
             'low_stock_threshold': '10',
+            'critical_stock_threshold': '5',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
                 db.session.add(Config(key=k, value=v))
 
+        all_perm_keys = ['can_view_products','can_add_products','can_edit_products','can_manage_products',
+                         'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
+                         'can_manage_users','can_view_history','can_sell',
+                         'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
+                         'can_view_charts']
         default_perms = {
-            'admin': {'can_view_products':True,'can_add_products':True,'can_edit_products':True,'can_manage_products':True,'can_manage_suppliers':True,'can_manage_users':True,'can_view_history':True,'can_sell':True,'can_access_categories':True,'can_view_charts':True},
-            'supervisor': {'can_view_products':True,'can_add_products':True,'can_edit_products':True,'can_manage_products':True,'can_manage_suppliers':True,'can_manage_users':True,'can_view_history':True,'can_sell':True,'can_access_categories':True,'can_view_charts':True},
-            'user': {'can_view_products':True,'can_add_products':True,'can_edit_products':False,'can_manage_products':False,'can_manage_suppliers':False,'can_manage_users':False,'can_view_history':False,'can_sell':True,'can_access_categories':False,'can_view_charts':True}
+            'admin': {k: True for k in all_perm_keys},
+            'supervisor': {k: True for k in all_perm_keys},
+            'user': {k: k in ('can_view_products','can_add_products','can_sell','can_view_charts',
+                              'can_view_suppliers','can_view_categories') for k in all_perm_keys}
         }
         for role, perms in default_perms.items():
             key = f'perms_{role}'
-            if not Config.query.filter_by(key=key).first():
+            existing = Config.query.filter_by(key=key).first()
+            if existing:
+                try:
+                    stored = json.loads(existing.value)
+                except (json.JSONDecodeError, TypeError):
+                    stored = {}
+                changed = False
+                for pk in all_perm_keys:
+                    if pk not in stored:
+                        stored[pk] = perms[pk]
+                        changed = True
+                if changed:
+                    existing.value = json.dumps(stored, ensure_ascii=False)
+            else:
                 db.session.add(Config(key=key, value=json.dumps(perms, ensure_ascii=False)))
         db.session.commit()
 

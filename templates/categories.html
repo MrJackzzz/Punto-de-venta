@@ -3,7 +3,9 @@
 {% block content %}
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
     <h2 style="color:var(--primary);">Categorías de Productos</h2>
+    {% if current_user.can_add_categories() %}
     <button class="btn btn-primary" onclick="openModal('catModal')">+ Nueva Categoría</button>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -17,9 +19,16 @@
                 <td><strong>{{ c.name }}</strong></td>
                 <td>{{ c.products|length }}</td>
                 <td>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                    {% if current_user.can_edit_categories() %}
+                    <button class="btn btn-sm btn-secondary" onclick="editCat({{ c.id }}, '{{ c.name|e }}')">Editar</button>
+                    {% endif %}
+                    {% if current_user.can_delete_categories() %}
                     <form method="POST" action="{{ url_for('category_delete', id=c.id) }}" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ c.name }}? Los productos pasarán a "Sin categoría".')">Eliminar</button>
                     </form>
+                    {% endif %}
+                    </div>
                 </td>
             </tr>
             {% else %}
@@ -32,16 +41,30 @@
 <div id="catModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <span>Nueva Categoría</span>
+            <span id="catModalTitle">Nueva Categoría</span>
             <button class="modal-close" onclick="closeModal('catModal')">&times;</button>
         </div>
-        <form method="POST" action="{{ url_for('category_add') }}">
+        <form id="catForm" method="POST" action="{{ url_for('category_add') }}">
             <div class="form-group">
-                <label for="name">Nombre de la categoría</label>
-                <input type="text" id="name" name="name" class="form-control" required autofocus>
+                <label for="catName">Nombre de la categoría</label>
+                <input type="text" id="catName" name="name" class="form-control" required autofocus>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;">Crear</button>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Guardar</button>
         </form>
     </div>
 </div>
+
+<script>
+function editCat(id, name) {
+    document.getElementById('catModalTitle').textContent = 'Editar Categoría';
+    document.getElementById('catForm').action = '/categories/edit/' + id;
+    document.getElementById('catName').value = name;
+    openModal('catModal');
+}
+
+document.getElementById('catModal').addEventListener('closeModal', function() {
+    document.getElementById('catForm').action = '{{ url_for("category_add") }}';
+    document.getElementById('catModalTitle').textContent = 'Nueva Categoría';
+});
+</script>
 {% endblock %}

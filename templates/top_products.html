@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Ranking Productos{% endblock %}
+{% block content %}
+<h2 style="color:var(--primary);margin-bottom:1.5rem;">🏆 Ranking de Productos Más Vendidos</h2>
+
+<div class="card">
+    <div class="card-header">🔍 Filtros</div>
+    <form method="GET">
+        <div class="form-row" style="grid-template-columns:1fr 1fr auto;align-items:end;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Desde</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Hasta</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Filtrar</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    {% if products %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width:50px;">#</th>
+                    <th>Código</th>
+                    <th>Producto</th>
+                    <th style="text-align:center;">Cantidad Vendida</th>
+                    <th style="text-align:right;">Total Vendido</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        {% if loop.index == 1 %}
+                        <span style="font-size:1.3rem;">🥇</span>
+                        {% elif loop.index == 2 %}
+                        <span style="font-size:1.3rem;">🥈</span>
+                        {% elif loop.index == 3 %}
+                        <span style="font-size:1.3rem;">🥉</span>
+                        {% else %}
+                        <strong>{{ loop.index }}</strong>
+                        {% endif %}
+                    </td>
+                    <td style="font-family:monospace;font-size:0.85rem;">{{ p.code }}</td>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td style="text-align:center;">
+                        <span class="badge badge-primary" style="background:var(--primary);color:#fff;font-size:0.85rem;">{{ p.total_qty }}</span>
+                    </td>
+                    <td style="text-align:right;font-weight:600;">${{ "%.2f"|format(p.total_amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:2rem;color:var(--gray);">
+        <div style="font-size:3rem;margin-bottom:0.5rem;">📦</div>
+        <p>Sin ventas en este período</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

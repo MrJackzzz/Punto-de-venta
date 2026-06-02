@@ -325,6 +325,7 @@ body {
 
 .badge-active { background: var(--success); color: var(--white); }
 .badge-inactive { background: var(--gray); color: var(--white); }
+.badge-primary { background: var(--primary); color: var(--white); }
 
 .search-box {
     display: flex;

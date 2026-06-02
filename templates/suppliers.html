@@ -3,7 +3,9 @@
 {% block content %}
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
     <h2 style="color:var(--primary);">Proveedores</h2>
+    {% if current_user.can_add_suppliers() %}
     <button class="btn btn-primary" onclick="openModal('supplierModal')">+ Nuevo Proveedor</button>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -31,8 +33,10 @@
                 <td>{{ s.email or '-' }}</td>
                 <td>{{ s.address or '-' }}</td>
                 <td class="table-actions">
+                    {% if current_user.can_edit_suppliers() %}
                     <button class="btn btn-sm btn-secondary" onclick="editSupplier({{ s.id }}, '{{ s.name|e }}', '{{ s.contact|e }}', '{{ s.phone|e }}', '{{ s.email|e }}', '{{ s.address|e }}')">Editar</button>
-                    {% if current_user.role == 'admin' %}
+                    {% endif %}
+                    {% if current_user.can_delete_suppliers() %}
                     <form method="POST" action="{{ url_for('supplier_delete', id=s.id) }}" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ s.name }}?')">Eliminar</button>
                     </form>
