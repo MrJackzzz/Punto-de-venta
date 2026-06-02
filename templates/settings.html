@@ -163,8 +163,7 @@
                         {% for role in ['admin','supervisor','user'] %}
                         {% set checked = role_perms.get(role, {}).get(pk, default_perms[role][pk]) %}
                         <td style="text-align:center;">
-                            <input type="hidden" name="{{ role }}_{{ pk }}" value="off">
-                            <input type="checkbox" name="{{ role }}_{{ pk }}" {{ 'checked' if checked else '' }} style="width:18px;height:18px;cursor:pointer;">
+                            <input type="checkbox" name="{{ role }}_{{ pk }}" value="on" {{ 'checked' if checked else '' }} style="width:18px;height:18px;cursor:pointer;">
                         </td>
                         {% endfor %}
                     </tr>

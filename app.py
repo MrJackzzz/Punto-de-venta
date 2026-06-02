@@ -1124,7 +1124,7 @@ def save_permissions():
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
-            perms[pk] = request.form.get(f'{role}_{pk}') == 'on'
+            perms[pk] = 'on' in request.form.getlist(f'{role}_{pk}')
         cfg = Config.query.filter_by(key=f'perms_{role}').first()
         val = json.dumps(perms, ensure_ascii=False)
         if cfg:
