@@ -263,6 +263,12 @@ def product_edit(id):
         flash('Producto no encontrado.', 'danger')
         return redirect(url_for('products'))
 
+    old = {
+        'code': product.code, 'name': product.name, 'cost': product.cost,
+        'markup_percentage': product.markup_percentage, 'currency': product.currency,
+        'stock': product.stock, 'description': product.description,
+        'supplier_id': product.supplier_id, 'category_id': product.category_id,
+    }
     product.code = request.form.get('code')
     product.name = request.form.get('name')
     product.cost = float(request.form.get('cost', 0))
@@ -276,7 +282,16 @@ def product_edit(id):
     product.category_id = int(cid) if cid else None
     product.calculate_price()
     db.session.commit()
-    log_movement(current_user, 'product_edit', f'Producto editado: {product.name}')
+    changes = []
+    field_names = {'code': 'Código', 'name': 'Nombre', 'cost': 'Costo', 'markup_percentage': 'Margen %',
+                   'stock': 'Stock', 'description': 'Descripción', 'supplier_id': 'Proveedor', 'category_id': 'Categoría'}
+    for field, label in field_names.items():
+        o = old[field]
+        n = getattr(product, field)
+        if o != n:
+            changes.append(f'{label}: {o} → {n}')
+    detail = ', '.join(changes) if changes else 'sin cambios'
+    log_movement(current_user, 'product_edit', f'{product.name}: {detail}')
     flash('Producto actualizado.', 'success')
     return redirect(url_for('products'))
 
