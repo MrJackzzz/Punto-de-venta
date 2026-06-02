@@ -190,6 +190,9 @@ function clearFilters() {
     document.getElementById('filterAction').value = '';
     document.getElementById('filterDateFrom').value = '';
     document.getElementById('filterDateTo').value = '';
+    applyFilters();
+}
+
 function viewLog(logId) {
     fetch('/api/log/' + logId)
         .then(r => r.json())
@@ -227,9 +230,6 @@ function viewLog(logId) {
             document.getElementById('logDetailTitle').textContent = '📋 ' + (actionNames[data.action] || data.action);
             openModal('logDetailModal');
         });
-}
-
-applyFilters();
 }
 
 function exportCSV() {
