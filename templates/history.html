@@ -79,6 +79,11 @@
             <button class="modal-close" onclick="closeModal('saleDetailModal')">&times;</button>
         </div>
         <div id="saleDetailBody"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
+            <button class="btn btn-primary" onclick="printSaleTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
+            <button class="btn btn-success" onclick="shareSaleWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
+            <button class="btn btn-secondary" onclick="closeModal('saleDetailModal')" style="flex:1;min-width:80px;">Cerrar</button>
+        </div>
     </div>
 </div>
 
@@ -102,10 +107,13 @@ const actionMap = {
     'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass'
 };
 
+let lastViewedSale = null;
+
 function viewSale(saleId) {
     fetch('/api/sale/' + saleId + '/items')
         .then(r => r.json())
         .then(data => {
+            lastViewedSale = data;
             const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'};
             let html = `
                 <div style="margin-bottom:1rem;font-size:0.9rem;">
@@ -126,6 +134,29 @@ function viewSale(saleId) {
             document.getElementById('saleDetailTitle').textContent = '🧾 Venta #' + data.id;
             openModal('saleDetailModal');
         });
+}
+
+function shareSaleWhatsApp() {
+    if (!lastViewedSale) return;
+    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia', 'mercadopago': 'Mercado Pago'};
+    const bizName = '{{ business_name }}';
+    const now = new Date();
+    const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+    let msg = `*${bizName}*%0ATicket #${lastViewedSale.id}%0A${timeStr}%0AAtendió: ${lastViewedSale.user}%0A%0A`;
+    lastViewedSale.items.forEach(item => {
+        msg += `${item.product_name} x${item.quantity} = ${fmt(item.subtotal)}%0A`;
+    });
+    msg += `%0A*TOTAL: ${fmt(lastViewedSale.total)}*%0A`;
+    msg += `Método: ${methodNames[lastViewedSale.payment_method] || lastViewedSale.payment_method}`;
+    window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
+function printSaleTicket() {
+    if (!lastViewedSale) return;
+    const win = window.open('/ticket/' + lastViewedSale.id, '_blank');
+    if (win) {
+        win.onload = function() { setTimeout(function() { win.print(); }, 300); };
+    }
 }
 
 function getFilters() {
