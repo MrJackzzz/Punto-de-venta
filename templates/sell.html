@@ -69,6 +69,7 @@
             <button class="modal-close" onclick="closeTicketModal()">&times;</button>
         </div>
         <div id="ticketContent" data-business-name="{{ business_name }}" style="font-family:'Courier New',monospace;font-size:13px;background:#f9f9f9;padding:1rem;border-radius:8px;margin-bottom:1rem;"></div>
+        <div id="mpConfirmArea" style="display:none;margin-bottom:0.5rem;"></div>
         <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
             <button class="btn btn-primary" onclick="printTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
             <button class="btn btn-success" onclick="shareWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
@@ -220,8 +221,21 @@ function showTicket(data) {
         </div>` : ''}
         ${data.customer_email ? `<div style="border-top:1px dashed #999;margin:6px 0;"></div><div style="font-size:11px;">Email: ${data.customer_email}</div>` : ''}
         ${extraHtml}
+        <div id="mpStatusMsg" style="text-align:center;margin-top:8px;font-size:12px;"></div>
         <div style="text-align:center;margin-top:8px;font-size:11px;color:#555;">¡Gracias por su compra!</div>
     `;
+    if (data.mp_init_point) {
+        document.getElementById('mpConfirmArea').innerHTML = `
+            <button class="btn btn-sm btn-primary" onclick="confirmMpPayment(${data.sale_id})" style="width:100%;padding:0.8rem;font-weight:600;">
+                🔄 Verificar pago
+            </button>
+            <div style="font-size:11px;color:#888;text-align:center;margin-top:4px;">⏳ Esperando pago del cliente...</div>
+        `;
+        document.getElementById('mpConfirmArea').style.display = 'block';
+    } else {
+        document.getElementById('mpConfirmArea').style.display = 'none';
+        document.getElementById('mpConfirmArea').innerHTML = '';
+    }
     openModal('ticketModal');
     if (typeof playBeep === 'function') playBeep();
 }
@@ -342,6 +356,7 @@ function checkout() {
                 } else {
                     data.mp_init_point = mp.init_point;
                     showTicket(data);
+                    startMpPolling(data.sale_id);
                 }
             })
             .catch(() => showTicket(data));
@@ -396,6 +411,65 @@ document.getElementById('searchInput').addEventListener('input', function() {
             `).join('');
         });
 });
+
+let mpPollTimer = null;
+
+function startMpPolling(saleId) {
+    if (mpPollTimer) clearInterval(mpPollTimer);
+    mpPollTimer = setInterval(() => {
+        fetch('/api/mp-status/' + saleId)
+            .then(r => r.json())
+            .then(status => {
+                if (status.mp_status === 'approved') {
+                    clearInterval(mpPollTimer);
+                    mpPollTimer = null;
+                    playSuccessSound();
+                    document.getElementById('ticketContent').innerHTML +=
+                        '<div style="margin-top:10px;padding:8px;background:#d4edda;border-radius:6px;text-align:center;font-weight:600;color:#155724;">✅ Pago confirmado vía Mercado Pago</div>';
+                    if (status.mp_payment_id) {
+                        document.getElementById('ticketContent').innerHTML +=
+                            '<div style="font-size:11px;color:#555;text-align:center;">ID transacción: ' + status.mp_payment_id + '</div>';
+                    }
+                }
+            })
+            .catch(() => {});
+    }, 5000);
+}
+
+function confirmMpPayment(saleId) {
+    fetch('/api/mp-status/' + saleId)
+        .then(r => r.json())
+        .then(status => {
+            if (status.mp_status === 'approved') {
+                if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
+                playSuccessSound();
+                document.getElementById('ticketContent').innerHTML +=
+                    '<div style="margin-top:10px;padding:8px;background:#d4edda;border-radius:6px;text-align:center;font-weight:600;color:#155724;">✅ Pago verificado manualmente</div>';
+                if (status.mp_payment_id) {
+                    document.getElementById('ticketContent').innerHTML +=
+                        '<div style="font-size:11px;color:#555;text-align:center;">ID transacción: ' + status.mp_payment_id + '</div>';
+                }
+            } else {
+                alert('El pago aún no fue acreditado. Escaneá el QR o usá el link de pago.');
+            }
+        });
+}
+
+function playSuccessSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+}
 
 toggleCashFields();
 </script>

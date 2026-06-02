@@ -853,6 +853,7 @@ def create_mp_payment():
 
     try:
         import requests
+        host = request.host_url.rstrip('/')
         resp = requests.post('https://api.mercadopago.com/checkout/preferences', json={
             'items': [{
                 'title': description,
@@ -861,12 +862,12 @@ def create_mp_payment():
                 'currency_id': 'ARS'
             }],
             'back_urls': {
-                'success': request.host_url.rstrip('/') + url_for('mp_success', sale_id=sale_id),
-                'failure': request.host_url.rstrip('/') + url_for('sell'),
-                'pending': request.host_url.rstrip('/') + url_for('sell')
+                'success': host + url_for('mp_success', sale_id=sale_id),
+                'failure': host + url_for('sell'),
+                'pending': host + url_for('sell')
             },
             'auto_return': 'approved',
-            'notification_url': request.host_url.rstrip('/') + url_for('mp_webhook'),
+            'notification_url': host + url_for('mp_webhook'),
             'external_reference': str(sale_id)
         }, headers={
             'Authorization': f'Bearer {access_token}',
@@ -875,6 +876,11 @@ def create_mp_payment():
         data = resp.json()
         if 'id' not in data:
             return jsonify({'error': 'Error de Mercado Pago: ' + str(data.get('message', 'desconocido'))}), 400
+
+        sale = db.session.get(Sale, sale_id)
+        if sale:
+            sale.mp_status = 'pending'
+            db.session.commit()
 
         return jsonify({
             'success': True,
@@ -906,23 +912,54 @@ def mp_webhook():
                     resp = requests.get(f'https://api.mercadopago.com/v1/payments/{payment_id}',
                                         headers={'Authorization': f'Bearer {access_token}'})
                     pay = resp.json()
-                    if pay.get('status') == 'approved':
-                        sale_id = pay.get('external_reference')
+                    sale_id = pay.get('external_reference')
+                    if sale_id:
+                        try:
+                            sale_id = int(sale_id)
+                        except (ValueError, TypeError):
+                            sale_id = None
                         if sale_id:
-                            try:
-                                sale_id = int(sale_id)
-                            except (ValueError, TypeError):
-                                sale_id = None
-                            if sale_id:
-                                sale = db.session.get(Sale, sale_id)
-                                if sale:
+                            sale = db.session.get(Sale, sale_id)
+                            if sale:
+                                sale.mp_payment_id = str(payment_id)
+                                sale.mp_status = pay.get('status', 'unknown')
+                                if pay.get('status') == 'approved':
                                     sale.payment_method = 'mercadopago'
-                                    db.session.commit()
-                    elif pay.get('status') == 'rejected':
-                        pass
+                                db.session.commit()
     except Exception:
         pass
     return '', 200
+
+
+@app.route('/api/mp-status/<int:sale_id>')
+@login_required
+def mp_status(sale_id):
+    sale = db.session.get(Sale, sale_id)
+    if not sale:
+        return jsonify({'error': 'Venta no encontrada'}), 404
+    # Also try direct query to MP if pending
+    if sale.mp_status in ('pending', '') and sale.mp_payment_id:
+        access_token = get_config('mp_access_token', '')
+        if access_token:
+            try:
+                import requests
+                resp = requests.get(f'https://api.mercadopago.com/v1/payments/{sale.mp_payment_id}',
+                                    headers={'Authorization': f'Bearer {access_token}'})
+                pay = resp.json()
+                if 'status' in pay:
+                    sale.mp_status = pay['status']
+                    if pay['status'] == 'approved':
+                        sale.payment_method = 'mercadopago'
+                    db.session.commit()
+            except Exception:
+                pass
+    return jsonify({
+        'sale_id': sale.id,
+        'mp_payment_id': sale.mp_payment_id or '',
+        'mp_status': sale.mp_status or 'pending',
+        'payment_method': sale.payment_method,
+        'total': sale.total
+    })
 
 
 @app.route('/ticket/<int:id>')
@@ -1617,6 +1654,13 @@ def backup_restore(name):
 def init_app():
     with app.app_context():
         db.create_all()
+        # Add new columns for existing databases (safe to run multiple times)
+        for col, col_type in [('mp_payment_id', 'VARCHAR(100)'), ('mp_status', 'VARCHAR(20)')]:
+            try:
+                db.session.execute(db.text(f'ALTER TABLE sale ADD COLUMN {col} {col_type} DEFAULT \'\''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin', active=True)
             admin.set_password('admin123')
