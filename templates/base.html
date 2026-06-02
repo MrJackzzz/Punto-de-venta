@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ business_name }}{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename=logo_url) if logo_url else url_for('static', filename='css/style.css') }}?v=1" type="image/png">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -36,6 +37,7 @@
             <a href="{{ url_for('history') }}">Historial</a>
             {% endif %}
             {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('backups') }}">Backups</a>
             <a href="{{ url_for('settings') }}">Config</a>
             {% endif %}
         </nav>

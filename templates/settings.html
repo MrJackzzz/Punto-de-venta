@@ -121,12 +121,13 @@
                         'can_manage_users':'Gestionar usuarios',
                         'can_view_history':'Ver historial',
                         'can_sell':'Vender / Cobrar',
-                        'can_access_categories':'Acceder a categorías'
+                        'can_access_categories':'Acceder a categorías',
+                        'can_view_charts':'Ver gráficos del inicio'
                     } %}
                     {% set default_perms = {
-                        'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_manage_suppliers':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_access_categories':true},
-                        'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_manage_suppliers':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_access_categories':true},
-                        'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_manage_suppliers':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_access_categories':false}
+                        'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_manage_suppliers':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_access_categories':true,'can_view_charts':true},
+                        'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_manage_suppliers':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_access_categories':true,'can_view_charts':true},
+                        'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_manage_suppliers':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_access_categories':false,'can_view_charts':true}
                     } %}
                     {% for pk, plabel in perm_labels.items() %}
                     <tr>

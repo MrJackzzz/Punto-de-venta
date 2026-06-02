@@ -22,6 +22,7 @@
     </div>
 </div>
 
+{% if current_user.can_view_charts() %}
 <div class="grid grid-2" style="margin-top:1rem;">
     <div class="card">
         <div class="card-header">Ventas de los Últimos 7 Días</div>
@@ -43,6 +44,7 @@
         <p id="topEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin ventas en ese período</p>
     </div>
 </div>
+{% endif %}
 
 <div class="grid grid-2" style="margin-top:0.5rem;">
     <div class="card">
@@ -170,6 +172,7 @@ function refreshStats() {
 }
 
 (function initDashboard() {
+    {% if current_user.can_view_charts() %}
     const selYear = document.getElementById('topYear');
     const now = new Date();
     for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
@@ -181,6 +184,7 @@ function refreshStats() {
     document.getElementById('topMonth').value = now.getMonth() + 1;
     loadSalesChart();
     loadTopChart();
+    {% endif %}
 })();
 
 setInterval(refreshStats, 5000);

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Backups{% endblock %}
+{% block content %}
+<h2 style="color:var(--primary);margin-bottom:1.5rem;">Gestión de Backups</h2>
+
+<div class="card">
+    <div class="card-header">Crear Backup</div>
+    <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
+        Generá una copia de seguridad de toda la base de datos (productos, ventas, usuarios, configuraciones).
+    </p>
+    <form method="POST" action="{{ url_for('backup_create') }}">
+        <button type="submit" class="btn btn-primary">📦 Crear Backup Ahora</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">Backups Disponibles</div>
+    {% if backups %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Archivo</th>
+                    <th>Tamaño</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in backups %}
+                <tr>
+                    <td>{{ b.name }}</td>
+                    <td>{{ "%.1f"|format(b.size / 1024) }} KB</td>
+                    <td>{{ b.mtime }}</td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('backup_download', name=b.name) }}" class="btn btn-sm btn-secondary">⬇ Descargar</a>
+                        <form method="POST" action="{{ url_for('backup_restore', name=b.name) }}" style="display:inline;" onsubmit="return confirm('¿Restaurar este backup? Se perderán los datos actuales.')">
+                            <button type="submit" class="btn btn-sm btn-accent">♻ Restaurar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:var(--gray);padding:1rem;">No hay backups todavía. Creá uno.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">Configuración de Backup Automático</div>
+    <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
+        Podés configurar que la app genere backups automáticos cada cierto tiempo.
+        Este proceso se ejecuta cuando alguien visita el panel de control.
+    </p>
+    <form method="POST" action="{{ url_for('settings') }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="backup_interval">Intervalo entre backups (horas)</label>
+                <input type="number" id="backup_interval" name="backup_interval" class="form-control" value="{{ configs.get('backup_interval', '0') }}" min="0">
+                <small style="color:var(--gray);">0 = desactivado</small>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+    </form>
+</div>
+{% endblock %}

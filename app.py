@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category
 from datetime import datetime, timezone, timedelta
 from werkzeug.utils import secure_filename
 from sqlalchemy import func
-import os, csv, io, json, smtplib
+import os, csv, io, json, smtplib, shutil, zipfile, subprocess
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -13,9 +13,11 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambiame-en-produccion'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///sistema.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+app.config['BACKUP_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['BACKUP_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 
@@ -834,7 +836,8 @@ def settings():
 
     if request.method == 'POST':
         keys = ['owner_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password',
-                'low_stock_threshold', 'default_currency', 'business_name']
+                'low_stock_threshold', 'default_currency', 'business_name',
+                'backup_interval']
         for key in keys:
             val = request.form.get(key, '').strip()
             config = Config.query.filter_by(key=key).first()
@@ -865,7 +868,8 @@ def save_permissions():
         return redirect(url_for('settings'))
     perm_keys = ['can_view_products', 'can_add_products', 'can_edit_products',
                  'can_manage_products', 'can_manage_suppliers', 'can_manage_users',
-                 'can_view_history', 'can_sell', 'can_access_categories']
+                 'can_view_history', 'can_sell', 'can_access_categories',
+                 'can_view_charts']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
@@ -925,6 +929,156 @@ def delete_logo():
     return redirect(url_for('settings'))
 
 
+BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
+os.makedirs(BACKUP_DIR, exist_ok=True)
+
+
+def auto_backup_check():
+    interval = int(get_config('backup_interval', '0'))
+    if interval <= 0:
+        return
+    files = sorted([f for f in os.listdir(BACKUP_DIR) if f.startswith('backup_') and f.endswith('.zip')], reverse=True)
+    if files:
+        last = files[0]
+        ts_str = last.replace('backup_', '').replace('.zip', '')
+        try:
+            last_time = datetime.strptime(ts_str, '%Y%m%d_%H%M%S')
+            if (datetime.now() - last_time).total_seconds() < interval * 3600:
+                return
+        except ValueError:
+            pass
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    db_url = app.config['SQLALCHEMY_DATABASE_URI']
+    try:
+        if db_url.startswith('sqlite'):
+            src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
+            if os.path.exists(src):
+                dst = os.path.join(BACKUP_DIR, f'backup_{ts}.db')
+                shutil.copy2(src, dst)
+                with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(dst, 'sistema.db')
+                os.remove(dst)
+        else:
+            dump = subprocess.run(['pg_dump', db_url], capture_output=True, text=True, timeout=30)
+            if dump.returncode == 0:
+                dst = os.path.join(BACKUP_DIR, f'backup_auto_{ts}.sql')
+                with open(dst, 'w', encoding='utf-8') as f:
+                    f.write(dump.stdout)
+                with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(dst, f'backup_auto_{ts}.sql')
+                os.remove(dst)
+    except Exception:
+        pass
+
+
+@app.route('/backups')
+@login_required
+def backups():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    auto_backup_check()
+    configs = {c.key: c.value for c in Config.query.all()}
+    files = []
+    for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
+        fpath = os.path.join(BACKUP_DIR, f)
+        if os.path.isfile(fpath) and f.startswith('backup_') and f.endswith('.zip'):
+            files.append({
+                'name': f,
+                'size': os.path.getsize(fpath),
+                'mtime': datetime.fromtimestamp(os.path.getmtime(fpath)).strftime('%d/%m/%Y %H:%M')
+            })
+    return render_template('backups.html', backups=files, configs=configs)
+
+
+@app.route('/backups/create', methods=['POST'])
+@login_required
+def backup_create():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    db_url = app.config['SQLALCHEMY_DATABASE_URI']
+    if db_url.startswith('sqlite'):
+        src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
+        if os.path.exists(src):
+            dst = os.path.join(BACKUP_DIR, f'backup_{ts}.db')
+            shutil.copy2(src, dst)
+            with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                zf.write(dst, 'sistema.db')
+            os.remove(dst)
+            flash(f'Backup creado: backup_{ts}.zip', 'success')
+        else:
+            flash('Base de datos no encontrada.', 'danger')
+    else:
+        try:
+            dump = subprocess.run(['pg_dump', db_url], capture_output=True, text=True, timeout=30)
+            if dump.returncode == 0:
+                dst = os.path.join(BACKUP_DIR, f'backup_{ts}.sql')
+                with open(dst, 'w', encoding='utf-8') as f:
+                    f.write(dump.stdout)
+                with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(dst, f'backup_{ts}.sql')
+                os.remove(dst)
+                flash(f'Backup creado: backup_{ts}.zip', 'success')
+            else:
+                flash(f'Error pg_dump: {dump.stderr[:200]}', 'danger')
+        except FileNotFoundError:
+            flash('pg_dump no está instalado en el servidor.', 'danger')
+        except Exception as e:
+            flash(f'Error: {str(e)[:200]}', 'danger')
+    return redirect(url_for('backups'))
+
+
+@app.route('/backups/download/<name>')
+@login_required
+def backup_download(name):
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    fpath = os.path.join(BACKUP_DIR, name)
+    if not os.path.exists(fpath):
+        flash('Archivo no encontrado.', 'danger')
+        return redirect(url_for('backups'))
+    return send_file(fpath, as_attachment=True)
+
+
+@app.route('/backups/restore/<name>', methods=['POST'])
+@login_required
+def backup_restore(name):
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    fpath = os.path.join(BACKUP_DIR, name)
+    if not os.path.exists(fpath):
+        flash('Archivo no encontrado.', 'danger')
+        return redirect(url_for('backups'))
+    db_url = app.config['SQLALCHEMY_DATABASE_URI']
+    try:
+        if db_url.startswith('sqlite'):
+            with zipfile.ZipFile(fpath, 'r') as zf:
+                zf.extract('sistema.db', BACKUP_DIR)
+            dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
+            shutil.copy2(os.path.join(BACKUP_DIR, 'sistema.db'), dst)
+            os.remove(os.path.join(BACKUP_DIR, 'sistema.db'))
+            flash('Base restaurada. Recargá la página.', 'success')
+        else:
+            with zipfile.ZipFile(fpath, 'r') as zf:
+                sql_name = [n for n in zf.namelist() if n.endswith('.sql')][0]
+                zf.extract(sql_name, BACKUP_DIR)
+            sql_path = os.path.join(BACKUP_DIR, sql_name)
+            result = subprocess.run(['psql', db_url], stdin=open(sql_path, 'r'),
+                                    capture_output=True, text=True, timeout=60)
+            os.remove(sql_path)
+            if result.returncode == 0:
+                flash('Base restaurada. Recargá la página.', 'success')
+            else:
+                flash(f'Error al restaurar: {result.stderr[:200]}', 'danger')
+    except Exception as e:
+        flash(f'Error: {str(e)[:200]}', 'danger')
+    return redirect(url_for('backups'))
+
+
 def init_app():
     with app.app_context():
         db.create_all()
@@ -944,9 +1098,9 @@ def init_app():
                 db.session.add(Config(key=k, value=v))
 
         default_perms = {
-            'admin': {'can_view_products':True,'can_add_products':True,'can_edit_products':True,'can_manage_products':True,'can_manage_suppliers':True,'can_manage_users':True,'can_view_history':True,'can_sell':True,'can_access_categories':True},
-            'supervisor': {'can_view_products':True,'can_add_products':True,'can_edit_products':True,'can_manage_products':True,'can_manage_suppliers':True,'can_manage_users':True,'can_view_history':True,'can_sell':True,'can_access_categories':True},
-            'user': {'can_view_products':True,'can_add_products':True,'can_edit_products':False,'can_manage_products':False,'can_manage_suppliers':False,'can_manage_users':False,'can_view_history':False,'can_sell':True,'can_access_categories':False}
+            'admin': {'can_view_products':True,'can_add_products':True,'can_edit_products':True,'can_manage_products':True,'can_manage_suppliers':True,'can_manage_users':True,'can_view_history':True,'can_sell':True,'can_access_categories':True,'can_view_charts':True},
+            'supervisor': {'can_view_products':True,'can_add_products':True,'can_edit_products':True,'can_manage_products':True,'can_manage_suppliers':True,'can_manage_users':True,'can_view_history':True,'can_sell':True,'can_access_categories':True,'can_view_charts':True},
+            'user': {'can_view_products':True,'can_add_products':True,'can_edit_products':False,'can_manage_products':False,'can_manage_suppliers':False,'can_manage_users':False,'can_view_history':False,'can_sell':True,'can_access_categories':False,'can_view_charts':True}
         }
         for role, perms in default_perms.items():
             key = f'perms_{role}'

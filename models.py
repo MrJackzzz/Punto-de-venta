@@ -59,6 +59,9 @@ class User(UserMixin, db.Model):
     def can_access_categories(self):
         return self._role_perm('can_access_categories', self.role == 'admin')
 
+    def can_view_charts(self):
+        return self._role_perm('can_view_charts', True)
+
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
