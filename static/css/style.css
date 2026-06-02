@@ -486,23 +486,34 @@ body {
     }
 
     .topbar nav {
-        display: none;
         position: absolute;
         top: 60px;
         left: 0;
         right: 0;
         background: var(--primary);
         flex-direction: column;
-        padding: 1rem;
+        padding: 0 1rem;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.35s ease, padding 0.35s ease;
     }
 
     .topbar nav.open {
-        display: flex;
+        max-height: 500px;
+        padding: 1rem;
     }
 
     .topbar nav a {
         padding: 0.7rem 1rem;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+    }
+
+    .topbar nav.open a {
+        opacity: 1;
+        transform: translateX(0);
     }
 
     .topbar .user-info {
