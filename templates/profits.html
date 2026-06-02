@@ -32,15 +32,15 @@
 
 <div class="grid grid-4" style="margin-bottom:1rem;">
     <div class="stat-card success">
-        <div class="number">${{ "%.2f"|format(total_revenue) }}</div>
+        <div class="number">{{ total_revenue|fmt }}</div>
         <div class="label">💰 Ingresos</div>
     </div>
     <div class="stat-card warning">
-        <div class="number">${{ "%.2f"|format(total_cost) }}</div>
+        <div class="number">{{ total_cost|fmt }}</div>
         <div class="label">📦 Costos</div>
     </div>
     <div class="stat-card" style="border-left-color:var(--primary);">
-        <div class="number" style="color:var(--primary);">${{ "%.2f"|format(total_profit) }}</div>
+        <div class="number" style="color:var(--primary);">{{ total_profit|fmt }}</div>
         <div class="label">📈 Ganancia Neta</div>
     </div>
     <div class="stat-card" style="border-left-color:var(--dark);">
@@ -69,10 +69,10 @@
                 <tr>
                     <td><strong>{{ p.name }}</strong></td>
                     <td>{{ p.qty }}</td>
-                    <td>${{ "%.2f"|format(p.revenue) }}</td>
-                    <td>${{ "%.2f"|format(p.cost) }}</td>
+                    <td>{{ p.revenue|fmt }}</td>
+                    <td>{{ p.cost|fmt }}</td>
                     <td style="color:{% if p.profit >= 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
-                        {% if p.profit >= 0 %}+{% endif %}${{ "%.2f"|format(p.profit) }}
+                        {% if p.profit >= 0 %}+{% endif %}{{ p.profit|fmt }}
                     </td>
                     <td>{{ "%.1f"|format(p.margin) }}%</td>
                 </tr>
@@ -106,10 +106,10 @@
                     <td>{{ i.date }}</td>
                     <td>{{ i.user }}</td>
                     <td>{{ i.items_count }}</td>
-                    <td>${{ "%.2f"|format(i.revenue) }}</td>
-                    <td>${{ "%.2f"|format(i.cost) }}</td>
+                    <td>{{ i.revenue|fmt }}</td>
+                    <td>{{ i.cost|fmt }}</td>
                     <td style="color:{% if i.profit >= 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
-                        {% if i.profit >= 0 %}+{% endif %}${{ "%.2f"|format(i.profit) }}
+                        {% if i.profit >= 0 %}+{% endif %}{{ i.profit|fmt }}
                     </td>
                     <td>{{ "%.1f"|format(i.margin) }}%</td>
                 </tr>

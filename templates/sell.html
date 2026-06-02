@@ -93,10 +93,10 @@ function calculateChange() {
     const change = paid - total;
     const el = document.getElementById('changeDisplay');
     if (paid >= total && paid > 0) {
-        el.textContent = 'Vuelto: $' + change.toFixed(2);
+        el.textContent = 'Vuelto: ' + fmt(change);
         el.style.color = 'var(--success)';
     } else if (paid > 0) {
-        el.textContent = 'Faltan: $' + Math.abs(change).toFixed(2);
+        el.textContent = 'Faltan: ' + fmt(Math.abs(change));
         el.style.color = 'var(--accent)';
     } else {
         el.textContent = '';
@@ -177,7 +177,7 @@ function showTicket(data) {
         itemsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">
             <span style="flex:1;">${item.product_name}</span>
             <span style="width:30px;text-align:center;">${item.quantity}</span>
-            <span style="width:70px;text-align:right;">$${item.subtotal.toFixed(2)}</span>
+            <span style="width:70px;text-align:right;">${fmt(item.subtotal)}</span>
         </div>`;
     });
     const bizName = '{{ business_name }}';
@@ -207,17 +207,17 @@ function showTicket(data) {
         <div style="border-top:1px dashed #999;margin:6px 0;"></div>
         ${itemsHtml}
         <div style="border-top:1px dashed #999;margin:6px 0;"></div>
-        <div style="text-align:right;font-size:15px;font-weight:700;margin:4px 0;">TOTAL: $${data.total.toFixed(2)}</div>
+        <div style="text-align:right;font-size:15px;font-weight:700;margin:4px 0;">TOTAL: ${fmt(data.total)}</div>
         <div style="display:flex;justify-content:space-between;font-size:12px;">
             <span>Método de pago:</span>
             <span>${methodNames[data.payment_method] || data.payment_method}</span>
         </div>
         ${data.payment_method === 'cash' ? `
         <div style="display:flex;justify-content:space-between;font-size:12px;">
-            <span>Recibido:</span><span>$${data.amount_paid.toFixed(2)}</span>
+            <span>Recibido:</span><span>${fmt(data.amount_paid)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;">
-            <span>Vuelto:</span><span style="color:green;font-weight:700;">$${data.change.toFixed(2)}</span>
+            <span>Vuelto:</span><span style="color:green;font-weight:700;">${fmt(data.change)}</span>
         </div>` : ''}
         ${data.customer_email ? `<div style="border-top:1px dashed #999;margin:6px 0;"></div><div style="font-size:11px;">Email: ${data.customer_email}</div>` : ''}
         ${extraHtml}
@@ -248,12 +248,12 @@ function shareWhatsApp() {
     const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
     let msg = `*${bizName}*%0ATicket #${lastSaleData.sale_id}%0A${timeStr}%0AAtendió: ${lastSaleData.user}%0A%0A`;
     lastSaleData.items.forEach(item => {
-        msg += `${item.product_name} x${item.quantity} = $${item.subtotal.toFixed(2)}%0A`;
+        msg += `${item.product_name} x${item.quantity} = ${fmt(item.subtotal)}%0A`;
     });
-    msg += `%0A*TOTAL: $${lastSaleData.total.toFixed(2)}*%0A`;
+    msg += `%0A*TOTAL: ${fmt(lastSaleData.total)}*%0A`;
     msg += `Método: ${methodNames[lastSaleData.payment_method] || lastSaleData.payment_method}`;
     if (lastSaleData.payment_method === 'cash') {
-        msg += `%0ARecibido: $${lastSaleData.amount_paid.toFixed(2)}%0AVuelto: $${lastSaleData.change.toFixed(2)}`;
+        msg += `%0ARecibido: ${fmt(lastSaleData.amount_paid)}%0AVuelto: ${fmt(lastSaleData.change)}`;
     }
     if (lastSaleData.mp_init_point) {
         msg += `%0A%0A💳 Pagá aquí: ${lastSaleData.mp_init_point}`;
@@ -286,19 +286,19 @@ function renderCart() {
         <div class="cart-item">
             <div class="info">
                 <div class="name">${item.name}</div>
-                <div class="price">$${item.unit_price.toFixed(2)}</div>
+                <div class="price">${fmt(item.unit_price)}</div>
             </div>
             <div style="display:flex;align-items:center;gap:0.5rem;">
                 <button class="btn btn-sm btn-secondary" onclick="changeQty(${i}, -1)" style="font-weight:bold;">−</button>
                 <span style="font-weight:600;min-width:24px;text-align:center;">${item.quantity}</span>
                 <button class="btn btn-sm btn-secondary" onclick="changeQty(${i}, 1)" style="font-weight:bold;">+</button>
-                <strong>$${item.subtotal.toFixed(2)}</strong>
+                <strong>${fmt(item.subtotal)}</strong>
                 <button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">&times;</button>
             </div>
         </div>
     `).join('');
     const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
-    totalEl.textContent = '$' + total.toFixed(2);
+    totalEl.textContent = fmt(total);
     calculateChange();
 }
 
@@ -404,7 +404,7 @@ document.getElementById('searchInput').addEventListener('input', function() {
                         <small style="color:var(--gray);"> (${p.code})</small>
                     </div>
                     <div style="text-align:right;">
-                        <div>$${p.price.toFixed(2)}</div>
+                        <div>${fmt(p.price)}</div>
                         <small style="color:var(--gray);">Stock: ${p.stock}</small>
                     </div>
                 </div>

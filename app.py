@@ -17,6 +17,17 @@ from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 app.jinja_env.globals['to_ar'] = to_ar
+
+
+def fmt(amount):
+    """Formato argentino: 1234567.89 -> $1.234.567,89"""
+    s = f"{amount:,.2f}"
+    integer_part, decimal_part = s.split('.')
+    integer_part = integer_part.replace(',', '.')
+    return f"${integer_part},{decimal_part}"
+
+
+app.jinja_env.filters['fmt'] = fmt
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambiame-en-produccion')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///sistema.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

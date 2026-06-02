@@ -34,9 +34,9 @@
         Reporte de Ganancias{% if date_from %} | Desde: {{ date_from }}{% endif %}{% if date_to %} | Hasta: {{ date_to }}{% endif %}
     </div>
     <div class="summary">
-        <div class="sum-item green"><div class="val">${{ "%.2f"|format(total_revenue) }}</div><div class="lbl">Ingresos</div></div>
-        <div class="sum-item orange"><div class="val">${{ "%.2f"|format(total_cost) }}</div><div class="lbl">Costos</div></div>
-        <div class="sum-item"><div class="val">${{ "%.2f"|format(total_profit) }}</div><div class="lbl">Ganancia Neta</div></div>
+        <div class="sum-item green"><div class="val">{{ total_revenue|fmt }}</div><div class="lbl">Ingresos</div></div>
+        <div class="sum-item orange"><div class="val">{{ total_cost|fmt }}</div><div class="lbl">Costos</div></div>
+        <div class="sum-item"><div class="val">{{ total_profit|fmt }}</div><div class="lbl">Ganancia Neta</div></div>
         <div class="sum-item dark"><div class="val">{{ "%.1f"|format(total_margin) }}%</div><div class="lbl">Margen</div></div>
     </div>
     {% if items %}
@@ -58,9 +58,9 @@
             <tr>
                 <td><strong>{{ p.name }}</strong></td>
                 <td>{{ p.qty }}</td>
-                <td>${{ "%.2f"|format(p.revenue) }}</td>
-                <td>${{ "%.2f"|format(p.cost) }}</td>
-                <td class="{% if p.profit >= 0 %}pos{% else %}neg{% endif %}">${{ "%.2f"|format(p.profit) }}</td>
+                <td>{{ p.revenue|fmt }}</td>
+                <td>{{ p.cost|fmt }}</td>
+                <td class="{% if p.profit >= 0 %}pos{% else %}neg{% endif %}">{{ p.profit|fmt }}</td>
                 <td>{{ "%.1f"|format(p.margin) }}%</td>
             </tr>
             {% endfor %}
@@ -89,9 +89,9 @@
                 <td>{{ i.date }}</td>
                 <td>{{ i.user }}</td>
                 <td>{{ i.items_count }}</td>
-                <td>${{ "%.2f"|format(i.revenue) }}</td>
-                <td>${{ "%.2f"|format(i.cost) }}</td>
-                <td class="{% if i.profit >= 0 %}pos{% else %}neg{% endif %}">${{ "%.2f"|format(i.profit) }}</td>
+                <td>{{ i.revenue|fmt }}</td>
+                <td>{{ i.cost|fmt }}</td>
+                <td class="{% if i.profit >= 0 %}pos{% else %}neg{% endif %}">{{ i.profit|fmt }}</td>
                 <td>{{ "%.1f"|format(i.margin) }}%</td>
             </tr>
             {% endfor %}

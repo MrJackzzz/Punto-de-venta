@@ -69,18 +69,18 @@
         <div class="item">
             <span class="item-name">{{ item.product.name }}</span>
             <span class="item-qty">{{ item.quantity }}</span>
-            <span class="item-price">${{ "%.2f"|format(item.subtotal) }}</span>
+            <span class="item-price">{{ item.subtotal|fmt }}</span>
         </div>
         {% endfor %}
 
         <div class="divider"></div>
 
-        <div class="total">TOTAL: ${{ "%.2f"|format(sale.total) }}</div>
+        <div class="total">TOTAL: {{ sale.total|fmt }}</div>
 
         <div class="row"><span>Método de pago:</span><span>{{ {'cash':'Efectivo','card':'Tarjeta','transfer':'Transferencia'}.get(sale.payment_method, sale.payment_method) }}</span></div>
         {% if sale.payment_method == 'cash' %}
-        <div class="row"><span>Recibido:</span><span>${{ "%.2f"|format(sale.amount_paid) }}</span></div>
-        <div class="row"><span>Vuelto:</span><span>${{ "%.2f"|format(sale.change_amount) }}</span></div>
+        <div class="row"><span>Recibido:</span><span>{{ sale.amount_paid|fmt }}</span></div>
+        <div class="row"><span>Vuelto:</span><span>{{ sale.change_amount|fmt }}</span></div>
         {% endif %}
 
         {% if sale.customer_email %}

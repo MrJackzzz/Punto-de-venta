@@ -52,7 +52,7 @@
                     <td style="text-align:center;">
                         <span class="badge badge-primary" style="background:var(--primary);color:#fff;font-size:0.85rem;">{{ p.total_qty }}</span>
                     </td>
-                    <td style="text-align:right;font-weight:600;">${{ "%.2f"|format(p.total_amount) }}</td>
+                    <td style="text-align:right;font-weight:600;">{{ p.total_amount|fmt }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

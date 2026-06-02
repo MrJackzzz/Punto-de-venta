@@ -1,3 +1,7 @@
+function fmt(amount) {
+    return '$' + Number(amount).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
 function openModal(id) {
     document.getElementById(id).classList.add('active');
 }

@@ -112,14 +112,14 @@ function viewSale(saleId) {
                     <strong>#${data.id}</strong> | ${data.date}<br>
                     Atendió: <strong>${data.user}</strong><br>
                     Método: ${methodNames[data.payment_method] || data.payment_method}<br>
-                    <span style="font-size:1.2rem;font-weight:700;color:var(--primary);">Total: $${data.total.toFixed(2)}</span>
+                    <span style="font-size:1.2rem;font-weight:700;color:var(--primary);">Total: ${fmt(data.total)}</span>
                 </div>
                 <table class="table">
                     <thead><tr><th>Producto</th><th>Cant</th><th>P/U</th><th>Subtotal</th></tr></thead>
                     <tbody>
             `;
             data.items.forEach(item => {
-                html += `<tr><td>${item.product_name}</td><td>${item.quantity}</td><td>$${item.unit_price.toFixed(2)}</td><td>$${item.subtotal.toFixed(2)}</td></tr>`;
+                html += `<tr><td>${item.product_name}</td><td>${item.quantity}</td><td>${fmt(item.unit_price)}</td><td>${fmt(item.subtotal)}</td></tr>`;
             });
             html += `</tbody></table>`;
             document.getElementById('saleDetailBody').innerHTML = html;
@@ -174,7 +174,7 @@ function applyFilters() {
                     <div class="label">Movimientos</div>
                 </div>
                 <div class="stat-card success">
-                    <div class="number">$${data.summary.total_sales_amount.toFixed(2)}</div>
+                    <div class="number">${fmt(data.summary.total_sales_amount)}</div>
                     <div class="label">Total vendido (${data.summary.sale_count} ventas)</div>
                 </div>
                 <div class="stat-card">
