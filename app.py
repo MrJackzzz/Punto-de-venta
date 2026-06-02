@@ -1094,12 +1094,57 @@ def api_history():
     return jsonify({
         'logs': log_list,
         'summary': {
-            'total_logs': len(logs),
-            'total_sales_amount': round(total_sales_amount, 2),
+            'total_logs': len(log_list),
+            'total_sales_amount': total_sales_amount,
             'total_sales_qty': total_sales_qty,
-            'sale_count': len(sale_ids)
+            'sale_count': len(sale_ids),
         }
     })
+
+
+@app.route('/api/log/<int:id>')
+@login_required
+def api_log_detail(id):
+    if not current_user.can_view_history():
+        return jsonify({'error': 'Permiso denegado'}), 403
+    log = db.session.get(MovementLog, id)
+    if not log:
+        return jsonify({'error': 'No encontrado'}), 404
+    result = {
+        'id': log.id,
+        'user': log.user.username,
+        'role': log.user.role,
+        'action': log.action,
+        'description': log.description,
+        'time': log.created_at.strftime('%d/%m/%Y %H:%M'),
+    }
+    if log.action == 'product_edit':
+        # Parse "NombreProducto: Campo: viejo → nuevo, Campo2: viejo → nuevo"
+        parts = log.description.split(': ', 1)
+        if len(parts) == 2:
+            product_name = parts[0]
+            changes_str = parts[1]
+            changes = []
+            for change in changes_str.split(', '):
+                if ' → ' in change:
+                    if ': ' in change:
+                        field, rest = change.split(': ', 1)
+                    else:
+                        field = ''
+                        rest = change
+                    arrow = rest.split(' → ')
+                    old_val = arrow[0] if len(arrow) > 0 else ''
+                    new_val = arrow[1] if len(arrow) > 1 else arrow[0]
+                    changes.append({'field': field, 'old': old_val, 'new': new_val})
+            result['changes'] = changes
+            result['product_name'] = product_name
+    if log.action == 'sale':
+        if '#' in log.description:
+            try:
+                result['sale_id'] = int(log.description.split('#')[1].split(' ')[0])
+            except (IndexError, ValueError):
+                pass
+    return jsonify(result)
 
 
 @app.route('/api/stats')

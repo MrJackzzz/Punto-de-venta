@@ -82,6 +82,16 @@
     </div>
 </div>
 
+<div id="logDetailModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+        <div class="modal-header">
+            <span id="logDetailTitle">Detalle del Movimiento</span>
+            <button class="modal-close" onclick="closeModal('logDetailModal')">&times;</button>
+        </div>
+        <div id="logDetailBody"></div>
+    </div>
+</div>
+
 <script>
 const actionMap = {
     'login': 'Inicio Sesión', 'logout': 'Cierre Sesión',
@@ -144,10 +154,7 @@ function applyFilters() {
                 countEl.textContent = '0 movimientos';
             } else {
                 tbody.innerHTML = data.logs.map(log => {
-                    let extra = '';
-                    if (log.sale_id) {
-                        extra = ` onclick="viewSale(${log.sale_id})" style="cursor:pointer;" title="Click para ver detalle"`;
-                    }
+                    let extra = ` onclick="viewLog(${log.id})" style="cursor:pointer;" title="Click para ver detalle"`;
                     return `<tr${extra}>
                         <td>${log.time}</td>
                         <td>${log.user}</td>
@@ -183,7 +190,46 @@ function clearFilters() {
     document.getElementById('filterAction').value = '';
     document.getElementById('filterDateFrom').value = '';
     document.getElementById('filterDateTo').value = '';
-    applyFilters();
+function viewLog(logId) {
+    fetch('/api/log/' + logId)
+        .then(r => r.json())
+        .then(data => {
+            if (data.sale_id) {
+                viewSale(data.sale_id);
+                return;
+            }
+            const actionNames = {
+                'login': 'Inicio Sesión', 'logout': 'Cierre Sesión',
+                'product_create': 'Crear Producto', 'product_edit': 'Editar Producto',
+                'product_delete': 'Eliminar Producto', 'sale': 'Venta',
+                'supplier_create': 'Crear Proveedor', 'supplier_edit': 'Editar Proveedor',
+                'supplier_delete': 'Eliminar Proveedor', 'user_create': 'Crear Usuario',
+                'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass'
+            };
+            let html = `
+                <div style="margin-bottom:1rem;font-size:0.9rem;">
+                    <strong>${data.time}</strong><br>
+                    Usuario: <strong>${data.user}</strong> (${data.role.toUpperCase()})<br>
+                    Acción: <strong>${actionNames[data.action] || data.action}</strong>
+                </div>
+            `;
+            if (data.changes && data.changes.length) {
+                html += `<div style="margin-bottom:0.5rem;font-weight:600;">Producto: ${data.product_name}</div>`;
+                html += `<table class="table"><thead><tr><th>Campo</th><th>Valor anterior</th><th>Valor nuevo</th></tr></thead><tbody>`;
+                data.changes.forEach(c => {
+                    html += `<tr><td>${c.field}</td><td style="color:#999;">${c.old}</td><td style="color:var(--success);font-weight:600;">${c.new}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            } else {
+                html += `<div style="padding:1rem;background:var(--bg);border-radius:8px;">${data.description}</div>`;
+            }
+            document.getElementById('logDetailBody').innerHTML = html;
+            document.getElementById('logDetailTitle').textContent = '📋 ' + (actionNames[data.action] || data.action);
+            openModal('logDetailModal');
+        });
+}
+
+applyFilters();
 }
 
 function exportCSV() {
