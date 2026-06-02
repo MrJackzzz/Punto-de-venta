@@ -75,7 +75,7 @@ body {
 }
 
 .sidebar-brand {
-    color: var(--white);
+    color: #ffffff;
     font-size: 1rem;
     font-weight: 600;
     white-space: nowrap;
@@ -125,6 +125,17 @@ body {
     transition: opacity 0.2s ease;
 }
 
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin: 6px 16px;
+    flex-shrink: 0;
+}
+
+.sidebar.collapsed .sidebar-divider {
+    margin: 6px 4px;
+}
+
 .sidebar-footer {
     display: flex;
     align-items: center;
@@ -159,7 +170,7 @@ body {
 
 .sidebar-role {
     background: var(--accent);
-    color: var(--white);
+    color: #ffffff;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.65rem;
@@ -776,6 +787,19 @@ body.dark-mode .sidebar {
     background: #1a1e2e;
 }
 
+body.dark-mode .topbar {
+    color: #ffffff;
+}
+
+body.dark-mode .topbar nav a,
+body.dark-mode .mobile-nav a {
+    color: #ffffff;
+}
+
+body.dark-mode .topbar .user-info {
+    color: #ffffff;
+}
+
 body.dark-mode .card,
 body.dark-mode .modal-content,
 body.dark-mode .stat-card,
@@ -817,10 +841,6 @@ body.dark-mode .alert-info {
     color: #a0c0e0;
 }
 
-body.dark-mode .stat-card .number {
-    color: var(--primary);
-}
-
 body.dark-mode .stat-card.success .number {
     color: var(--success);
 }
@@ -830,7 +850,7 @@ body.dark-mode .stat-card.warning .number {
 }
 
 body.dark-mode .card-header {
-    color: var(--primary);
+    color: #8ab8d9;
 }
 
 body.dark-mode .form-group label {
@@ -842,9 +862,13 @@ body.dark-mode .login-page {
 }
 
 body.dark-mode .modal-header {
-    color: var(--primary);
+    color: #8ab8d9;
 }
 
 body.dark-mode .cart-total {
-    color: var(--primary);
+    color: #8ab8d9;
+}
+
+body.dark-mode .stat-card .number {
+    color: #8ab8d9;
 }
