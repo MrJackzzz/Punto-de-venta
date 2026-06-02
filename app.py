@@ -1373,6 +1373,9 @@ def init_app():
                     if pk not in stored:
                         stored[pk] = perms[pk]
                         changed = True
+                if not changed and role == 'admin' and all(not stored.get(pk, True) for pk in all_perm_keys):
+                    stored = {k: True for k in all_perm_keys}
+                    changed = True
                 if changed:
                     existing.value = json.dumps(stored, ensure_ascii=False)
             else:
