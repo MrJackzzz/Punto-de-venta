@@ -142,13 +142,13 @@ function shareSaleWhatsApp() {
     const bizName = '{{ business_name }}';
     const now = new Date();
     const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-    let msg = `*${bizName}*%0ATicket #${lastViewedSale.id}%0A${timeStr}%0AAtendió: ${lastViewedSale.user}%0A%0A`;
+    let msg = '*' + bizName + '*\nTicket #' + lastViewedSale.id + '\n' + timeStr + '\nAtendió: ' + lastViewedSale.user + '\n\n';
     lastViewedSale.items.forEach(item => {
-        msg += `${item.product_name} x${item.quantity} = ${fmt(item.subtotal)}%0A`;
+        msg += item.product_name + ' x' + item.quantity + ' = ' + fmt(item.subtotal) + '\n';
     });
-    msg += `%0A*TOTAL: ${fmt(lastViewedSale.total)}*%0A`;
-    msg += `Método: ${methodNames[lastViewedSale.payment_method] || lastViewedSale.payment_method}`;
-    window.open('https://wa.me/?text=' + msg, '_blank');
+    msg += '\n*TOTAL: ' + fmt(lastViewedSale.total) + '*\n';
+    msg += 'Método: ' + (methodNames[lastViewedSale.payment_method] || lastViewedSale.payment_method);
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function printSaleTicket() {

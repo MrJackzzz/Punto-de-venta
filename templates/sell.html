@@ -246,19 +246,19 @@ function shareWhatsApp() {
     const bizName = document.getElementById('ticketContent').dataset.businessName || '{{ business_name }}';
     const now = new Date();
     const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-    let msg = `*${bizName}*%0ATicket #${lastSaleData.sale_id}%0A${timeStr}%0AAtendió: ${lastSaleData.user}%0A%0A`;
+    let msg = '*' + bizName + '*\nTicket #' + lastSaleData.sale_id + '\n' + timeStr + '\nAtendió: ' + lastSaleData.user + '\n\n';
     lastSaleData.items.forEach(item => {
-        msg += `${item.product_name} x${item.quantity} = ${fmt(item.subtotal)}%0A`;
+        msg += item.product_name + ' x' + item.quantity + ' = ' + fmt(item.subtotal) + '\n';
     });
-    msg += `%0A*TOTAL: ${fmt(lastSaleData.total)}*%0A`;
-    msg += `Método: ${methodNames[lastSaleData.payment_method] || lastSaleData.payment_method}`;
+    msg += '\n*TOTAL: ' + fmt(lastSaleData.total) + '*\n';
+    msg += 'Método: ' + (methodNames[lastSaleData.payment_method] || lastSaleData.payment_method);
     if (lastSaleData.payment_method === 'cash') {
-        msg += `%0ARecibido: ${fmt(lastSaleData.amount_paid)}%0AVuelto: ${fmt(lastSaleData.change)}`;
+        msg += '\nRecibido: ' + fmt(lastSaleData.amount_paid) + '\nVuelto: ' + fmt(lastSaleData.change);
     }
     if (lastSaleData.mp_init_point) {
-        msg += `%0A%0A💳 Pagá aquí: ${lastSaleData.mp_init_point}`;
+        msg += '\n\n💳 Pagá aquí: ' + lastSaleData.mp_init_point;
     }
-    window.open('https://wa.me/?text=' + msg, '_blank');
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function printTicket() {
