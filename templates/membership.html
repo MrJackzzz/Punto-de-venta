@@ -51,8 +51,17 @@
                 {% endif %}
             </div>
             <div>
-                <button class="btn btn-success" onclick="registerPayment()">💰 Registrar pago → +1 mes</button>
+                <button class="btn btn-success" onclick="registerPayment()">💰 Registrar pago → 1ro próximo mes</button>
             </div>
+        </div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
+            <details style="font-size:0.85rem;">
+                <summary style="cursor:pointer;color:var(--gray);">Fijar fecha manualmente (opcional)</summary>
+                <div style="margin-top:0.5rem;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                    <input type="date" id="manualExpiry" class="form-control" style="max-width:200px;" value="{{ m.membership_expiry }}">
+                    <button class="btn btn-sm btn-secondary" onclick="setManualDate()">Establecer</button>
+                </div>
+            </details>
         </div>
         <div id="paymentMsg" style="margin-top:0.8rem;font-size:0.9rem;"></div>
     {% else %}
@@ -81,8 +90,28 @@ function registerPayment() {
         })
         .finally(() => {
             btn.disabled = false;
-            btn.textContent = '💰 Registrar pago → +1 mes';
+            btn.textContent = '💰 Registrar pago → 1ro próximo mes';
         });
+}
+
+function setManualDate() {
+    const date = document.getElementById('manualExpiry').value;
+    if (!date) { alert('Seleccioná una fecha'); return; }
+    const msgEl = document.getElementById('paymentMsg');
+    fetch('/api/membership/set-expiry', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({expiry: date})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            msgEl.innerHTML = '<span style="color:var(--danger);">Error: ' + data.error + '</span>';
+        } else {
+            msgEl.innerHTML = '<span style="color:var(--success);">✅ Fecha establecida: <strong>' + data.new_expiry + '</strong></span>';
+            document.getElementById('expiryDisplay').textContent = data.new_expiry;
+        }
+    });
 }
 </script>
 {% endblock %}
