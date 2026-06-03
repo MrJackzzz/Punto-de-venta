@@ -965,6 +965,103 @@ def mp_success(sale_id):
     return redirect(url_for('sell'))
 
 
+@app.route('/mp-membership-success')
+@login_required
+def mp_membership_success():
+    flash('Pago procesado. La membresía se actualizará automáticamente.', 'success')
+    return redirect(url_for('membership'))
+
+
+@app.route('/api/create-mp-membership-payment', methods=['POST'])
+@login_required
+def create_mp_membership_payment():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+
+    access_token = get_config('mp_access_token', '')
+    if not access_token:
+        return jsonify({'error': 'Mercado Pago no configurado. Andá a Config.'}), 400
+
+    price = get_config('membership_price', '10')
+    try:
+        price = float(price)
+    except ValueError:
+        price = 10
+
+    try:
+        import requests
+        host = request.host_url.rstrip('/')
+        resp = requests.post('https://api.mercadopago.com/checkout/preferences', json={
+            'items': [{
+                'title': 'Suscripción mensual - ' + get_config('business_name', 'SmartPost'),
+                'quantity': 1,
+                'unit_price': price,
+                'currency_id': 'ARS'
+            }],
+            'back_urls': {
+                'success': host + url_for('mp_membership_success'),
+                'failure': host + url_for('membership'),
+                'pending': host + url_for('membership')
+            },
+            'auto_return': 'approved',
+            'notification_url': host + url_for('mp_webhook'),
+            'external_reference': 'membership'
+        }, headers={
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        })
+        data = resp.json()
+        if 'id' not in data:
+            return jsonify({'error': 'Error MP: ' + str(data.get('message', 'desconocido'))}), 400
+
+        cfg = Config.query.filter_by(key='mp_membership_preference_id').first()
+        if not cfg:
+            cfg = Config(key='mp_membership_preference_id', value='')
+            db.session.add(cfg)
+        cfg.value = data['id']
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'payment_id': data['id'],
+            'init_point': data['init_point'],
+            'sandbox_init_point': data.get('sandbox_init_point', '')
+        })
+    except Exception as e:
+        return jsonify({'error': 'Error al conectar con MP: ' + str(e)[:100]}), 500
+
+
+@app.route('/api/mp-membership-status')
+@login_required
+def mp_membership_status():
+    cfg = Config.query.filter_by(key='mp_membership_preference_id').first()
+    pref_id = cfg.value if cfg else ''
+    if not pref_id:
+        return jsonify({'status': 'none'})
+
+    access_token = get_config('mp_access_token', '')
+    if not access_token:
+        return jsonify({'status': 'none'})
+
+    try:
+        import requests
+        resp = requests.get(f'https://api.mercadopago.com/v1/payments/search?external_reference=membership&sort=date_created&criteria=desc&limit=1',
+                            headers={'Authorization': f'Bearer {access_token}'})
+        data = resp.json()
+        results = data.get('results', [])
+        if results:
+            pay = results[0]
+            status = pay.get('status', 'pending')
+            if status == 'approved':
+                cfg.value = ''
+                db.session.commit()
+                return jsonify({'status': 'approved', 'payment_id': pay.get('id')})
+            return jsonify({'status': status, 'payment_id': pay.get('id')})
+        return jsonify({'status': 'pending'})
+    except Exception:
+        return jsonify({'status': 'pending'})
+
+
 @app.route('/api/mp-webhook', methods=['POST'])
 def mp_webhook():
     try:
@@ -978,20 +1075,44 @@ def mp_webhook():
                     resp = requests.get(f'https://api.mercadopago.com/v1/payments/{payment_id}',
                                         headers={'Authorization': f'Bearer {access_token}'})
                     pay = resp.json()
-                    sale_id = pay.get('external_reference')
-                    if sale_id:
-                        try:
-                            sale_id = int(sale_id)
-                        except (ValueError, TypeError):
-                            sale_id = None
+                    ext_ref = pay.get('external_reference')
+                    if ext_ref == 'membership':
+                        if pay.get('status') == 'approved':
+                            from dateutil.relativedelta import relativedelta
+                            today = datetime.now(AR_TZ).date()
+                            cfg = Config.query.filter_by(key='membership_expiry').first()
+                            if cfg and cfg.value:
+                                try:
+                                    current = datetime.strptime(cfg.value, '%Y-%m-%d').date()
+                                except (ValueError, TypeError):
+                                    current = today
+                                base = max(current, today)
+                            else:
+                                base = today
+                                if not cfg:
+                                    cfg = Config(key='membership_expiry', value='')
+                                    db.session.add(cfg)
+                            new_expiry = base + relativedelta(months=1, day=1)
+                            cfg.value = new_expiry.strftime('%Y-%m-%d')
+                            pref = Config.query.filter_by(key='mp_membership_preference_id').first()
+                            if pref:
+                                pref.value = ''
+                            db.session.commit()
+                    else:
+                        sale_id = ext_ref
                         if sale_id:
-                            sale = db.session.get(Sale, sale_id)
-                            if sale:
-                                sale.mp_payment_id = str(payment_id)
-                                sale.mp_status = pay.get('status', 'unknown')
-                                if pay.get('status') == 'approved':
-                                    sale.payment_method = 'mercadopago'
-                                db.session.commit()
+                            try:
+                                sale_id = int(sale_id)
+                            except (ValueError, TypeError):
+                                sale_id = None
+                            if sale_id:
+                                sale = db.session.get(Sale, sale_id)
+                                if sale:
+                                    sale.mp_payment_id = str(payment_id)
+                                    sale.mp_status = pay.get('status', 'unknown')
+                                    if pay.get('status') == 'approved':
+                                        sale.payment_method = 'mercadopago'
+                                    db.session.commit()
     except Exception:
         pass
     return '', 200

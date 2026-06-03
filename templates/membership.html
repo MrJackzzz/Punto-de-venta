@@ -55,8 +55,9 @@
                     <p style="color:var(--gray);">Sin fecha de vencimiento configurada.</p>
                 {% endif %}
             </div>
-            <div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
                 <button class="btn btn-success" onclick="registerPayment()">💰 +1 mes (próximo día 1)</button>
+                <button class="btn btn-primary" onclick="payMembershipMP()" id="mpBtn">💳 Pagar con MP</button>
             </div>
         </div>
         <div id="paymentMsg" style="margin-top:0.8rem;font-size:0.9rem;"></div>
@@ -71,6 +72,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (cb) {
         cb.previousElementSibling.value = cb.checked ? 'true' : 'false';
     }
+    const msgEl = document.getElementById('paymentMsg');
+    if (!msgEl) return;
+    function pollStatus() {
+        fetch('/api/mp-membership-status')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'approved') {
+                    msgEl.innerHTML = '<span style="color:var(--success);">✅ Pago confirmado. Membresía actualizada.</span>';
+                    setTimeout(function(){ location.reload(); }, 2000);
+                } else if (data.status === 'pending') {
+                    setTimeout(pollStatus, 5000);
+                }
+            });
+    }
+    setTimeout(pollStatus, 2000);
 });
 
 function registerPayment() {
@@ -97,5 +113,50 @@ function registerPayment() {
             btn.textContent = '💰 +1 mes (próximo día 1)';
         });
 }
+
+function payMembershipMP() {
+    const btn = document.getElementById('mpBtn');
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    const msgEl = document.getElementById('paymentMsg');
+    fetch('/api/create-mp-membership-payment', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                msgEl.innerHTML = '<span style="color:var(--danger);">Error: ' + data.error + '</span>';
+                btn.disabled = false;
+                btn.textContent = '💳 Pagar con MP';
+                return;
+            }
+            window.location.href = data.init_point;
+        })
+        .catch(() => {
+            msgEl.innerHTML = '<span style="color:var(--danger);">Error de conexión</span>';
+            btn.disabled = false;
+            btn.textContent = '💳 Pagar con MP';
+        });
+}
+
+// Poll membership MP status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const cb = document.querySelector('input[type="checkbox"][name="membership_enabled"]');
+    if (cb) {
+        cb.previousElementSibling.value = cb.checked ? 'true' : 'false';
+    }
+    const msgEl = document.getElementById('paymentMsg');
+    function pollStatus() {
+        fetch('/api/mp-membership-status')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'approved') {
+                    msgEl.innerHTML = '<span style="color:var(--success);">✅ Pago confirmado. Membresía actualizada.</span>';
+                    setTimeout(function(){ location.reload(); }, 2000);
+                } else if (data.status === 'pending') {
+                    setTimeout(pollStatus, 5000);
+                }
+            });
+    }
+    setTimeout(pollStatus, 2000);
+});
 </script>
 {% endblock %}
