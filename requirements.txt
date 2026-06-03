@@ -6,3 +6,4 @@ Werkzeug==3.0.1
 gunicorn==23.0.0
 psycopg2>=2.9.9
 requests>=2.31.0
+weasyprint>=69.0

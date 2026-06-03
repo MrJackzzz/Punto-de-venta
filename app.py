@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
 from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category
 from datetime import datetime, timezone, timedelta
@@ -1031,6 +1031,39 @@ def ticket(id):
         return redirect(url_for('sell'))
     items = SaleItem.query.filter_by(sale_id=sale.id).all()
     return render_template('ticket.html', sale=sale, items=items)
+
+
+@app.route('/ticket/<int:id>/pdf')
+@login_required
+def ticket_pdf(id):
+    import weasyprint
+    sale = db.session.get(Sale, id)
+    if not sale:
+        abort(404)
+    items = SaleItem.query.filter_by(sale_id=sale.id).all()
+    html = render_template('ticket_pdf.html', sale=sale, items=items)
+    pdf = weasyprint.HTML(string=html).write_pdf()
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename=ticket_{id}.pdf'
+    return response
+
+
+@app.route('/api/sale/<int:id>/send-email', methods=['POST'])
+@login_required
+def api_send_ticket_email(id):
+    data = request.get_json()
+    email = data.get('email', '').strip()
+    if not email:
+        return jsonify({'error': 'Email requerido'}), 400
+    if not current_user.can_view_history():
+        return jsonify({'error': 'Permiso denegado'}), 403
+    sale = db.session.get(Sale, id)
+    if not sale:
+        return jsonify({'error': 'Venta no encontrada'}), 404
+    items = SaleItem.query.filter_by(sale_id=sale.id).all()
+    send_ticket_email(sale, items, email)
+    return jsonify({'success': True, 'message': 'Ticket enviado por email'})
 
 
 @app.route('/suppliers')

@@ -82,7 +82,15 @@
         <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
             <button class="btn btn-primary" onclick="printSaleTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
             <button class="btn btn-success" onclick="shareSaleWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
+            <button class="btn btn-secondary" onclick="toggleSaleEmail()" style="flex:1;min-width:120px;">✉️ Email</button>
             <button class="btn btn-secondary" onclick="closeModal('saleDetailModal')" style="flex:1;min-width:80px;">Cerrar</button>
+        </div>
+        <div id="saleEmailArea" style="display:none;margin-top:0.5rem;">
+            <div style="display:flex;gap:0.5rem;">
+                <input type="email" id="saleEmailInput" class="form-control" placeholder="cliente@email.com">
+                <button class="btn btn-sm btn-primary" onclick="sendSaleEmail()">Enviar</button>
+            </div>
+            <div id="saleEmailMsg" style="font-size:0.8rem;margin-top:0.3rem;"></div>
         </div>
     </div>
 </div>
@@ -138,16 +146,9 @@ function viewSale(saleId) {
 
 function shareSaleWhatsApp() {
     if (!lastViewedSale) return;
-    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia', 'mercadopago': 'Mercado Pago'};
     const bizName = '{{ business_name }}';
-    const now = new Date();
-    const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-    let msg = '*' + bizName + '*\nTicket #' + lastViewedSale.id + '\n' + timeStr + '\nAtendió: ' + lastViewedSale.user + '\n\n';
-    lastViewedSale.items.forEach(item => {
-        msg += item.product_name + ' x' + item.quantity + ' = ' + fmt(item.subtotal) + '\n';
-    });
-    msg += '\n*TOTAL: ' + fmt(lastViewedSale.total) + '*\n';
-    msg += 'Método: ' + (methodNames[lastViewedSale.payment_method] || lastViewedSale.payment_method);
+    const url = window.location.origin + '/ticket/' + lastViewedSale.id;
+    const msg = '*' + bizName + '* - Ticket #' + lastViewedSale.id + '\nTotal: ' + fmt(lastViewedSale.total) + '\n🔗 ' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -157,6 +158,39 @@ function printSaleTicket() {
     if (win) {
         win.onload = function() { setTimeout(function() { win.print(); }, 300); };
     }
+}
+
+function toggleSaleEmail() {
+    const area = document.getElementById('saleEmailArea');
+    area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+
+function sendSaleEmail() {
+    const email = document.getElementById('saleEmailInput').value.trim();
+    const msgEl = document.getElementById('saleEmailMsg');
+    if (!email) { msgEl.textContent = 'Ingresá un email'; msgEl.style.color = 'var(--accent)'; return; }
+    msgEl.textContent = 'Enviando...';
+    msgEl.style.color = 'var(--gray)';
+    fetch('/api/sale/' + lastViewedSale.id + '/send-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            msgEl.textContent = 'Error: ' + data.error;
+            msgEl.style.color = 'var(--danger)';
+        } else {
+            msgEl.textContent = '✅ Ticket enviado a ' + email;
+            msgEl.style.color = 'var(--success)';
+            document.getElementById('saleEmailInput').value = '';
+        }
+    })
+    .catch(() => {
+        msgEl.textContent = 'Error al enviar';
+        msgEl.style.color = 'var(--danger)';
+    });
 }
 
 function getFilters() {

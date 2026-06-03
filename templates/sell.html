@@ -73,7 +73,15 @@
         <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
             <button class="btn btn-primary" onclick="printTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
             <button class="btn btn-success" onclick="shareWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
+            <button class="btn btn-secondary" onclick="toggleSellEmail()" style="flex:1;min-width:120px;">✉️ Email</button>
             <button class="btn btn-secondary" onclick="closeTicketModal()" style="flex:1;min-width:80px;">Cerrar</button>
+        </div>
+        <div id="sellEmailArea" style="display:none;margin-top:0.5rem;">
+            <div style="display:flex;gap:0.5rem;">
+                <input type="email" id="sellEmailInput" class="form-control" placeholder="cliente@email.com">
+                <button class="btn btn-sm btn-primary" onclick="sendSellEmail()">Enviar</button>
+            </div>
+            <div id="sellEmailMsg" style="font-size:0.8rem;margin-top:0.3rem;"></div>
         </div>
     </div>
 </div>
@@ -242,22 +250,9 @@ function showTicket(data) {
 
 function shareWhatsApp() {
     if (!lastSaleData) return;
-    const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia', 'mercadopago': 'Mercado Pago'};
     const bizName = document.getElementById('ticketContent').dataset.businessName || '{{ business_name }}';
-    const now = new Date();
-    const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-    let msg = '*' + bizName + '*\nTicket #' + lastSaleData.sale_id + '\n' + timeStr + '\nAtendió: ' + lastSaleData.user + '\n\n';
-    lastSaleData.items.forEach(item => {
-        msg += item.product_name + ' x' + item.quantity + ' = ' + fmt(item.subtotal) + '\n';
-    });
-    msg += '\n*TOTAL: ' + fmt(lastSaleData.total) + '*\n';
-    msg += 'Método: ' + (methodNames[lastSaleData.payment_method] || lastSaleData.payment_method);
-    if (lastSaleData.payment_method === 'cash') {
-        msg += '\nRecibido: ' + fmt(lastSaleData.amount_paid) + '\nVuelto: ' + fmt(lastSaleData.change);
-    }
-    if (lastSaleData.mp_init_point) {
-        msg += '\n\n💳 Pagá aquí: ' + lastSaleData.mp_init_point;
-    }
+    const url = window.location.origin + '/ticket/' + lastSaleData.sale_id;
+    const msg = '*' + bizName + '* - Ticket #' + lastSaleData.sale_id + '\nTotal: ' + fmt(lastSaleData.total) + '\n🔗 ' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -272,6 +267,39 @@ function printTicket() {
 function closeTicketModal() {
     closeModal('ticketModal');
     lastSaleData = null;
+}
+
+function toggleSellEmail() {
+    const area = document.getElementById('sellEmailArea');
+    area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+
+function sendSellEmail() {
+    const email = document.getElementById('sellEmailInput').value.trim();
+    const msgEl = document.getElementById('sellEmailMsg');
+    if (!email) { msgEl.textContent = 'Ingresá un email'; msgEl.style.color = 'var(--accent)'; return; }
+    msgEl.textContent = 'Enviando...';
+    msgEl.style.color = 'var(--gray)';
+    fetch('/api/sale/' + lastSaleData.sale_id + '/send-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            msgEl.textContent = 'Error: ' + data.error;
+            msgEl.style.color = 'var(--danger)';
+        } else {
+            msgEl.textContent = '✅ Ticket enviado a ' + email;
+            msgEl.style.color = 'var(--success)';
+            document.getElementById('sellEmailInput').value = '';
+        }
+    })
+    .catch(() => {
+        msgEl.textContent = 'Error al enviar';
+        msgEl.style.color = 'var(--danger)';
+    });
 }
 
 function renderCart() {
