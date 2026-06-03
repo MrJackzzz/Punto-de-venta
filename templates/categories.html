@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Categorías{% endblock %}
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-    <h2 style="color:var(--primary);">Categorías de Productos</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;">
+    <h2 style="color:var(--primary);margin:0;">Categorías de Productos</h2>
     {% if current_user.can_add_categories() %}
-    <button class="btn btn-primary" onclick="openModal('catModal')">+ Nueva Categoría</button>
+    <button class="btn btn-primary" style="flex-shrink:0;" onclick="openModal('catModal')">+ Nueva Categoría</button>
     {% endif %}
 </div>
 
 <div class="card">
+    <div class="table-responsive">
     <table class="table">
         <thead>
             <tr><th>Nombre</th><th>Productos</th><th>Acciones</th></tr>
@@ -36,6 +37,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <div id="catModal" class="modal">
