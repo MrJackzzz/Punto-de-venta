@@ -104,8 +104,14 @@
         </header>
         {% endif %}
         {% if membership_warning %}
-        <div style="background:#d32f2f;color:#fff;text-align:center;padding:0.6rem 1rem;font-size:0.85rem;white-space:pre-line;position:sticky;top:60px;z-index:99;">
+        <div style="background:#d32f2f;color:#fff;text-align:center;padding:0.5rem 1rem;font-size:0.85rem;white-space:pre-line;position:sticky;top:60px;z-index:99;">
             {{ membership_warning }}
+            {% if current_user.is_authenticated and current_user.can_pay_membership() %}
+            <div style="margin-top:0.4rem;">
+                <button class="btn btn-sm btn-light" onclick="payMembershipBanner()" id="bannerMpBtn">💳 Pagar con Mercado Pago</button>
+            </div>
+            <div id="bannerMpMsg" style="margin-top:0.3rem;font-size:0.8rem;"></div>
+            {% endif %}
         </div>
         {% endif %}
         <div class="container">
@@ -156,6 +162,31 @@
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
             osc.stop(ctx.currentTime + 0.15);
         } catch(e) {}
+    }
+
+    function payMembershipBanner() {
+        const btn = document.getElementById('bannerMpBtn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Procesando...';
+        fetch('/api/create-mp-membership-payment', {method: 'POST'})
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    const msgEl = document.getElementById('bannerMpMsg');
+                    if (msgEl) msgEl.textContent = 'Error: ' + data.error;
+                    btn.disabled = false;
+                    btn.textContent = '💳 Pagar con Mercado Pago';
+                    return;
+                }
+                window.location.href = data.init_point;
+            })
+            .catch(() => {
+                const msgEl = document.getElementById('bannerMpMsg');
+                if (msgEl) msgEl.textContent = 'Error de conexión';
+                btn.disabled = false;
+                btn.textContent = '💳 Pagar con Mercado Pago';
+            });
     }
     </script>
 </body>

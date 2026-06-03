@@ -86,6 +86,9 @@ class User(UserMixin, db.Model):
     def can_view_charts(self):
         return self._role_perm('can_view_charts', True)
 
+    def can_pay_membership(self):
+        return self._role_perm('can_pay_membership', self.role in ('admin', 'supervisor'))
+
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)

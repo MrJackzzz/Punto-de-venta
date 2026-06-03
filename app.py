@@ -2013,12 +2013,12 @@ def init_app():
                          'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
                          'can_manage_users','can_view_history','can_sell',
                          'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
-                         'can_view_charts']
+                         'can_view_charts','can_pay_membership']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
             'supervisor': {k: True for k in all_perm_keys},
             'user': {k: k in ('can_view_products','can_add_products','can_sell','can_view_charts',
-                              'can_view_suppliers','can_view_categories') for k in all_perm_keys}
+                              'can_view_suppliers','can_view_categories','can_pay_membership') for k in all_perm_keys}
         }
         for role, perms in default_perms.items():
             key = f'perms_{role}'
