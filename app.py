@@ -1788,6 +1788,7 @@ def membership():
 def api_register_payment():
     if current_user.role != 'admin':
         return jsonify({'error': 'Solo admin'}), 403
+    from dateutil.relativedelta import relativedelta
     cfg = Config.query.filter_by(key='membership_expiry').first()
     today = datetime.now(AR_TZ).date()
     if cfg and cfg.value:
@@ -1795,16 +1796,13 @@ def api_register_payment():
             current = datetime.strptime(cfg.value, '%Y-%m-%d').date()
         except (ValueError, TypeError):
             current = today
-        if current < today:
-            current = today
-        from dateutil.relativedelta import relativedelta
-        new_expiry = current + relativedelta(months=1)
+        base = max(current, today)
     else:
-        from dateutil.relativedelta import relativedelta
-        new_expiry = today + relativedelta(months=1)
+        base = today
         if not cfg:
             cfg = Config(key='membership_expiry', value='')
             db.session.add(cfg)
+    new_expiry = base + relativedelta(months=1, day=1)
     cfg.value = new_expiry.strftime('%Y-%m-%d')
     db.session.commit()
     return jsonify({'success': True, 'new_expiry': cfg.value})
