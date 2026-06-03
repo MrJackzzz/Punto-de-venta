@@ -1780,6 +1780,33 @@ def membership():
     return render_template('membership.html', m=data)
 
 
+@app.route('/api/membership/register-payment', methods=['POST'])
+@login_required
+def api_register_payment():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    cfg = Config.query.filter_by(key='membership_expiry').first()
+    today = datetime.now(AR_TZ).date()
+    if cfg and cfg.value:
+        try:
+            current = datetime.strptime(cfg.value, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            current = today
+        if current < today:
+            current = today
+        from dateutil.relativedelta import relativedelta
+        new_expiry = current + relativedelta(months=1)
+    else:
+        from dateutil.relativedelta import relativedelta
+        new_expiry = today + relativedelta(months=1)
+        if not cfg:
+            cfg = Config(key='membership_expiry', value='')
+            db.session.add(cfg)
+    cfg.value = new_expiry.strftime('%Y-%m-%d')
+    db.session.commit()
+    return jsonify({'success': True, 'new_expiry': cfg.value})
+
+
 @app.before_request
 def check_membership():
     if request.endpoint in ('login', 'logout', 'static', 'membership', 'membership_blocked'):
