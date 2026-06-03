@@ -1976,6 +1976,67 @@ def membership_blocked():
                            payment_info=get_config('membership_payment_info'))
 
 
+@app.route('/planes')
+@login_required
+def planes():
+    return render_template('planes.html')
+
+
+@app.route('/planes/pdf')
+@login_required
+def planes_pdf():
+    rendered = render_template('planes_pdf.html')
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=rendered).write_pdf()
+        return Response(pdf, mimetype='application/pdf',
+                        headers={'Content-Disposition': 'inline; filename=planes_smartpost.pdf'})
+    except Exception:
+        flash('Error al generar PDF. Descargá la página como PDF desde el navegador.', 'danger')
+        return redirect(url_for('planes'))
+
+
+@app.route('/api/planes/send-email', methods=['POST'])
+@login_required
+def planes_send_email():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    owner_email = get_config('owner_email', '')
+    if not owner_email:
+        return jsonify({'error': 'Configurá el email del dueño en Settings primero.'}), 400
+    rendered = render_template('planes_pdf.html')
+    html_body = render_template('planes.html')
+    try:
+        from weasyprint import HTML
+        pdf = HTML(string=rendered).write_pdf()
+    except Exception:
+        return jsonify({'error': 'Error al generar PDF en el servidor.'}), 500
+    try:
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.base import MIMEBase
+        from email.mime.text import MIMEText
+        from email import encoders
+        msg = MIMEMultipart()
+        msg['Subject'] = f'Planes SmartPost - {get_config("business_name", "SmartPost")}'
+        msg['From'] = get_config('smtp_user', '')
+        msg['To'] = owner_email
+        text = MIMEText('Adjuntamos los planes y precios de SmartPost. Podés verlos también en la web.', 'plain', 'utf-8')
+        msg.attach(text)
+        attach = MIMEBase('application', 'pdf')
+        attach.set_payload(pdf)
+        encoders.encode_base64(attach)
+        attach.add_header('Content-Disposition', 'attachment', filename='planes_smartpost.pdf')
+        msg.attach(attach)
+        with smtplib.SMTP(get_config('smtp_host', ''), int(get_config('smtp_port', 587))) as server:
+            server.starttls()
+            server.login(get_config('smtp_user', ''), get_config('smtp_password', ''))
+            server.send_message(msg)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': 'Error al enviar email: ' + str(e)[:100]}), 500
+
+
 def init_app():
     with app.app_context():
         db.create_all()

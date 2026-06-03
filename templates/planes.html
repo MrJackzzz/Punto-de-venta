@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Planes{% endblock %}
+{% block content %}
+<h2 style="color:var(--primary);margin-bottom:0.5rem;">📋 Planes y Precios</h2>
+<p style="color:var(--gray);margin-bottom:2rem;">Sistema de gestión comercial SmartPost — Elegí el plan que mejor se adapte a tu negocio.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-bottom:2rem;">
+    {% set plans = [
+        ('Kiosco / Almacén', '$8.000/mes', '#4caf50', [
+            'Hasta 2 usuarios',
+            'Gestión de productos y stock',
+            'Proveedores y categorías',
+            'Ventas + ticket imprimible',
+            'Historial de ventas',
+            'Dashboard con gráficos',
+            'Modo oscuro',
+            'Soporte por email',
+        ]),
+        ('Comercio Mediano', '$18.000/mes', '#2196f3', [
+            'Hasta 5 usuarios',
+            'Todo lo del Plan Básico',
+            'Mercado Pago integrado',
+            'Backups automáticos',
+            'Reportes PDF y CSV',
+            'Ranking de productos',
+            'Alertas de stock crítico',
+            'Soporte prioritario',
+        ]),
+        ('Comercio Grande', '$50.000/mes', '#9c27b0', [
+            'Usuarios ilimitados',
+            'Todo lo del Plan Mediano',
+            'Multi-caja / multi-sucursal',
+            'Membresía con MP automático',
+            'Permisos por rol configurables',
+            'Exportación avanzada',
+            'Capacitación incluida',
+            'Soporte 24/7',
+        ]),
+        ('Puesta en Marcha', '$250.000 (único pago)', '#ff9800', [
+            'Instalación y configuración',
+            'Carga inicial de productos',
+            'Personalización de logo y marca',
+            'Configuración de MP y email',
+            'Capacitación del equipo',
+            'Puesta a punto del sistema',
+            'Documentación del setup',
+            'Válido para cualquier plan',
+        ]),
+    ] %}
+    {% for name, price, color, features in plans %}
+    <div style="border:1px solid var(--secondary);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="background:{{ color }};color:#fff;padding:1.2rem;text-align:center;">
+            <h3 style="margin:0;font-size:1.1rem;">{{ name }}</h3>
+            <div style="font-size:1.5rem;font-weight:700;margin-top:0.5rem;">{{ price }}</div>
+        </div>
+        <div style="padding:1rem;flex:1;">
+            <ul style="list-style:none;padding:0;margin:0;">
+                {% for f in features %}
+                <li style="padding:0.4rem 0;border-bottom:1px solid var(--secondary);font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;">
+                    <span style="color:var(--success);">✓</span> {{ f }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header">📌 Comparativa detallada</div>
+    <div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Funcionalidad</th>
+                <th style="text-align:center;">Kiosco</th>
+                <th style="text-align:center;">Mediano</th>
+                <th style="text-align:center;">Grande</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set rows = [
+                ('Usuarios', 'Hasta 2', 'Hasta 5', 'Ilimitados'),
+                ('Productos y stock', '✅', '✅', '✅'),
+                ('Proveedores', '✅', '✅', '✅'),
+                ('Categorías', '✅', '✅', '✅'),
+                ('Ventas + Ticket', '✅', '✅', '✅'),
+                ('Dashboard y gráficos', '✅', '✅', '✅'),
+                ('Modo oscuro', '✅', '✅', '✅'),
+                ('Historial de ventas', '✅', '✅', '✅'),
+                ('Reportes PDF', '—', '✅', '✅'),
+                ('Exportar CSV', '—', '✅', '✅'),
+                ('Ranking de productos', '—', '✅', '✅'),
+                ('Alertas stock crítico', '—', '✅', '✅'),
+                ('Mercado Pago', '—', '✅', '✅'),
+                ('Backups automáticos', '—', '✅', '✅'),
+                ('Permisos por rol', '—', '—', '✅'),
+                ('Membresía automática', '—', '—', '✅'),
+                ('Multi-caja / sucursal', '—', '—', '✅'),
+                ('Soporte', 'Email', 'Prioritario', '24/7'),
+            ] %}
+            {% for label, kiosko, mediano, grande in rows %}
+            <tr>
+                <td><strong>{{ label }}</strong></td>
+                <td style="text-align:center;">{{ kiosko }}</td>
+                <td style="text-align:center;">{{ mediano }}</td>
+                <td style="text-align:center;">{{ grande }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div style="text-align:center;margin:2rem 0;padding:1.5rem;background:var(--light);border-radius:8px;">
+    <p style="font-size:1rem;margin-bottom:1rem;">¿Consultas o necesitás un plan personalizado?</p>
+    <button class="btn btn-primary" onclick="sendPlanesEmail()">📧 Enviar planes por email</button>
+    <a href="{{ url_for('planes_pdf') }}" class="btn btn-secondary" target="_blank">📄 Descargar PDF</a>
+</div>
+
+<script>
+function sendPlanesEmail() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    fetch('/api/planes/send-email', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert('✅ Planes enviados por email.');
+            }
+        })
+        .catch(() => { alert('Error de conexión'); })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = '📧 Enviar planes por email';
+        });
+}
+</script>
+{% endblock %}

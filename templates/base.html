@@ -43,6 +43,7 @@
             <hr class="sidebar-divider">
             {% if current_user.role == 'admin' %}
             <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si">⚙️</span><span class="st">Config</span></a>
+            <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si">📋</span><span class="st">Planes</span></a>
             <a href="{{ url_for('membership') }}" class="sidebar-link"><span class="si">💳</span><span class="st">Membresía</span></a>
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si">💾</span><span class="st">Backups</span></a>
             {% endif %}
@@ -92,6 +93,7 @@
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
+                <a href="{{ url_for('planes') }}">Planes</a>
                 <a href="{{ url_for('membership') }}">Membresía</a>
                 <a href="{{ url_for('settings') }}">Config</a>
                 {% endif %}
