@@ -1831,7 +1831,11 @@ def check_membership():
             return jsonify({'error': 'Membresía vencida'}), 403
         return redirect(url_for('membership_blocked'))
     if expiry < now:
-        flash('⚠️ Membresía vencida. Días de gracia restantes.', 'warning')
+        remaining = (expiry + timedelta(days=grace) - now).days
+        pay_info = get_config('membership_payment_info', '')
+        flash(f'⚠️ Membresía vencida. Quedan {remaining} días antes del bloqueo.', 'warning')
+        if pay_info:
+            flash(f'📌 Datos de pago:\n{pay_info}', 'warning')
     elif (expiry - now).days <= 10:
         flash(f'⚠️ Membresía vence en {(expiry - now).days} días.', 'warning')
 
