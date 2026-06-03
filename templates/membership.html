@@ -69,6 +69,10 @@
     {% else %}
         <p style="color:var(--gray);">🟢 Sistema de membresía desactivado — la app funciona libremente.</p>
     {% endif %}
+    <div style="margin-top:1rem;padding-top:0.8rem;border-top:1px solid var(--secondary);font-size:0.8rem;color:var(--gray);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
+        <span>ID del sistema: <code style="background:var(--light);padding:0.1rem 0.4rem;border-radius:4px;">{{ m.instance_id }}</code></span>
+        <span style="opacity:0.6;">Usado para identificar pagos de membresía</span>
+    </div>
 </div>
 
 <script>

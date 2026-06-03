@@ -1922,6 +1922,8 @@ def membership():
     data = {key: get_config(key) for key in
             ['membership_enabled', 'membership_price', 'membership_grace_days',
              'membership_expiry', 'membership_payment_info', 'mp_membership_access_token']}
+    data['instance_id'] = get_instance_id()
+    return render_template('membership.html', m=data)
     return render_template('membership.html', m=data)
 
 
