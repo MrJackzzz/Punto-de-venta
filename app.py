@@ -1938,7 +1938,7 @@ def api_register_payment():
 
 @app.before_request
 def check_membership():
-    if request.endpoint in ('login', 'logout', 'static', 'membership', 'membership_blocked'):
+    if request.endpoint in ('login', 'logout', 'static', 'membership', 'membership_blocked', 'mp_membership_success'):
         return
     if current_user.is_authenticated and current_user.role == 'admin':
         return
@@ -1956,6 +1956,8 @@ def check_membership():
     now = datetime.now(AR_TZ)
     if expiry + timedelta(days=grace) < now:
         if request.path.startswith('/api/'):
+            if request.path in ('/api/create-mp-membership-payment', '/api/mp-membership-status'):
+                return
             return jsonify({'error': 'Membresía vencida'}), 403
         return redirect(url_for('membership_blocked'))
     if expiry < now:
