@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
 from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category
 from datetime import datetime, timezone, timedelta
@@ -59,7 +59,8 @@ def inject_globals():
         'business_name': get_config('business_name', 'NexoControl'),
         'local_name': get_config('local_name', ''),
         'logo_url': get_config('logo_filename', ''),
-        'now': lambda: datetime.now(AR_TZ)
+        'now': lambda: datetime.now(AR_TZ),
+        'membership_warning': getattr(g, 'membership_warning', '')
     }
 
 db.init_app(app)
@@ -1833,11 +1834,11 @@ def check_membership():
     if expiry < now:
         remaining = (expiry + timedelta(days=grace) - now).days
         pay_info = get_config('membership_payment_info', '')
-        flash(f'⚠️ Membresía vencida. Quedan {remaining} días antes del bloqueo.', 'warning')
+        g.membership_warning = f'⚠️ Membresía vencida. Quedan {remaining} días antes del bloqueo.'
         if pay_info:
-            flash(f'📌 Datos de pago:\n{pay_info}', 'warning')
+            g.membership_warning += f'\n📌 {pay_info}'
     elif (expiry - now).days <= 10:
-        flash(f'⚠️ Membresía vence en {(expiry - now).days} días.', 'warning')
+        g.membership_warning = f'⚠️ Membresía vence en {(expiry - now).days} días.'
 
 
 @app.route('/membership-blocked')

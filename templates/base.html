@@ -103,11 +103,16 @@
             </div>
         </header>
         {% endif %}
+        {% if membership_warning %}
+        <div style="background:var(--danger);color:#fff;text-align:center;padding:0.6rem 1rem;font-size:0.85rem;white-space:pre-line;position:sticky;top:0;z-index:999;">
+            {{ membership_warning }}
+        </div>
+        {% endif %}
         <div class="container">
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message|nl2br|safe }}</div>
+            <div class="alert alert-{{ category }}">{{ message }}</div>
             {% endfor %}
             {% endif %}
             {% endwith %}
