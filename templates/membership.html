@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Membresía{% endblock %}
+{% block content %}
+<h2 style="color:var(--primary);margin-bottom:1rem;">💳 Membresía</h2>
+
+<div class="card">
+    <div class="card-header">Configuración de Suscripción</div>
+    <form method="POST">
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="hidden" name="membership_enabled" value="false">
+                <input type="checkbox" name="membership_enabled" value="true" {% if m.membership_enabled == 'true' %}checked{% endif %} onchange="this.previousElementSibling.value = this.checked ? 'true' : 'false'">
+                Habilitar sistema de membresía
+            </label>
+            <small style="color:var(--gray);">Si desactivás, la app funciona libremente sin restricciones.</small>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="membership_price">Precio mensual ($)</label>
+                <input type="number" id="membership_price" name="membership_price" class="form-control" step="0.01" min="0" value="{{ m.membership_price }}">
+            </div>
+            <div class="form-group">
+                <label for="membership_grace_days">Días de gracia</label>
+                <input type="number" id="membership_grace_days" name="membership_grace_days" class="form-control" min="0" value="{{ m.membership_grace_days }}">
+                <small style="color:var(--gray);">Días después del vencimiento antes de bloquear el sistema.</small>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="membership_expiry">Fecha de vencimiento actual</label>
+            <input type="date" id="membership_expiry" name="membership_expiry" class="form-control" value="{{ m.membership_expiry }}">
+            <small style="color:var(--gray);">Actualizá esta fecha cuando el cliente renueve.</small>
+        </div>
+        <div class="form-group">
+            <label for="membership_payment_info">Información de pago para el cliente</label>
+            <textarea id="membership_payment_info" name="membership_payment_info" class="form-control" rows="3">{{ m.membership_payment_info }}</textarea>
+            <small style="color:var(--gray);">Alias, CBU, link de MP, etc. Se muestra al cliente si la membresía está vencida.</small>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Guardar configuración</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">Estado actual</div>
+    {% if m.membership_enabled == 'true' %}
+        {% if m.membership_expiry %}
+            <p>Vencimiento: <strong>{{ m.membership_expiry }}</strong></p>
+            {% if m.membership_expiry > now().strftime('%Y-%m-%d') %}
+                <p style="color:var(--success);">✅ Al día</p>
+            {% else %}
+                <p style="color:var(--danger);">🔴 Vencido</p>
+            {% endif %}
+        {% else %}
+            <p style="color:var(--gray);">Sin fecha de vencimiento configurada.</p>
+        {% endif %}
+    {% else %}
+        <p style="color:var(--gray);">🟢 Sistema de membresía desactivado — la app funciona libremente.</p>
+    {% endif %}
+</div>
+{% endblock %}

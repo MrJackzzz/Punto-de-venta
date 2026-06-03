@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Sistema Suspendido{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+    <div class="card" style="text-align:center;max-width:450px;">
+        <div style="font-size:3rem;margin-bottom:1rem;">🚫</div>
+        <h2 style="color:var(--accent);margin-bottom:1rem;">Sistema Suspendido</h2>
+        <p style="color:var(--gray);margin-bottom:1.5rem;">
+            La membresía de este sistema ha vencido. Contactá al administrador para renovarla.
+        </p>
+        {% if payment_info %}
+        <div style="background:var(--light);padding:1rem;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;">
+            <strong style="color:var(--primary);">Datos para el pago:</strong><br>
+            {{ payment_info|nl2br }}
+        </div>
+        {% endif %}
+        <p style="font-size:0.85rem;color:var(--gray);">Una vez realizado el pago, el administrador actualizará la fecha de vencimiento.</p>
+    </div>
+</div>
+{% endblock %}

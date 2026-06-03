@@ -38,6 +38,7 @@
             <hr class="sidebar-divider">
             {% if current_user.role == 'admin' %}
             <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si">⚙️</span><span class="st">Config</span></a>
+            <a href="{{ url_for('membership') }}" class="sidebar-link"><span class="si">💳</span><span class="st">Membresía</span></a>
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si">💾</span><span class="st">Backups</span></a>
             {% endif %}
             {% if current_user.can_manage_users() %}
@@ -83,6 +84,7 @@
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
+                <a href="{{ url_for('membership') }}">Membresía</a>
                 <a href="{{ url_for('settings') }}">Config</a>
                 {% endif %}
             </nav>
@@ -106,6 +108,10 @@
     {% if current_user.is_authenticated %}
     </div>
     {% endif %}
+
+    <div style="text-align:center;padding:1rem;font-size:0.75rem;color:var(--gray);border-top:1px solid var(--secondary);">
+        &copy; {{ now().year }} {{ business_name }} &mdash; Todos los derechos reservados.
+    </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script>

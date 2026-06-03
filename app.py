@@ -18,6 +18,10 @@ from email.mime.multipart import MIMEMultipart
 app = Flask(__name__)
 app.jinja_env.globals['to_ar'] = to_ar
 
+def nl2br(text):
+    return (text or '').replace('\n', '<br>')
+app.jinja_env.filters['nl2br'] = nl2br
+
 
 def fmt(amount):
     """Formato argentino: 1234567.89 -> $1.234.567,89"""
@@ -1743,6 +1747,65 @@ def backup_restore(name):
     return redirect(url_for('backups'))
 
 
+@app.route('/membership', methods=['GET', 'POST'])
+@login_required
+def membership():
+    if current_user.role != 'admin':
+        flash('Solo admin puede acceder.', 'danger')
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        keys = ['membership_enabled', 'membership_price', 'membership_grace_days',
+                'membership_expiry', 'membership_payment_info']
+        for key in keys:
+            val = request.form.get(key, '')
+            cfg = Config.query.filter_by(key=key).first()
+            if cfg:
+                cfg.value = val
+            else:
+                db.session.add(Config(key=key, value=val))
+        db.session.commit()
+        flash('Configuración de membresía guardada.', 'success')
+        return redirect(url_for('membership'))
+    data = {key: get_config(key) for key in
+            ['membership_enabled', 'membership_price', 'membership_grace_days',
+             'membership_expiry', 'membership_payment_info']}
+    return render_template('membership.html', m=data)
+
+
+@app.before_request
+def check_membership():
+    if request.endpoint in ('login', 'logout', 'static', 'membership', 'membership_blocked'):
+        return
+    if current_user.is_authenticated and current_user.role == 'admin':
+        return
+    enabled = get_config('membership_enabled') == 'true'
+    if not enabled:
+        return
+    expiry_str = get_config('membership_expiry')
+    if not expiry_str:
+        return
+    try:
+        expiry = datetime.strptime(expiry_str, '%Y-%m-%d').replace(tzinfo=AR_TZ)
+    except (ValueError, TypeError):
+        return
+    grace = int(get_config('membership_grace_days', '5'))
+    now = datetime.now(AR_TZ)
+    if expiry + timedelta(days=grace) < now:
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Membresía vencida'}), 403
+        return redirect(url_for('membership_blocked'))
+    if expiry < now:
+        flash('⚠️ Membresía vencida. Días de gracia restantes.', 'warning')
+    elif (expiry - now).days <= 10:
+        flash(f'⚠️ Membresía vence en {(expiry - now).days} días.', 'warning')
+
+
+@app.route('/membership-blocked')
+def membership_blocked():
+    return render_template('membership_blocked.html',
+                           payment_info=get_config('membership_payment_info'))
+
+
 def init_app():
     with app.app_context():
         db.create_all()
@@ -1764,6 +1827,11 @@ def init_app():
             'default_markup': '30',
             'low_stock_threshold': '10',
             'critical_stock_threshold': '5',
+            'membership_enabled': 'false',
+            'membership_price': '10',
+            'membership_grace_days': '5',
+            'membership_expiry': '',
+            'membership_payment_info': 'Alias: nesxocontrol.mp\nCBU: 0000000000000000000000',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
