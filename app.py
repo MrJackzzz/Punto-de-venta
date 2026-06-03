@@ -57,6 +57,7 @@ def get_config(key, default=''):
 def inject_globals():
     return {
         'business_name': get_config('business_name', 'NexoControl'),
+        'local_name': get_config('local_name', ''),
         'logo_url': get_config('logo_filename', ''),
         'now': lambda: datetime.now(AR_TZ)
     }
@@ -1420,10 +1421,12 @@ def send_ticket_email(sale, sale_items, customer_email=None):
     )
 
     biz_name = get_config('business_name', 'NexoControl')
+    local = get_config('local_name', '')
     html = f"""
     <div style="font-family:Arial;max-width:400px;margin:0 auto;">
         <div style="text-align:center;background:#3d5a80;color:#fff;padding:15px;border-radius:8px 8px 0 0;">
             <h2 style="margin:0;">{biz_name}</h2>
+            {f'<p style="margin:2px 0 0;font-size:12px;">{local}</p>' if local else ''}
             <p style="margin:5px 0 0;font-size:13px;">Ticket #{sale.id}</p>
         </div>
         <div style="background:#f9f9f9;padding:15px;border:1px solid #ddd;">
@@ -1862,6 +1865,7 @@ def init_app():
             'default_markup': '30',
             'low_stock_threshold': '10',
             'critical_stock_threshold': '5',
+            'local_name': '',
             'membership_enabled': 'false',
             'membership_price': '10',
             'membership_grace_days': '5',

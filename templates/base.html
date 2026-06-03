@@ -13,7 +13,12 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <button class="sidebar-toggle" onclick="toggleMenu()">☰</button>
-            <span class="sidebar-brand">{{ business_name }}</span>
+            <span class="sidebar-brand">
+                <span style="display:block;font-size:1rem;">{{ business_name }}</span>
+                {% if local_name %}
+                <span style="display:block;font-size:0.65rem;opacity:0.6;font-weight:400;">{{ local_name }}</span>
+                {% endif %}
+            </span>
         </div>
         <nav class="sidebar-nav">
             <a href="{{ url_for('dashboard') }}" class="sidebar-link"><span class="si">🏠</span><span class="st">Inicio</span></a>
@@ -61,6 +66,9 @@
                 <img src="{{ url_for('static', filename=logo_url) }}" style="height:32px;margin-right:4px;">
                 {% endif %}
                 <h1>{{ business_name }}</h1>
+                {% if local_name %}
+                <span style="font-size:0.75rem;opacity:0.7;margin-left:0.3rem;">{{ local_name }}</span>
+                {% endif %}
             </div>
             <nav id="mobileNav" class="mobile-nav">
                 <a href="{{ url_for('dashboard') }}">Inicio</a>
