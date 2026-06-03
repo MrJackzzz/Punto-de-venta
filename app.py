@@ -11,7 +11,7 @@ def to_ar(dt):
     return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func
-import os, csv, io, json, smtplib, shutil, zipfile, subprocess
+import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -51,6 +51,19 @@ def allowed_file(filename):
 def get_config(key, default=''):
     c = Config.query.filter_by(key=key).first()
     return c.value if c and c.value else default
+
+
+def get_instance_id():
+    c = Config.query.filter_by(key='instance_id').first()
+    if c and c.value:
+        return c.value
+    uid = uuid.uuid4().hex[:12]
+    if c:
+        c.value = uid
+    else:
+        db.session.add(Config(key='instance_id', value=uid))
+    db.session.commit()
+    return uid
 
 
 @app.context_processor
@@ -1002,7 +1015,7 @@ def create_mp_membership_payment():
             },
             'auto_return': 'approved',
             'notification_url': host + url_for('mp_webhook'),
-            'external_reference': 'membership'
+            'external_reference': 'membership_' + get_instance_id()
         }, headers={
             'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json'
@@ -1042,7 +1055,8 @@ def mp_membership_status():
 
     try:
         import requests
-        resp = requests.get(f'https://api.mercadopago.com/v1/payments/search?external_reference=membership&sort=date_created&criteria=desc&limit=1',
+        ref = 'membership_' + get_instance_id()
+        resp = requests.get(f'https://api.mercadopago.com/v1/payments/search?external_reference={ref}&sort=date_created&criteria=desc&limit=1',
                             headers={'Authorization': f'Bearer {access_token}'})
         data = resp.json()
         results = data.get('results', [])
@@ -1083,7 +1097,7 @@ def mp_webhook():
                     ext_ref = pay.get('external_reference')
                     if not ext_ref:
                         continue
-                    if ext_ref == 'membership':
+                    if ext_ref == 'membership_' + get_instance_id():
                         if pay.get('status') == 'approved':
                             from dateutil.relativedelta import relativedelta
                             today = datetime.now(AR_TZ).date()
@@ -2068,6 +2082,9 @@ def init_app():
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
                 db.session.add(Config(key=k, value=v))
+
+        if not Config.query.filter_by(key='instance_id').first():
+            db.session.add(Config(key='instance_id', value=uuid.uuid4().hex[:12]))
 
         all_perm_keys = ['can_view_products','can_add_products','can_edit_products','can_manage_products',
                          'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
