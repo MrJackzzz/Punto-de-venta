@@ -1066,8 +1066,10 @@ def api_send_ticket_email(id):
     if not sale:
         return jsonify({'error': 'Venta no encontrada'}), 404
     items = SaleItem.query.filter_by(sale_id=sale.id).all()
-    send_ticket_email(sale, items, email)
-    return jsonify({'success': True, 'message': 'Ticket enviado por email'})
+    if send_ticket_email(sale, items, email):
+        return jsonify({'success': True, 'message': 'Ticket enviado por email'})
+    else:
+        return jsonify({'error': 'No se pudo enviar el email. Verificá la configuración SMTP en Admin > Config.'}), 500
 
 
 @app.route('/suppliers')
@@ -1400,11 +1402,14 @@ def api_config(key):
 
 
 def send_ticket_email(sale, sale_items, customer_email=None):
+    if not can_send_email():
+        return False
+
     owner_email = Config.query.filter_by(key='owner_email').first()
     owner_email = owner_email.value if owner_email else ''
 
     if not customer_email and not owner_email:
-        return
+        return False
 
     method_names = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'}
     items_html = ''.join(
@@ -1455,9 +1460,12 @@ def send_ticket_email(sale, sale_items, customer_email=None):
 
     for to in recipients:
         try:
-            send_email(to, f'Tu Ticket #{sale.id} - {biz_name}', html)
+            sent = send_email(to, f'Tu Ticket #{sale.id} - {biz_name}', html)
+            if not sent:
+                return False
         except Exception:
-            pass
+            return False
+    return True
 
 
 @app.route('/settings', methods=['GET', 'POST'])
