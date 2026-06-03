@@ -975,9 +975,6 @@ def mp_membership_success():
 @app.route('/api/create-mp-membership-payment', methods=['POST'])
 @login_required
 def create_mp_membership_payment():
-    if current_user.role != 'admin':
-        return jsonify({'error': 'Solo admin'}), 403
-
     access_token = get_config('mp_membership_access_token', '')
     if not access_token:
         return jsonify({'error': 'Mercado Pago no configurado. Ingresá tu Access Token en Membresía.'}), 400
