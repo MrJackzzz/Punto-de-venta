@@ -978,9 +978,9 @@ def create_mp_membership_payment():
     if current_user.role != 'admin':
         return jsonify({'error': 'Solo admin'}), 403
 
-    access_token = get_config('mp_access_token', '')
+    access_token = get_config('mp_membership_access_token', '')
     if not access_token:
-        return jsonify({'error': 'Mercado Pago no configurado. Andá a Config.'}), 400
+        return jsonify({'error': 'Mercado Pago no configurado. Ingresá tu Access Token en Membresía.'}), 400
 
     price = get_config('membership_price', '10')
     try:
@@ -1039,7 +1039,7 @@ def mp_membership_status():
     if not pref_id:
         return jsonify({'status': 'none'})
 
-    access_token = get_config('mp_access_token', '')
+    access_token = get_config('mp_membership_access_token', '')
     if not access_token:
         return jsonify({'status': 'none'})
 
@@ -1069,13 +1069,23 @@ def mp_webhook():
         if data and data.get('type') == 'payment':
             payment_id = data.get('data', {}).get('id')
             if payment_id:
-                access_token = get_config('mp_access_token', '')
-                if access_token:
-                    import requests
-                    resp = requests.get(f'https://api.mercadopago.com/v1/payments/{payment_id}',
-                                        headers={'Authorization': f'Bearer {access_token}'})
-                    pay = resp.json()
+                import requests
+                tokens = [
+                    ('membership', get_config('mp_membership_access_token', '')),
+                    ('store', get_config('mp_access_token', ''))
+                ]
+                for token_type, access_token in tokens:
+                    if not access_token:
+                        continue
+                    try:
+                        resp = requests.get(f'https://api.mercadopago.com/v1/payments/{payment_id}',
+                                            headers={'Authorization': f'Bearer {access_token}'})
+                        pay = resp.json()
+                    except Exception:
+                        continue
                     ext_ref = pay.get('external_reference')
+                    if not ext_ref:
+                        continue
                     if ext_ref == 'membership':
                         if pay.get('status') == 'approved':
                             from dateutil.relativedelta import relativedelta
@@ -1098,21 +1108,20 @@ def mp_webhook():
                             if pref:
                                 pref.value = ''
                             db.session.commit()
+                        break
                     else:
-                        sale_id = ext_ref
-                        if sale_id:
-                            try:
-                                sale_id = int(sale_id)
-                            except (ValueError, TypeError):
-                                sale_id = None
-                            if sale_id:
-                                sale = db.session.get(Sale, sale_id)
-                                if sale:
-                                    sale.mp_payment_id = str(payment_id)
-                                    sale.mp_status = pay.get('status', 'unknown')
-                                    if pay.get('status') == 'approved':
-                                        sale.payment_method = 'mercadopago'
-                                    db.session.commit()
+                        try:
+                            sale_id = int(ext_ref)
+                        except (ValueError, TypeError):
+                            continue
+                        sale = db.session.get(Sale, sale_id)
+                        if sale:
+                            sale.mp_payment_id = str(payment_id)
+                            sale.mp_status = pay.get('status', 'unknown')
+                            if pay.get('status') == 'approved':
+                                sale.payment_method = 'mercadopago'
+                            db.session.commit()
+                        break
     except Exception:
         pass
     return '', 200
@@ -1888,7 +1897,7 @@ def membership():
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
         keys = ['membership_enabled', 'membership_price', 'membership_grace_days',
-                'membership_expiry', 'membership_payment_info']
+                'membership_expiry', 'membership_payment_info', 'mp_membership_access_token']
         for key in keys:
             val = request.form.get(key, '')
             cfg = Config.query.filter_by(key=key).first()
@@ -1901,7 +1910,7 @@ def membership():
         return redirect(url_for('membership'))
     data = {key: get_config(key) for key in
             ['membership_enabled', 'membership_price', 'membership_grace_days',
-             'membership_expiry', 'membership_payment_info']}
+             'membership_expiry', 'membership_payment_info', 'mp_membership_access_token']}
     return render_template('membership.html', m=data)
 
 
