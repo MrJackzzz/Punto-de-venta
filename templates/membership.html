@@ -30,6 +30,11 @@
             <textarea id="membership_payment_info" name="membership_payment_info" class="form-control" rows="3">{{ m.membership_payment_info }}</textarea>
             <small style="color:var(--gray);">Alias, CBU, link de MP, etc. Se muestra al cliente si la membresía está vencida.</small>
         </div>
+        <div class="form-group">
+            <label for="membership_expiry">Fecha de vencimiento (opcional)</label>
+            <input type="date" id="membership_expiry" name="membership_expiry" class="form-control" value="{{ m.membership_expiry or '' }}">
+            <small style="color:var(--gray);">Si se deja vacía, podés fijarla después con el botón "Registrar pago".</small>
+        </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">Guardar configuración</button>
     </form>
 </div>
@@ -51,17 +56,8 @@
                 {% endif %}
             </div>
             <div>
-                <button class="btn btn-success" onclick="registerPayment()">💰 Registrar pago → 1ro próximo mes</button>
+                <button class="btn btn-success" onclick="registerPayment()">💰 +1 mes (próximo día 1)</button>
             </div>
-        </div>
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
-            <details style="font-size:0.85rem;">
-                <summary style="cursor:pointer;color:var(--gray);">Fijar fecha manualmente (opcional)</summary>
-                <div style="margin-top:0.5rem;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                    <input type="date" id="manualExpiry" class="form-control" style="max-width:200px;" value="{{ m.membership_expiry }}">
-                    <button class="btn btn-sm btn-secondary" onclick="setManualDate()">Establecer</button>
-                </div>
-            </details>
         </div>
         <div id="paymentMsg" style="margin-top:0.8rem;font-size:0.9rem;"></div>
     {% else %}
@@ -90,6 +86,7 @@ function registerPayment() {
             } else {
                 msgEl.innerHTML = '<span style="color:var(--success);">✅ Pago registrado. Nueva fecha de vencimiento: <strong>' + data.new_expiry + '</strong></span>';
                 document.getElementById('expiryDisplay').textContent = data.new_expiry;
+                document.getElementById('membership_expiry').value = data.new_expiry;
             }
         })
         .catch(() => {
@@ -97,28 +94,8 @@ function registerPayment() {
         })
         .finally(() => {
             btn.disabled = false;
-            btn.textContent = '💰 Registrar pago → 1ro próximo mes';
+            btn.textContent = '💰 +1 mes (próximo día 1)';
         });
-}
-
-function setManualDate() {
-    const date = document.getElementById('manualExpiry').value;
-    if (!date) { alert('Seleccioná una fecha'); return; }
-    const msgEl = document.getElementById('paymentMsg');
-    fetch('/api/membership/set-expiry', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({expiry: date})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.error) {
-            msgEl.innerHTML = '<span style="color:var(--danger);">Error: ' + data.error + '</span>';
-        } else {
-            msgEl.innerHTML = '<span style="color:var(--success);">✅ Fecha establecida: <strong>' + data.new_expiry + '</strong></span>';
-            document.getElementById('expiryDisplay').textContent = data.new_expiry;
-        }
-    });
 }
 </script>
 {% endblock %}

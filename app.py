@@ -1808,28 +1808,6 @@ def api_register_payment():
     return jsonify({'success': True, 'new_expiry': cfg.value})
 
 
-@app.route('/api/membership/set-expiry', methods=['POST'])
-@login_required
-def api_set_expiry():
-    if current_user.role != 'admin':
-        return jsonify({'error': 'Solo admin'}), 403
-    data = request.get_json()
-    expiry = data.get('expiry', '').strip()
-    if not expiry:
-        return jsonify({'error': 'Fecha requerida'}), 400
-    try:
-        datetime.strptime(expiry, '%Y-%m-%d')
-    except ValueError:
-        return jsonify({'error': 'Formato inválido'}), 400
-    cfg = Config.query.filter_by(key='membership_expiry').first()
-    if not cfg:
-        cfg = Config(key='membership_expiry', value='')
-        db.session.add(cfg)
-    cfg.value = expiry
-    db.session.commit()
-    return jsonify({'success': True, 'new_expiry': expiry})
-
-
 @app.before_request
 def check_membership():
     if request.endpoint in ('login', 'logout', 'static', 'membership', 'membership_blocked'):
