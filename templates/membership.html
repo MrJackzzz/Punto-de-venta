@@ -70,6 +70,13 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cb = document.querySelector('input[type="checkbox"][name="membership_enabled"]');
+    if (cb) {
+        cb.previousElementSibling.value = cb.checked ? 'true' : 'false';
+    }
+});
+
 function registerPayment() {
     const btn = event.target;
     btn.disabled = true;
