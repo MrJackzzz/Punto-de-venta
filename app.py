@@ -1906,6 +1906,7 @@ def save_permissions():
                  'can_view_history', 'can_sell',
                  'can_view_categories', 'can_add_categories', 'can_edit_categories', 'can_delete_categories',
                  'can_view_charts',
+                 'can_take_orders', 'can_pay_membership',
                  'can_view_barcodes']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}

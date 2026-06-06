@@ -336,7 +336,7 @@ function startScanner() {
             document.getElementById('manualCode').value = decodedText;
             html5Scanner.stop();
             container.style.display = 'none';
-            playSuccessSound();
+            if (typeof playBeep === 'function') playBeep();
             addByCode();
         },
         function() {}
