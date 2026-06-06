@@ -81,7 +81,10 @@ function generateCodes() {
     const pxW = Math.round(wCm * 37.8);
     const pxH = Math.round(hCm * 37.8);
 
-    preview.innerHTML = '<div class="d-flex flex-wrap gap-3 justify-content-center">';
+    preview.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex flex-wrap gap-3 justify-content-center';
+    preview.appendChild(wrapper);
 
     checked.forEach(cb => {
         const data = JSON.parse(cb.value);
@@ -98,7 +101,7 @@ function generateCodes() {
             const qrDiv = document.createElement('div');
             qrDiv.id = 'qr_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
             container.appendChild(qrDiv);
-            preview.appendChild(container);
+            wrapper.appendChild(container);
             setTimeout(function() {
                 new QRCode(qrDiv, {
                     text: data.code,
@@ -110,7 +113,7 @@ function generateCodes() {
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.id = 'barcode_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
             container.appendChild(svg);
-            preview.appendChild(container);
+            wrapper.appendChild(container);
             setTimeout(function() {
                 JsBarcode(svg, data.code, {
                     format: type,
@@ -128,8 +131,6 @@ function generateCodes() {
         codeEl.textContent = data.code;
         container.appendChild(codeEl);
     });
-
-    preview.innerHTML += '</div>';
 }
 
 function printCodes() {
