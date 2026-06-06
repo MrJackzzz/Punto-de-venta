@@ -881,7 +881,7 @@ def checkout():
         })
 
     total = round(total, 2)
-    change = 0
+    change = round(max(0, amount_paid - total), 2)
 
     if payment_method == 'cash' and amount_paid < total:
         return jsonify({'error': 'El monto recibido es menor al total'}), 400
