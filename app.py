@@ -2198,21 +2198,42 @@ def init_app():
         try:
             db.session.execute(db.text('SELECT 1 FROM pending_order LIMIT 1'))
         except Exception:
-            db.session.execute(db.text('''
-                CREATE TABLE pending_order (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL REFERENCES "user"(id),
-                    items_json TEXT NOT NULL DEFAULT '[]',
-                    customer_name VARCHAR(200) DEFAULT '',
-                    notes TEXT DEFAULT '',
-                    total FLOAT NOT NULL DEFAULT 0,
-                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-                    created_at DATETIME,
-                    completed_at DATETIME,
-                    sale_id INTEGER REFERENCES sale(id)
-                )
-            '''))
-            db.session.commit()
+            try:
+                db.session.execute(db.text('''
+                    CREATE TABLE pending_order (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL REFERENCES "user"(id),
+                        items_json TEXT NOT NULL DEFAULT '[]',
+                        customer_name VARCHAR(200) DEFAULT '',
+                        notes TEXT DEFAULT '',
+                        total FLOAT NOT NULL DEFAULT 0,
+                        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                        created_at TIMESTAMP,
+                        completed_at TIMESTAMP,
+                        sale_id INTEGER REFERENCES sale(id)
+                    )
+                '''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                try:
+                    db.session.execute(db.text('''
+                        CREATE TABLE pending_order (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER NOT NULL REFERENCES "user"(id),
+                            items_json TEXT NOT NULL DEFAULT '[]',
+                            customer_name VARCHAR(200) DEFAULT '',
+                            notes TEXT DEFAULT '',
+                            total FLOAT NOT NULL DEFAULT 0,
+                            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                            created_at DATETIME,
+                            completed_at DATETIME,
+                            sale_id INTEGER REFERENCES sale(id)
+                        )
+                    '''))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin', active=True)
             admin.set_password('admin123')
