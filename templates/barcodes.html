@@ -62,8 +62,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 function toggleAll(el) {
     document.querySelectorAll('.product-check').forEach(cb => cb.checked = el.checked);
@@ -98,31 +97,39 @@ function generateCodes() {
         container.appendChild(nameEl);
 
         if (type === 'qr') {
-            const qrDiv = document.createElement('div');
-            qrDiv.id = 'qr_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
-            container.appendChild(qrDiv);
+            const img = document.createElement('img');
+            const size = Math.min(pxW, pxH);
+            img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(data.code);
+            img.style.width = size + 'px';
+            img.style.height = size + 'px';
+            img.alt = data.code;
+            container.appendChild(img);
             wrapper.appendChild(container);
-            setTimeout(function() {
-                new QRCode(qrDiv, {
-                    text: data.code,
-                    width: Math.min(pxW, pxH),
-                    height: Math.min(pxW, pxH)
-                });
-            }, 10);
         } else {
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.id = 'barcode_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
             container.appendChild(svg);
             wrapper.appendChild(container);
             setTimeout(function() {
-                JsBarcode(svg, data.code, {
-                    format: type,
-                    width: 2,
-                    height: Math.min(pxH, 100),
-                    displayValue: true,
-                    fontSize: 14,
-                    margin: 5
-                });
+                try {
+                    JsBarcode(svg, data.code, {
+                        format: type,
+                        width: 2,
+                        height: Math.min(pxH, 100),
+                        displayValue: true,
+                        fontSize: 14,
+                        margin: 5
+                    });
+                } catch(e) {
+                    JsBarcode(svg, data.code, {
+                        format: 'code128',
+                        width: 2,
+                        height: Math.min(pxH, 100),
+                        displayValue: true,
+                        fontSize: 14,
+                        margin: 5
+                    });
+                }
             }, 10);
         }
 
