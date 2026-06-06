@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Papelera{% endblock %}
+{% block content %}
+<h2 class="text-primary mb-3"><i class="bi bi-trash3"></i> Papelera de recuperación</h2>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <label class="form-label mb-0 me-2">Filtrar:</label>
+            <select id="filterType" class="form-select form-select-sm w-auto" onchange="loadTrash()">
+                <option value="">Todos</option>
+                <option value="movement">Movimientos</option>
+                <option value="sale">Ventas</option>
+            </select>
+            <span class="small text-muted ms-auto" id="resultCount"></span>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="thead-primary">
+                <tr>
+                    <th>Fecha de eliminación</th>
+                    <th>Tipo</th>
+                    <th>Detalle</th>
+                    <th>Eliminado por</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="trashBody">
+                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function loadTrash() {
+    const type = document.getElementById('filterType').value;
+    const url = '/api/trash' + (type ? '?type=' + type : '');
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('trashBody');
+            const countEl = document.getElementById('resultCount');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Papelera vacía</td></tr>';
+                countEl.textContent = '0 registros';
+                return;
+            }
+            tbody.innerHTML = data.map(r => {
+                const detail = r.type === 'sale'
+                    ? 'Venta $' + fmt(r.data.total || 0)
+                    : (r.data.description || r.data.action || '—');
+                const restored = r.restored_at ? true : false;
+                return `<tr class="${restored ? 'table-success' : ''}">
+                    <td><small>${r.deleted_at}</small></td>
+                    <td><span class="badge bg-${r.type === 'sale' ? 'primary' : 'secondary'}">${r.type === 'sale' ? 'Venta' : 'Movimiento'}</span></td>
+                    <td><small>${detail}</small></td>
+                    <td><small>${r.deleted_by}</small></td>
+                    <td>${restored ? '<span class="badge bg-success">Restaurado</span>' : '<span class="badge bg-danger">Eliminado</span>'}</td>
+                    <td>${!restored ? `<button class="btn btn-sm btn-outline-success" onclick="restore(${r.id})"><i class="bi bi-arrow-counterclockwise"></i> Restaurar</button>` : `<small class="text-muted">${r.restored_at}</small>`}</td>
+                </tr>`;
+            }).join('');
+            countEl.textContent = data.length + ' registros';
+        });
+}
+
+function restore(id) {
+    if (!confirm('¿Restaurar este registro?')) return;
+    fetch('/api/trash/' + id + '/restore', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { alert('Error: ' + data.error); return; }
+            loadTrash();
+        });
+}
+
+loadTrash();
+</script>
+{% endblock %}

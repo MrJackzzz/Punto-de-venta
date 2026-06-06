@@ -106,6 +106,9 @@ class User(UserMixin, db.Model):
     def can_view_barcodes(self):
         return self._role_perm('can_view_barcodes', self.role == 'admin')
 
+    def can_view_trash(self):
+        return self._role_perm('can_view_trash', self.role == 'admin')
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -220,3 +223,15 @@ class System(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class DeletedRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    record_type = db.Column(db.String(20), nullable=False)
+    record_id = db.Column(db.Integer)
+    data_json = db.Column(db.Text, nullable=False)
+    deleted_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    deleted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    restored_at = db.Column(db.DateTime)
+
+    deleter = db.relationship('User', backref='deleted_records')

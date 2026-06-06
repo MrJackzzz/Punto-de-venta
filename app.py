@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
-from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System
+from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord
 from datetime import datetime, timezone, timedelta
 AR_TZ = timezone(timedelta(hours=-3))
 
@@ -1467,6 +1467,28 @@ def clear_history():
             pass
     sales = query_sales.all()
     sale_ids = [s.id for s in sales]
+    for sale in sales:
+        items = SaleItem.query.filter_by(sale_id=sale.id).all()
+        db.session.add(DeletedRecord(
+            record_type='sale', record_id=sale.id,
+            data_json=json.dumps({
+                'total': sale.total, 'payment_method': sale.payment_method,
+                'amount_paid': sale.amount_paid, 'change_amount': sale.change_amount,
+                'customer_email': sale.customer_email,
+                'user_id': sale.user_id, 'created_at': sale.created_at.isoformat() if sale.created_at else None,
+                'items': [{'product_id': i.product_id, 'quantity': i.quantity,
+                           'unit_price': i.unit_price, 'subtotal': i.subtotal} for i in items]
+            }),
+            deleted_by=current_user.id,
+        ))
+    logs = query_logs.all()
+    for log in logs:
+        db.session.add(DeletedRecord(
+            record_type='movement', record_id=log.id,
+            data_json=json.dumps({'action': log.action, 'description': log.description,
+                                  'user_id': log.user_id, 'created_at': log.created_at.isoformat() if log.created_at else None}),
+            deleted_by=current_user.id,
+        ))
     if sale_ids:
         SaleItem.query.filter(SaleItem.sale_id.in_(sale_ids)).delete(synchronize_session=False)
         Sale.query.filter(Sale.id.in_(sale_ids)).delete(synchronize_session=False)
@@ -1484,16 +1506,124 @@ def delete_log(log_id):
     log = db.session.get(MovementLog, log_id)
     if not log:
         return jsonify({'error': 'Movimiento no encontrado'}), 404
+    deleted = DeletedRecord(
+        record_type='movement',
+        record_id=log.id,
+        data_json=json.dumps({'action': log.action, 'description': log.description,
+                              'user_id': log.user_id, 'created_at': log.created_at.isoformat() if log.created_at else None}),
+        deleted_by=current_user.id,
+    )
+    db.session.add(deleted)
     if log.action == 'sale':
         import re
         match = re.search(r'#(\d+)', log.description)
         if match:
             sale_id = int(match.group(1))
-            SaleItem.query.filter_by(sale_id=sale_id).delete()
-            Sale.query.filter_by(id=sale_id).delete()
+            sale = db.session.get(Sale, sale_id)
+            if sale:
+                items = SaleItem.query.filter_by(sale_id=sale_id).all()
+                deleted2 = DeletedRecord(
+                    record_type='sale',
+                    record_id=sale.id,
+                    data_json=json.dumps({
+                        'total': sale.total, 'payment_method': sale.payment_method,
+                        'amount_paid': sale.amount_paid, 'change_amount': sale.change_amount,
+                        'customer_email': sale.customer_email,
+                        'user_id': sale.user_id, 'created_at': sale.created_at.isoformat() if sale.created_at else None,
+                        'items': [{'product_id': i.product_id, 'quantity': i.quantity,
+                                   'unit_price': i.unit_price, 'subtotal': i.subtotal} for i in items]
+                    }),
+                    deleted_by=current_user.id,
+                )
+                db.session.add(deleted2)
+                SaleItem.query.filter_by(sale_id=sale_id).delete()
+                Sale.query.filter_by(id=sale_id).delete()
     db.session.delete(log)
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@app.route('/trash')
+@login_required
+def trash():
+    if not current_user.can_view_trash():
+        flash('No tienes permiso.', 'danger')
+        return redirect(url_for('dashboard'))
+    deleted = DeletedRecord.query.order_by(DeletedRecord.deleted_at.desc()).limit(200).all()
+    users = {u.id: u for u in User.query.all()}
+    return render_template('trash.html', deleted=deleted, users=users)
+
+
+@app.route('/api/trash')
+@login_required
+def api_trash():
+    if not current_user.can_view_trash():
+        return jsonify({'error': 'Permiso denegado'}), 403
+    record_type = request.args.get('type', '').strip()
+    query = DeletedRecord.query
+    if record_type in ('movement', 'sale'):
+        query = query.filter(DeletedRecord.record_type == record_type)
+    records = query.order_by(DeletedRecord.deleted_at.desc()).limit(200).all()
+    users = {u.id: u.get_full_name() for u in User.query.all()}
+    return jsonify([{
+        'id': r.id, 'type': r.record_type, 'record_id': r.record_id,
+        'data': json.loads(r.data_json) if r.data_json else {},
+        'deleted_by': users.get(r.deleted_by, '?'),
+        'deleted_at': to_ar(r.deleted_at).strftime('%d/%m/%Y %H:%M') if r.deleted_at else '',
+        'restored_at': to_ar(r.restored_at).strftime('%d/%m/%Y %H:%M') if r.restored_at else None,
+    } for r in records])
+
+
+@app.route('/api/trash/<int:id>/restore', methods=['POST'])
+@login_required
+def restore_trash(id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    rec = db.session.get(DeletedRecord, id)
+    if not rec:
+        return jsonify({'error': 'Registro no encontrado'}), 404
+    if rec.restored_at:
+        return jsonify({'error': 'Ya fue restaurado'}), 400
+    data = json.loads(rec.data_json) if rec.data_json else {}
+    if rec.record_type == 'movement':
+        log = MovementLog(
+            action=data.get('action', 'unknown'),
+            description=data.get('description', ''),
+            user_id=data.get('user_id', current_user.id),
+            created_at=datetime.fromisoformat(data['created_at']) if data.get('created_at') else datetime.now(timezone.utc),
+        )
+        db.session.add(log)
+    elif rec.record_type == 'sale':
+        sale = Sale(
+            total=data.get('total', 0),
+            payment_method=data.get('payment_method', 'cash'),
+            amount_paid=data.get('amount_paid', 0),
+            change_amount=data.get('change_amount', 0),
+            customer_email=data.get('customer_email', ''),
+            user_id=data.get('user_id', current_user.id),
+            created_at=datetime.fromisoformat(data['created_at']) if data.get('created_at') else datetime.now(timezone.utc),
+        )
+        db.session.add(sale)
+        db.session.flush()
+        for item_data in data.get('items', []):
+            db.session.add(SaleItem(
+                sale_id=sale.id,
+                product_id=item_data['product_id'],
+                quantity=item_data['quantity'],
+                unit_price=item_data['unit_price'],
+                subtotal=item_data['subtotal'],
+            ))
+        movement = MovementLog(
+            user_id=current_user.id,
+            action='sale',
+            description=f'Venta #%d (restaurada)' % sale.id,
+            created_at=datetime.now(timezone.utc),
+        )
+        movement.description = f'Venta #{sale.id} (restaurada)'
+        db.session.add(movement)
+    rec.restored_at = datetime.now(timezone.utc)
+    db.session.commit()
+    return jsonify({'ok': True, 'type': rec.record_type})
 
 
 @app.route('/api/history')
@@ -1979,7 +2109,8 @@ def save_permissions():
                  'can_view_categories', 'can_add_categories', 'can_edit_categories', 'can_delete_categories',
                  'can_view_charts',
                  'can_take_orders', 'can_pay_membership',
-                 'can_view_barcodes']
+                 'can_view_barcodes',
+                 'can_view_trash']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:

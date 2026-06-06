@@ -44,6 +44,9 @@
             <a href="{{ url_for('profits') }}" class="sidebar-link"><span class="si"><i class="bi bi-graph-up-arrow"></i></span><span class="st">Ganancias</span></a>
             <a href="{{ url_for('top_products') }}" class="sidebar-link"><span class="si"><i class="bi bi-trophy"></i></span><span class="st">Ranking</span></a>
             <a href="{{ url_for('history') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Historial</span></a>
+            {% if current_user.can_view_trash() %}
+            <a href="{{ url_for('trash') }}" class="sidebar-link"><span class="si"><i class="bi bi-trash3"></i></span><span class="st">Papelera</span></a>
+            {% endif %}
             {% endif %}
             {% if current_user.role == 'admin' or current_user.can_manage_users() %}
             <hr class="sidebar-divider">
@@ -93,6 +96,9 @@
                 <a href="{{ url_for('history') }}">Historial</a>
                 <a href="{{ url_for('profits') }}">Ganancias</a>
                 <a href="{{ url_for('top_products') }}">Ranking</a>
+                {% endif %}
+                {% if current_user.can_view_trash() %}
+                <a href="{{ url_for('trash') }}">Papelera</a>
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
