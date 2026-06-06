@@ -246,7 +246,7 @@
                         } %}
                         {% for group_name, perms in perm_groups %}
                         <tr class="table-light fw-semibold">
-                            <td colspan="4" class="py-2 text-primary">{{ group_name }}</td>
+                            <td colspan="4" class="py-2 text-primary">{{ group_name|safe }}</td>
                         </tr>
                         {% for pk, plabel in perms %}
                         <tr>
