@@ -14,6 +14,14 @@
                 <div class="mb-3">
                     <input type="text" id="searchInput" class="form-control" placeholder="Buscar producto por código o nombre..." autofocus>
                 </div>
+                <div class="mb-3">
+                    <label for="manualCode" class="form-label small">O escaneá código</label>
+                    <div class="input-group">
+                        <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
+                        <button class="btn btn-outline-secondary" type="button" onclick="startScanner()" title="Escanear código"><i class="bi bi-camera"></i></button>
+                    </div>
+                    <div id="scannerContainer" style="display:none;" class="mt-2"></div>
+                </div>
                 <div id="searchResults" class="overflow-auto mb-3" style="max-height:250px;"></div>
 
                 <div class="table-responsive">
@@ -300,6 +308,45 @@ document.getElementById('searchInput').addEventListener('keydown', function(e) {
 
 document.getElementById('searchInput').addEventListener('input', function() {
     renderSearchResults(this.value.trim());
+});
+
+function addByCode() {
+    const code = document.getElementById('manualCode').value.trim();
+    if (!code) { alert('Escribí o escaneá un código de producto'); return; }
+    fetch('/api/product/' + encodeURIComponent(code))
+        .then(r => r.json())
+        .then(product => {
+            addToCart(product.id, product.code, product.name, product.price, product.unit_type || 'unit');
+            document.getElementById('manualCode').value = '';
+        })
+        .catch(() => alert('Producto no encontrado'));
+}
+
+let html5Scanner = null;
+function startScanner() {
+    const container = document.getElementById('scannerContainer');
+    container.style.display = 'block';
+    container.innerHTML = '<div id="scannerView" style="width:100%;max-width:320px;margin:0 auto;"></div>';
+    if (html5Scanner) { html5Scanner.clear(); }
+    html5Scanner = new Html5Qrcode("scannerView");
+    html5Scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        function(decodedText) {
+            document.getElementById('manualCode').value = decodedText;
+            html5Scanner.stop();
+            container.style.display = 'none';
+            playSuccessSound();
+            addByCode();
+        },
+        function() {}
+    ).catch(function(err) {
+        container.innerHTML = '<p class="text-danger small">Error al acceder a la cámara: ' + err + '</p>';
+    });
+}
+
+document.getElementById('manualCode').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addByCode(); }
 });
 </script>
 {% endblock %}

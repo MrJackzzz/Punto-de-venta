@@ -2254,6 +2254,16 @@ def planes_send_email():
         return jsonify({'error': 'Error al enviar email: ' + str(e)[:100]}), 500
 
 
+@app.route('/barcodes')
+@login_required
+def barcodes():
+    if current_user.role != 'admin':
+        flash('Solo admin puede acceder.', 'danger')
+        return redirect(url_for('dashboard'))
+    products_list = Product.query.order_by(Product.name).all()
+    return render_template('barcodes.html', products=products_list)
+
+
 def init_app():
     with app.app_context():
         db.create_all()

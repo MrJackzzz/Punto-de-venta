@@ -86,7 +86,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="code" class="form-label">Código (Código de barras / SKU)</label>
-                        <input type="text" id="code" name="code" class="form-control" required>
+                        <div class="input-group">
+                            <input type="text" id="code" name="code" class="form-control" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="startScanner()" title="Escanear código"><i class="bi bi-camera"></i></button>
+                        </div>
+                        <div id="scannerContainer" style="display:none;" class="mt-2"></div>
                     </div>
                     <div class="mb-3">
                         <label for="name" class="form-label">Nombre del Producto</label>
@@ -227,6 +231,28 @@ function filterProducts() {
     } else {
         restoreOriginalOrder();
     }
+}
+
+let html5Scanner = null;
+function startScanner() {
+    const container = document.getElementById('scannerContainer');
+    container.style.display = 'block';
+    container.innerHTML = '<div id="scannerView" style="width:100%;max-width:320px;margin:0 auto;"></div>';
+    if (html5Scanner) { html5Scanner.clear(); }
+    html5Scanner = new Html5Qrcode("scannerView");
+    html5Scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        function(decodedText) {
+            document.getElementById('code').value = decodedText;
+            html5Scanner.stop();
+            container.style.display = 'none';
+            if (typeof playBeep === 'function') playBeep();
+        },
+        function() {}
+    ).catch(function(err) {
+        container.innerHTML = '<p class="text-danger small">Error al acceder a la cámara: ' + err + '</p>';
+    });
 }
 
 document.addEventListener('DOMContentLoaded', saveOriginalOrder);

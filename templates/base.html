@@ -51,6 +51,7 @@
             <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si"><i class="bi bi-gear"></i></span><span class="st">Config</span></a>
             <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Planes</span></a>
             <a href="{{ url_for('membership') }}" class="sidebar-link"><span class="si"><i class="bi bi-credit-card"></i></span><span class="st">Membresía</span></a>
+            <a href="{{ url_for('barcodes') }}" class="sidebar-link"><span class="si"><i class="bi bi-upc-scan"></i></span><span class="st">Códigos</span></a>
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
             {% endif %}
             {% if current_user.can_manage_users() %}
@@ -92,6 +93,7 @@
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
+                <a href="{{ url_for('barcodes') }}">Códigos</a>
                 <a href="{{ url_for('planes') }}">Planes</a>
                 <a href="{{ url_for('membership') }}">Membresía</a>
                 <a href="{{ url_for('settings') }}">Config</a>

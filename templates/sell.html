@@ -15,7 +15,7 @@
 
                 <div class="mt-3 pt-3 border-top">
                     <div class="row">
-                        <div class="mb-3 col-6">
+                        <div class="mb-3 col-12">
                             <label for="manualCode">O ingresá código manualmente</label>
                             <div class="input-group">
                                 <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
@@ -23,13 +23,8 @@
                             </div>
                             <div id="scannerContainer" style="display:none;" class="mt-2"></div>
                         </div>
-                        <div class="mb-3 col-6">
-                            <label for="manualQty">Cantidad</label>
-                            <input type="number" id="manualQty" class="form-control" value="1" min="0.1" step="any">
-                        </div>
                     </div>
                     <button class="btn btn-primary" onclick="addByCode()">Agregar al Carrito</button>
-                    <p class="text-muted small mt-1"><i class="bi bi-lightbulb"></i> Usá la Cantidad de arriba antes de agregar desde la búsqueda o el código manual</p>
                 </div>
             </div>
         </div>
@@ -128,7 +123,7 @@ function calculateChange() {
 }
 
 function getQty() {
-    return parseFloat(document.getElementById('manualQty').value) || 1;
+    return 1;
 }
 
 function addToCart(product) {
@@ -175,7 +170,6 @@ function addByCode() {
             }
             renderCart();
             document.getElementById('manualCode').value = '';
-            document.getElementById('manualQty').value = '1';
         })
         .catch(() => alert('Producto no encontrado'));
 }

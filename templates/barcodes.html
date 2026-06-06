@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Códigos de Barras / QR{% endblock %}
+{% block content %}
+<h2 class="text-primary mb-3">Generar Códigos de Barras / QR</h2>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select id="barcodeType" class="form-control">
+                    <option value="code128">CODE128 (alfanumérico)</option>
+                    <option value="ean13">EAN-13 (13 dígitos)</option>
+                    <option value="qr">QR</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Ancho (cm)</label>
+                <input type="number" id="widthCm" class="form-control" value="4" step="0.5" min="1" max="10">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Alto (cm)</label>
+                <input type="number" id="heightCm" class="form-control" value="2" step="0.5" min="1" max="10">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" onclick="generateCodes()">Generar</button>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-success w-100" onclick="printCodes()">Imprimir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header">Seleccionar Productos</div>
+            <div class="card-body p-2" style="max-height:500px;overflow-y:auto;">
+                <div class="mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleAll(this)">
+                        <label class="form-check-label fw-bold" for="selectAll">Seleccionar todos</label>
+                    </div>
+                </div>
+                {% for p in products %}
+                <div class="form-check">
+                    <input class="form-check-input product-check" type="checkbox" value='{"code":"{{ p.code }}","name":"{{ p.name }}","price":"{{ p.price }}"}'>
+                    <label class="form-check-label small">{{ p.name }} <span class="text-muted">({{ p.code }})</span></label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">Vista previa</div>
+            <div class="card-body" id="codesPreview">
+                <p class="text-muted text-center p-4">Seleccioná productos y hacé clic en Generar</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+function toggleAll(el) {
+    document.querySelectorAll('.product-check').forEach(cb => cb.checked = el.checked);
+}
+
+function generateCodes() {
+    const type = document.getElementById('barcodeType').value;
+    const wCm = parseFloat(document.getElementById('widthCm').value) || 4;
+    const hCm = parseFloat(document.getElementById('heightCm').value) || 2;
+    const checked = document.querySelectorAll('.product-check:checked');
+    const preview = document.getElementById('codesPreview');
+
+    if (checked.length === 0) { alert('Seleccioná al menos un producto'); return; }
+
+    const pxW = Math.round(wCm * 37.8);
+    const pxH = Math.round(hCm * 37.8);
+
+    preview.innerHTML = '<div class="d-flex flex-wrap gap-3 justify-content-center">';
+
+    checked.forEach(cb => {
+        const data = JSON.parse(cb.value);
+        const container = document.createElement('div');
+        container.className = 'text-center p-2 border rounded';
+        container.style.width = pxW + 20 + 'px';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'small text-muted mb-1 text-truncate';
+        nameEl.textContent = data.name;
+        container.appendChild(nameEl);
+
+        if (type === 'qr') {
+            const qrDiv = document.createElement('div');
+            qrDiv.id = 'qr_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
+            container.appendChild(qrDiv);
+            preview.appendChild(container);
+            setTimeout(function() {
+                new QRCode(qrDiv, {
+                    text: data.code,
+                    width: Math.min(pxW, pxH),
+                    height: Math.min(pxW, pxH)
+                });
+            }, 10);
+        } else {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.id = 'barcode_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
+            container.appendChild(svg);
+            preview.appendChild(container);
+            setTimeout(function() {
+                JsBarcode(svg, data.code, {
+                    format: type,
+                    width: 2,
+                    height: Math.min(pxH, 100),
+                    displayValue: true,
+                    fontSize: 14,
+                    margin: 5
+                });
+            }, 10);
+        }
+
+        const codeEl = document.createElement('div');
+        codeEl.className = 'small mt-1';
+        codeEl.textContent = data.code;
+        container.appendChild(codeEl);
+    });
+
+    preview.innerHTML += '</div>';
+}
+
+function printCodes() {
+    const checked = document.querySelectorAll('.product-check:checked');
+    if (checked.length === 0) { alert('Seleccioná al menos un producto'); return; }
+
+    const type = document.getElementById('barcodeType').value;
+    const wCm = parseFloat(document.getElementById('widthCm').value) || 4;
+    const hCm = parseFloat(document.getElementById('heightCm').value) || 2;
+
+    let printContent = '<html><head><style>';
+    printContent += 'body { margin: 0; padding: 10px; }';
+    printContent += '.item { display: inline-block; text-align: center; margin: 5px; page-break-inside: avoid; }';
+    printContent += '.name { font-size: 10px; color: #666; margin-bottom: 2px; }';
+    printContent += '.code { font-size: 9px; margin-top: 2px; }';
+    printContent += '@page { margin: 0.5cm; }';
+    printContent += '</style></head><body>';
+
+    checked.forEach(function(cb) {
+        const data = JSON.parse(cb.value);
+        printContent += '<div class="item" style="width:' + wCm + 'cm;height:' + hCm + 'cm;">';
+        printContent += '<div class="name">' + data.name + '</div>';
+        if (type === 'qr') {
+            printContent += '<div><img src="https://api.qrserver.com/v1/create-qr-code/?size=' + Math.round(wCm * 100) + 'x' + Math.round(hCm * 80) + '&data=' + encodeURIComponent(data.code) + '"></div>';
+        } else {
+            printContent += '<div><img src="https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(data.code) + '&code=' + type + '&dpi=96&imagetype=png"></div>';
+        }
+        printContent += '<div class="code">' + data.code + '</div>';
+        printContent += '</div>';
+    });
+
+    printContent += '</body></html>';
+
+    const win = window.open('', '_blank');
+    win.document.write(printContent);
+    win.document.close();
+    setTimeout(function() { win.print(); }, 500);
+}
+</script>
+{% endblock %}
