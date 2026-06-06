@@ -1332,7 +1332,7 @@ def user_add():
         flash('El usuario ya existe.', 'danger')
         return redirect(url_for('users'))
 
-    if role != 'admin':
+    if current_user.role != 'admin':
         max_users = get_config('max_users', '0')
         if max_users and max_users != '0':
             non_admin_count = User.query.filter(User.role != 'admin').count()
