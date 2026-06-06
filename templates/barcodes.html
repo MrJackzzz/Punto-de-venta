@@ -141,10 +141,9 @@ function generateCodes() {
 }
 
 function printCodes() {
-    const checked = document.querySelectorAll('.product-check:checked');
-    if (checked.length === 0) { alert('Seleccioná al menos un producto'); return; }
-
-    const type = document.getElementById('barcodeType').value;
+    const preview = document.getElementById('codesPreview');
+    const items = preview.querySelectorAll('.border.rounded');
+    if (items.length === 0) { alert('Primero generá los códigos con "Generar".'); return; }
     const wCm = parseFloat(document.getElementById('widthCm').value) || 4;
     const hCm = parseFloat(document.getElementById('heightCm').value) || 2;
 
@@ -156,16 +155,21 @@ function printCodes() {
     printContent += '@page { margin: 0.5cm; }';
     printContent += '</style></head><body>';
 
-    checked.forEach(function(cb) {
-        const data = JSON.parse(cb.value);
-        printContent += '<div class="item" style="width:' + wCm + 'cm;height:' + hCm + 'cm;">';
-        printContent += '<div class="name">' + data.name + '</div>';
-        if (type === 'qr') {
-            printContent += '<div><img src="https://api.qrserver.com/v1/create-qr-code/?size=' + Math.round(wCm * 100) + 'x' + Math.round(hCm * 80) + '&data=' + encodeURIComponent(data.code) + '"></div>';
-        } else {
-            printContent += '<div><img src="https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(data.code) + '&code=' + type + '&dpi=96&imagetype=png"></div>';
+    items.forEach(function(item) {
+        const svg = item.querySelector('svg');
+        const img = item.querySelector('img');
+        const name = item.querySelector('.text-truncate')?.textContent || '';
+        const code = item.querySelector('.mt-1')?.textContent || '';
+        printContent += '<div class="item" style="width:' + wCm + 'cm;">';
+        printContent += '<div class="name">' + name + '</div>';
+        if (svg) {
+            var serializer = new XMLSerializer();
+            var svgStr = serializer.serializeToString(svg);
+            printContent += '<img src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr) + '" style="width:100%;max-height:' + hCm + 'cm;">';
+        } else if (img) {
+            printContent += img.outerHTML;
         }
-        printContent += '<div class="code">' + data.code + '</div>';
+        printContent += '<div class="code">' + code + '</div>';
         printContent += '</div>';
     });
 
