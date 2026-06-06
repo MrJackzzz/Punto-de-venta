@@ -19,7 +19,9 @@ function closeModal(id) {
 }
 
 function toggleMenu() {
-    document.getElementById('sidebar').classList.toggle('collapsed');
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('collapsed');
+    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
 }
 
 function toggleMobileMenu() {
