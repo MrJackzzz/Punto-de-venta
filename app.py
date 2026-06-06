@@ -1624,7 +1624,8 @@ def orders():
     products = Product.query.order_by(Product.name).all()
     categories = Category.query.order_by(Category.name).all()
     pending = PendingOrder.query.filter_by(status='pending').order_by(PendingOrder.created_at.desc()).all()
-    return render_template('orders.html', products=products, categories=categories, pending=pending)
+    products_json = [{'id': p.id, 'code': p.code, 'name': p.name, 'price': p.price} for p in products]
+    return render_template('orders.html', products=products_json, categories=categories, pending=pending)
 
 
 @app.route('/api/orders')

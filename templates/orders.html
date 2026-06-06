@@ -202,7 +202,11 @@ function saveOrder() {
         body: JSON.stringify({
             items: cart.map(item => ({
                 product_id: item.product_id,
-                quantity: item.quantity
+                code: item.code,
+                name: item.name,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                subtotal: item.subtotal
             })),
             customer_name: customerName,
             notes: notes,
