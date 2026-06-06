@@ -32,7 +32,7 @@
             <a href="{{ url_for('categories') }}" class="sidebar-link"><span class="si"><i class="bi bi-folder"></i></span><span class="st">Categorías</span></a>
             {% endif %}
             {% if current_user.can_view_suppliers() %}
-            <a href="{{ url_for('suppliers') }}" class="sidebar-link"><span class="si"><i class="bi bi-handshake"></i></span><span class="st">Proveedores</span></a>
+            <a href="{{ url_for('suppliers') }}" class="sidebar-link"><span class="si"><i class="bi bi-building"></i></span><span class="st">Proveedores</span></a>
             {% endif %}
             <a href="{{ url_for('sell') }}" class="sidebar-link"><span class="si"><i class="bi bi-cart"></i></span><span class="st">Vender</span></a>
             {% if current_user.can_take_orders() %}
