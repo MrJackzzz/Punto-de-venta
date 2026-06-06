@@ -1482,6 +1482,11 @@ def api_history():
 
     logs = query.order_by(MovementLog.created_at.desc()).limit(500).all()
 
+    hide_admin = get_config('hide_admin_history', 'false')
+    if hide_admin == 'true' and current_user.role != 'admin':
+        admin_ids = [u.id for u in User.query.filter_by(role='admin').all()]
+        logs = [log for log in logs if log.user_id not in admin_ids]
+
     sale_ids = []
     for log in logs:
         if log.action == 'sale':

@@ -219,6 +219,24 @@
     </div>
 </div>
 
+<!-- Historial Admin -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary">Historial</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input type="hidden" name="hide_admin_history" value="false">
+                    <input type="checkbox" id="hide_admin_history" name="hide_admin_history" value="true" class="form-check-input" {{ 'checked' if configs.get('hide_admin_history') == 'true' else '' }} onchange="this.previousElementSibling.value = this.checked ? 'true' : 'false'">
+                    <label for="hide_admin_history" class="form-check-label">Ocultar actividad del Admin en el Historial (para supervisores/usuarios)</label>
+                </div>
+                <small class="text-muted d-block mt-1">Si está activado, los supervisores y usuarios no verán los inicios de sesión ni acciones del admin en el historial.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+</div>
+
 <!-- Permisos -->
 <div class="card shadow-sm mb-4">
     <div class="card-header card-header-primary">Permisos por Rol</div>
