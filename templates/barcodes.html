@@ -83,7 +83,8 @@ function generateCodes() {
 
     preview.innerHTML = '';
     const wrapper = document.createElement('div');
-    wrapper.className = 'd-flex flex-wrap gap-3 justify-content-center';
+    wrapper.className = 'd-flex flex-wrap justify-content-center';
+    wrapper.style.gap = '20px';
     preview.appendChild(wrapper);
 
     checked.forEach(function(cb) {
@@ -93,6 +94,7 @@ function generateCodes() {
             const container = document.createElement('div');
             container.className = 'text-center p-2 border rounded';
             container.style.width = pxW + 20 + 'px';
+            container.style.margin = '4px';
 
             const nameEl = document.createElement('div');
             nameEl.className = 'small text-muted mb-1 text-truncate';
@@ -153,7 +155,7 @@ function printCodes() {
 
     let printContent = '<html><head><style>';
     printContent += 'body { margin: 0; padding: 10px; }';
-    printContent += '.item { display: inline-block; text-align: center; margin: 5px; page-break-inside: avoid; }';
+    printContent += '.item { display: inline-block; text-align: center; margin: 8px; page-break-inside: avoid; }';
     printContent += '.name { font-size: 10px; color: #666; margin-bottom: 2px; }';
     printContent += '.code { font-size: 9px; margin-top: 2px; }';
     printContent += '@page { margin: 0.5cm; }';
