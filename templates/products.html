@@ -173,6 +173,18 @@
 </div>
 
 <script>
+let originalRows = [];
+
+function saveOriginalOrder() {
+    const tbody = document.getElementById('productsBody');
+    originalRows = Array.from(tbody.querySelectorAll('tr'));
+}
+
+function restoreOriginalOrder() {
+    const tbody = document.getElementById('productsBody');
+    originalRows.forEach(r => tbody.appendChild(r));
+}
+
 function editProduct(id, code, name, cost, markup, currency, stock, unitType, supplierId, description, categoryId) {
     document.getElementById('productModalTitle').textContent = 'Editar Producto';
     document.getElementById('productForm').action = '/products/edit/' + id;
@@ -212,7 +224,11 @@ function filterProducts() {
             return aVal - bVal;
         });
         visible.forEach(r => tbody.appendChild(r));
+    } else {
+        restoreOriginalOrder();
     }
 }
+
+document.addEventListener('DOMContentLoaded', saveOriginalOrder);
 </script>
 {% endblock %}

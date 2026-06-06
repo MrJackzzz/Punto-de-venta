@@ -17,7 +17,11 @@
                     <div class="row">
                         <div class="mb-3 col-6">
                             <label for="manualCode">O ingresá código manualmente</label>
-                            <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
+                            <div class="input-group">
+                                <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
+                                <button class="btn btn-outline-secondary" type="button" onclick="startScanner()" title="Escanear código"><i class="bi bi-camera"></i></button>
+                            </div>
+                            <div id="scannerContainer" style="display:none;" class="mt-2"></div>
                         </div>
                         <div class="mb-3 col-6">
                             <label for="manualQty">Cantidad</label>
@@ -533,5 +537,28 @@ function playSuccessSound() {
 }
 
 toggleCashFields();
+
+let html5Scanner = null;
+function startScanner() {
+    const container = document.getElementById('scannerContainer');
+    container.style.display = 'block';
+    container.innerHTML = '<div id="scannerView" style="width:100%;max-width:320px;margin:0 auto;"></div>';
+    if (html5Scanner) { html5Scanner.clear(); }
+    html5Scanner = new Html5Qrcode("scannerView");
+    html5Scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        function(decodedText) {
+            document.getElementById('manualCode').value = decodedText;
+            html5Scanner.stop();
+            container.style.display = 'none';
+            playSuccessSound();
+            addByCode();
+        },
+        function() {}
+    ).catch(function(err) {
+        container.innerHTML = '<p class="text-danger small">Error al acceder a la cámara: ' + err + '</p>';
+    });
+}
 </script>
 {% endblock %}
