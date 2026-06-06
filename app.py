@@ -22,6 +22,12 @@ def nl2br(text):
     return (text or '').replace('\n', '<br>')
 app.jinja_env.filters['nl2br'] = nl2br
 
+def fmt_stock(value, unit_type='unit'):
+    if unit_type == 'unit':
+        return str(int(value))
+    return str(value)
+app.jinja_env.filters['fmt_stock'] = fmt_stock
+
 
 def fmt(amount):
     """Formato argentino: 1234567.89 -> $1.234.567,89"""

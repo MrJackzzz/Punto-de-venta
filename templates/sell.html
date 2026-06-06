@@ -189,6 +189,15 @@ function removeFromCart(index) {
     renderCart();
 }
 
+function setCartQty(index, val) {
+    const item = cart[index];
+    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.1 : 1;
+    const qty = parseFloat(val) || step;
+    item.quantity = Math.max(step, qty);
+    item.subtotal = item.quantity * item.unit_price;
+    renderCart();
+}
+
 let lastSaleData = null;
 
 function showTicket(data) {
@@ -334,7 +343,10 @@ function renderCart() {
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, -1)">−</button>
-                <span class="fw-semibold text-center" style="min-width:36px;">${(item.unit_type && item.unit_type !== 'unit' ? Number(item.quantity).toFixed(1) : item.quantity)}${item.unit_type && item.unit_type !== 'unit' ? ' ' + item.unit_type : ''}</span>
+                <div class="d-flex align-items-center">
+                    <input type="number" class="form-control form-control-sm text-center" style="width:65px;" value="${item.quantity}" min="${(item.unit_type && item.unit_type !== 'unit') ? '0.1' : '1'}" step="${(item.unit_type && item.unit_type !== 'unit') ? '0.1' : '1'}" onchange="setCartQty(${i}, this.value)" onfocus="this.select()">
+                    ${item.unit_type && item.unit_type !== 'unit' ? '<span class="ms-1 small text-muted">' + item.unit_type + '</span>' : ''}
+                </div>
                 <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, 1)">+</button>
                 <strong>${fmt(item.subtotal)}</strong>
                 <button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">&times;</button>

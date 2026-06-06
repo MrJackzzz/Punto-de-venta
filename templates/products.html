@@ -44,9 +44,9 @@
                         <td>{{ p.currency }}</td>
                         <td>
                             {% if p.stock < low_stock_threshold %}
-                            <span class="text-danger fw-semibold">{{ p.stock }}</span>
+                            <span class="text-danger fw-semibold">{{ p.stock|fmt_stock(p.unit_type) }}</span>
                             {% else %}
-                            {{ p.stock }}
+                            {{ p.stock|fmt_stock(p.unit_type) }}
                             {% endif %}
                         </td>
                         <td>{{ {'unit': 'Unidad', 'kg': 'KG', 'g': 'Gr', 'liter': 'Litro', 'ml': 'ML', 'm': 'Metro', 'cm': 'CM', 'dozen': 'Docena', 'pack': 'Pack'}.get(p.unit_type, p.unit_type) }}</td>
