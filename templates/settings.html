@@ -123,6 +123,22 @@
     <button type="submit" class="btn btn-primary w-100 mb-4">Guardar Configuración</button>
 </form>
 
+<!-- Límite de Usuarios -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary">Límite de Usuarios</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="max_users" class="form-label">Máximo de usuarios permitidos (sin contar Admin)</label>
+                <input type="number" id="max_users" name="max_users" class="form-control"
+                       value="{{ configs.get('max_users', '0') }}" min="0">
+                <small class="text-muted">Poner 0 para sin límite. El sistema no permitirá crear más usuarios que este número (útil para planes).</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+</div>
+
 <!-- Mercado Pago -->
 <div class="card shadow-sm mb-4">
     <div class="card-header card-header-primary">Mercado Pago</div>
@@ -238,11 +254,14 @@
                             ('<i class="bi bi-credit-card"></i> Membresía', [
                                 ('can_pay_membership','Pagar membresía con MP'),
                             ]),
+                            ('<i class="bi bi-upc-scan"></i> Códigos', [
+                                ('can_view_barcodes','Ver / generar códigos de barras y QR'),
+                            ]),
                         ] %}
                         {% set default_perms = {
-                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true},
-                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true},
-                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false}
+                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':true},
+                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':false},
+                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false,'can_view_barcodes':false}
                         } %}
                         {% for group_name, perms in perm_groups %}
                         <tr class="table-light fw-semibold">

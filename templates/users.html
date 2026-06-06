@@ -3,7 +3,13 @@
 {% block content %}
 <div class="users-page"><div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="text-primary">Gesti&oacute;n de Usuarios</h2>
-    <button class="btn btn-primary" onclick="openModal('userModal')">+ Nuevo Usuario</button>
+    <div class="d-flex align-items-center gap-2">
+        {% set max_users = configs.get('max_users', '0') %}
+        {% if max_users and max_users != '0' %}
+        <span class="small text-muted me-2">Límite: {{ max_users }} usuarios (sin contar admin)</span>
+        {% endif %}
+        <button class="btn btn-primary" onclick="openModal('userModal')">+ Nuevo Usuario</button>
+    </div>
 </div>
 
 <div class="card shadow-sm">

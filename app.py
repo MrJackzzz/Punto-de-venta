@@ -1312,7 +1312,8 @@ def users():
         flash('No tienes permiso.', 'danger')
         return redirect(url_for('dashboard'))
     users_list = User.query.order_by(User.username).all()
-    return render_template('users.html', users=users_list)
+    configs = {c.key: c.value for c in Config.query.all()}
+    return render_template('users.html', users=users_list, configs=configs)
 
 
 @app.route('/users/add', methods=['POST'])
@@ -1330,6 +1331,14 @@ def user_add():
     if User.query.filter_by(username=username).first():
         flash('El usuario ya existe.', 'danger')
         return redirect(url_for('users'))
+
+    if role != 'admin':
+        max_users = get_config('max_users', '0')
+        if max_users and max_users != '0':
+            non_admin_count = User.query.filter(User.role != 'admin').count()
+            if non_admin_count >= int(max_users):
+                flash(f'Límite alcanzado: máximo {max_users} usuarios (sin contar admin).', 'danger')
+                return redirect(url_for('users'))
 
     user = User(username=username, role=role, active=True, first_name=first_name, last_name=last_name)
     user.set_password(password)
@@ -1859,7 +1868,8 @@ def save_permissions():
                  'can_manage_users',
                  'can_view_history', 'can_sell',
                  'can_view_categories', 'can_add_categories', 'can_edit_categories', 'can_delete_categories',
-                 'can_view_charts']
+                 'can_view_charts',
+                 'can_view_barcodes']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
@@ -2257,8 +2267,8 @@ def planes_send_email():
 @app.route('/barcodes')
 @login_required
 def barcodes():
-    if current_user.role != 'admin':
-        flash('Solo admin puede acceder.', 'danger')
+    if not current_user.can_view_barcodes():
+        flash('No tienes permiso para ver esta página.', 'danger')
         return redirect(url_for('dashboard'))
     products_list = Product.query.order_by(Product.name).all()
     return render_template('barcodes.html', products=products_list)

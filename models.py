@@ -103,6 +103,9 @@ class User(UserMixin, db.Model):
     def can_take_orders(self):
         return self._role_perm('can_take_orders', self.role in ('admin', 'supervisor'))
 
+    def can_view_barcodes(self):
+        return self._role_perm('can_view_barcodes', self.role == 'admin')
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
