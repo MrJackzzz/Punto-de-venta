@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Administrar Sistemas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-primary"><i class="bi bi-grid-3x3-gap-fill"></i> Sistemas</h2>
+    <button class="btn btn-primary" onclick="openModal('systemModal')">+ Nuevo Sistema</button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="thead-primary">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Orden</th>
+                    <th>Activo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in systems %}
+                <tr>
+                    <td><strong>{{ s.name }}</strong><br><small class="text-muted">{{ s.tagline }}</small></td>
+                    <td><span class="badge bg-info text-dark">{{ s.category or '-' }}</span></td>
+                    <td>{{ s.price or '-' }}</td>
+                    <td>{{ s.sort_order }}</td>
+                    <td>{% if s.is_active %}<span class="badge bg-success">Sí</span>{% else %}<span class="badge bg-danger">No</span>{% endif %}</td>
+                    <td class="text-nowrap">
+                        <button class="btn btn-sm btn-secondary" onclick='editSystem({{ s.id|tojson }}, {{ s.name|tojson }}, {{ s.tagline|tojson }}, {{ s.description|tojson }}, {{ s.logo_url|tojson }}, {{ s.price|tojson }}, {{ s.category|tojson }}, {{ s.demo_url|tojson }}, {{ s.features|tojson }}, {{ s.sort_order }}, {{ 'true' if s.is_active else 'false' }})'><i class="bi bi-pencil"></i></button>
+                        <form method="POST" action="{{ url_for('admin_systems_delete', id=s.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ s.name }}?')">
+                            <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No hay sistemas creados</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="systemModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="systemModalTitle">Nuevo Sistema</h5>
+                <button type="button" class="btn-close" onclick="closeModal('systemModal')"></button>
+            </div>
+            <form id="systemForm" method="POST" action="{{ url_for('admin_systems_add') }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="name" id="s_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tagline</label>
+                            <input type="text" name="tagline" id="s_tagline" class="form-control" placeholder="Breve descripción corta">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Categoría</label>
+                            <input type="text" name="category" id="s_category" class="form-control" placeholder="Ej: Ventas, Acceso">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Precio</label>
+                            <input type="text" name="price" id="s_price" class="form-control" placeholder="$99/mes">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Orden</label>
+                            <input type="number" name="sort_order" id="s_sort_order" class="form-control" value="0">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <textarea name="description" id="s_description" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">URL del logo</label>
+                            <input type="text" name="logo_url" id="s_logo_url" class="form-control" placeholder="https://ejemplo.com/logo.png">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">URL de demo</label>
+                            <input type="text" name="demo_url" id="s_demo_url" class="form-control" placeholder="https://demo.ejemplo.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Características (una por línea)</label>
+                            <textarea name="features" id="s_features" class="form-control" rows="3" placeholder="Ventas con QR&#10;Control de stock&#10;Reportes mensuales"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input type="hidden" name="is_active" value="">
+                                <input type="checkbox" id="s_is_active" name="is_active" value="on" class="form-check-input" checked>
+                                <label for="s_is_active" class="form-check-label">Activo (visible en landing)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editSystem(id, name, tagline, description, logo_url, price, category, demo_url, features, sort_order, is_active) {
+    document.getElementById('systemModalTitle').textContent = 'Editar Sistema';
+    document.getElementById('systemForm').action = '/admin/systems/edit/' + id;
+    document.getElementById('s_name').value = name;
+    document.getElementById('s_tagline').value = tagline;
+    document.getElementById('s_description').value = description;
+    document.getElementById('s_logo_url').value = logo_url;
+    document.getElementById('s_price').value = price;
+    document.getElementById('s_category').value = category;
+    document.getElementById('s_demo_url').value = demo_url;
+    document.getElementById('s_features').value = features;
+    document.getElementById('s_sort_order').value = sort_order;
+    document.getElementById('s_is_active').checked = is_active;
+    openModal('systemModal');
+}
+</script>
+{% endblock %}

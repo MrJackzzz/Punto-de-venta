@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
-from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder
+from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System
 from datetime import datetime, timezone, timedelta
 AR_TZ = timezone(timedelta(hours=-3))
 
@@ -192,6 +192,14 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
+
+
+@app.route('/landing')
+def landing():
+    systems = System.query.filter_by(is_active=True).order_by(System.sort_order).all()
+    biz_name = get_config('business_name', 'SmartPost')
+    logo_url = get_config('logo_filename', '')
+    return render_template('landing.html', systems=systems, business_name=biz_name, logo_url=logo_url)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -2310,6 +2318,76 @@ def barcodes():
         return redirect(url_for('dashboard'))
     products_list = Product.query.order_by(Product.name).all()
     return render_template('barcodes.html', products=products_list)
+
+
+@app.route('/admin/systems')
+@login_required
+def admin_systems():
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    systems = System.query.order_by(System.sort_order).all()
+    return render_template('admin_systems.html', systems=systems)
+
+
+@app.route('/admin/systems/add', methods=['POST'])
+@login_required
+def admin_systems_add():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Permiso denegado'}), 403
+    system = System(
+        name=request.form.get('name', ''),
+        tagline=request.form.get('tagline', ''),
+        description=request.form.get('description', ''),
+        logo_url=request.form.get('logo_url', ''),
+        price=request.form.get('price', ''),
+        category=request.form.get('category', ''),
+        demo_url=request.form.get('demo_url', ''),
+        features=request.form.get('features', ''),
+        sort_order=int(request.form.get('sort_order', 0)),
+        is_active='is_active' in request.form
+    )
+    db.session.add(system)
+    db.session.commit()
+    flash('Sistema creado.', 'success')
+    return redirect(url_for('admin_systems'))
+
+
+@app.route('/admin/systems/edit/<int:id>', methods=['POST'])
+@login_required
+def admin_systems_edit(id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Permiso denegado'}), 403
+    system = db.session.get(System, id)
+    if not system:
+        flash('Sistema no encontrado.', 'danger')
+        return redirect(url_for('admin_systems'))
+    system.name = request.form.get('name', '')
+    system.tagline = request.form.get('tagline', '')
+    system.description = request.form.get('description', '')
+    system.logo_url = request.form.get('logo_url', '')
+    system.price = request.form.get('price', '')
+    system.category = request.form.get('category', '')
+    system.demo_url = request.form.get('demo_url', '')
+    system.features = request.form.get('features', '')
+    system.sort_order = int(request.form.get('sort_order', 0))
+    system.is_active = 'is_active' in request.form
+    db.session.commit()
+    flash('Sistema actualizado.', 'success')
+    return redirect(url_for('admin_systems'))
+
+
+@app.route('/admin/systems/delete/<int:id>', methods=['POST'])
+@login_required
+def admin_systems_delete(id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Permiso denegado'}), 403
+    system = db.session.get(System, id)
+    if system:
+        db.session.delete(system)
+        db.session.commit()
+        flash('Sistema eliminado.', 'success')
+    return redirect(url_for('admin_systems'))
 
 
 def init_app():

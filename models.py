@@ -205,3 +205,18 @@ class Config(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.Text, nullable=False)
+
+
+class System(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    tagline = db.Column(db.String(300), default='')
+    description = db.Column(db.Text, default='')
+    logo_url = db.Column(db.String(500), default='')
+    price = db.Column(db.String(100), default='')
+    category = db.Column(db.String(100), default='')
+    demo_url = db.Column(db.String(500), default='')
+    features = db.Column(db.Text, default='')
+    is_active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

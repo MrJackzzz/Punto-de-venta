@@ -54,6 +54,7 @@
             {% if current_user.can_view_barcodes() %}
             <a href="{{ url_for('barcodes') }}" class="sidebar-link"><span class="si"><i class="bi bi-upc-scan"></i></span><span class="st">Códigos</span></a>
             {% endif %}
+            <a href="{{ url_for('admin_systems') }}" class="sidebar-link"><span class="si"><i class="bi bi-grid-3x3-gap-fill"></i></span><span class="st">Sistemas</span></a>
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
             {% endif %}
             {% if current_user.can_manage_users() %}
@@ -66,6 +67,7 @@
             <span class="sidebar-user">{{ current_user.get_full_name() }}</span>
             <span class="sidebar-role">{{ current_user.role }}</span>
             <a href="{{ url_for('logout') }}" class="sidebar-logout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
+            <a href="{{ url_for('landing') }}" class="sidebar-logout" title="Ver landing" style="position:relative;right:auto;margin-left:auto;"><i class="bi bi-globe"></i></a>
         </div>
     </aside>
     <div class="main-area" id="mainArea">
@@ -95,6 +97,7 @@
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
+                <a href="{{ url_for('admin_systems') }}">Sistemas</a>
                 {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}
                 <a href="{{ url_for('planes') }}">Planes</a>
                 <a href="{{ url_for('membership') }}">Membresía</a>
