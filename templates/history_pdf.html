@@ -3,55 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <title>Historial - {{ biz_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
-        h1 { font-size: 18px; color: #3d5a80; margin-bottom: 4px; }
-        .subtitle { font-size: 12px; color: #666; margin-bottom: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        th { background: #3d5a80; color: #fff; padding: 6px 8px; text-align: left; font-size: 10px; text-transform: uppercase; }
-        td { padding: 5px 8px; border-bottom: 1px solid #ddd; font-size: 11px; }
-        tr:nth-child(even) td { background: #f5f8fa; }
-        .badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 600; }
-        .badge-admin { background: #ee6c4d; color: #fff; }
-        .badge-supervisor { background: #3d5a80; color: #fff; }
-        .badge-user { background: #98c1d9; color: #333; }
-        .footer { margin-top: 16px; font-size: 10px; color: #999; text-align: center; }
         @media print { body { padding: 0; } }
     </style>
 </head>
 <body>
-    <h1>{{ biz_name }}</h1>
-    <div class="subtitle">
-        Historial de Movimientos{% if date_from %} | Desde: {{ date_from }}{% endif %}{% if date_to %} | Hasta: {{ date_to }}{% endif %}
-        | Total: {{ logs|length }} movimientos
+    <div class="container">
+        <h1 class="fw-bold" style="font-size:18px;color:#3d5a80;">{{ biz_name }}</h1>
+        <p class="text-muted small mb-3">
+            Historial de Movimientos{% if date_from %} | Desde: {{ date_from }}{% endif %}{% if date_to %} | Hasta: {{ date_to }}{% endif %}
+            | Total: {{ logs|length }} movimientos
+        </p>
+        {% if logs %}
+        <table class="table table-bordered table-sm">
+            <thead class="table-primary">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Acción</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ to_ar(log.created_at).strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ log.user.get_full_name() }}</td>
+                    <td><span class="badge {% if log.user.role == 'admin' %}bg-danger{% elif log.user.role == 'supervisor' %}bg-primary{% else %}bg-info text-dark{% endif %}">{{ log.user.role|upper }}</span></td>
+                    <td>{{ action_map.get(log.action, log.action) }}</td>
+                    <td>{{ log.description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-muted py-5">Sin movimientos en este período.</p>
+        {% endif %}
+        <div class="text-center text-muted small mt-3">Generado el {{ now().strftime('%d/%m/%Y %H:%M') }}</div>
     </div>
-    {% if logs %}
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Acción</th>
-                <th>Descripción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-            <tr>
-                <td>{{ to_ar(log.created_at).strftime('%d/%m/%Y %H:%M') }}</td>
-                <td>{{ log.user.username }}</td>
-                <td><span class="badge badge-{{ log.user.role }}">{{ log.user.role|upper }}</span></td>
-                <td>{{ action_map.get(log.action, log.action) }}</td>
-                <td>{{ log.description }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="text-align:center;color:#999;padding:40px;">Sin movimientos en este período.</p>
-    {% endif %}
-    <div class="footer">Generado el {{ now().strftime('%d/%m/%Y %H:%M') }}</div>
 </body>
 </html>

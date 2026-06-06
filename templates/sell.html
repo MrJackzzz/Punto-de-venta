@@ -1,87 +1,95 @@
 {% extends "base.html" %}
 {% block title %}Vender{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1.5rem;">Punto de Venta</h2>
+<h2 class="text-primary mb-4">Punto de Venta</h2>
 
 <div class="grid grid-2">
-    <div class="card">
+    <div class="card shadow-sm">
         <div class="card-header">Buscar Producto</div>
-        <div class="search-box">
-            <input type="text" id="searchInput" class="form-control" placeholder="Escaneá o escribí código/nombre..." autofocus>
-        </div>
-        <div id="searchResults" style="max-height:300px;overflow-y:auto;"></div>
-
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="manualCode">O ingresá código manualmente</label>
-                    <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
-                </div>
-                <div class="form-group">
-                    <label for="manualQty">Cantidad</label>
-                    <input type="number" id="manualQty" class="form-control" value="1" min="1">
-                </div>
+        <div class="card-body">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="form-control" placeholder="Escaneá o escribí código/nombre..." autofocus>
             </div>
-            <button class="btn btn-primary" onclick="addByCode()" style="width:100%;">Agregar al Carrito</button>
-            <p style="font-size:0.8rem;color:var(--gray);margin-top:0.5rem;">💡 Usá la Cantidad de arriba antes de agregar desde la búsqueda o el código manual</p>
+            <div id="searchResults" class="overflow-auto" style="max-height:300px;"></div>
+
+            <div class="mt-3 pt-3 border-top">
+                <div class="row">
+                    <div class="mb-3 col-6">
+                        <label for="manualCode">O ingresá código manualmente</label>
+                        <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
+                    </div>
+                    <div class="mb-3 col-6">
+                        <label for="manualQty">Cantidad</label>
+                        <input type="number" id="manualQty" class="form-control" value="1" min="1">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="addByCode()">Agregar al Carrito</button>
+                <p class="text-muted small mt-1">💡 Usá la Cantidad de arriba antes de agregar desde la búsqueda o el código manual</p>
+            </div>
         </div>
     </div>
 
-    <div class="card">
+    <div class="card shadow-sm">
         <div class="card-header">Carrito</div>
-        <div id="cartItems" style="max-height:300px;overflow-y:auto;">
-            <p style="color:var(--gray);text-align:center;padding:2rem;">Carrito vacío</p>
-        </div>
-        <div class="cart-total" id="cartTotal">$0.00</div>
+        <div class="card-body">
+            <div id="cartItems" class="overflow-auto" style="max-height:300px;">
+                <p class="text-muted text-center p-4">Carrito vacío</p>
+            </div>
+            <div class="cart-total text-end fw-bold fs-4" id="cartTotal">$0.00</div>
 
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
-            <div class="form-group">
-                <label for="paymentMethod">Método de Pago</label>
-                <select id="paymentMethod" class="form-control" onchange="toggleCashFields()">
-                    <option value="cash">Efectivo</option>
-                    <option value="card">Tarjeta (POSNet)</option>
-                    <option value="transfer">Transferencia</option>
-                    <option value="mercadopago">Mercado Pago (QR)</option>
-                </select>
-            </div>
-            <div id="cashFields">
-                <div class="form-group">
-                    <label for="amountPaid">Monto recibido ($)</label>
-                    <input type="number" id="amountPaid" class="form-control" step="0.01" min="0" placeholder="0.00" oninput="calculateChange()">
+            <div class="border-top pt-3 mt-3">
+                <div class="mb-3">
+                    <label for="paymentMethod">Método de Pago</label>
+                    <select id="paymentMethod" class="form-control" onchange="toggleCashFields()">
+                        <option value="cash">Efectivo</option>
+                        <option value="card">Tarjeta (POSNet)</option>
+                        <option value="transfer">Transferencia</option>
+                        <option value="mercadopago">Mercado Pago (QR)</option>
+                    </select>
                 </div>
-                <div id="changeDisplay" class="change-display"></div>
+                <div id="cashFields">
+                    <div class="mb-3">
+                        <label for="amountPaid">Monto recibido ($)</label>
+                        <input type="number" id="amountPaid" class="form-control" step="0.01" min="0" placeholder="0.00" oninput="calculateChange()">
+                    </div>
+                    <div id="changeDisplay" class="change-display"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="customerEmail">Enviar ticket por email (opcional)</label>
+                    <input type="email" id="customerEmail" class="form-control" placeholder="cliente@email.com">
+                </div>
+                <button class="btn btn-success w-100 py-3 fs-5" onclick="checkout()" id="checkoutBtn">
+                    Cobrar
+                </button>
             </div>
-            <div class="form-group">
-                <label for="customerEmail">Enviar ticket por email (opcional)</label>
-                <input type="email" id="customerEmail" class="form-control" placeholder="cliente@email.com">
-            </div>
-            <button class="btn btn-success" onclick="checkout()" style="width:100%;padding:0.8rem;font-size:1.1rem;" id="checkoutBtn">
-                Cobrar
-            </button>
         </div>
     </div>
 </div>
 
-<div id="ticketModal" class="modal">
-    <div class="modal-content" style="max-width:400px;">
-        <div class="modal-header">
-            <span>✅ Venta Exitosa</span>
-            <button class="modal-close" onclick="closeTicketModal()">&times;</button>
-        </div>
-        <div id="ticketContent" data-business-name="{{ business_name }}" style="font-family:'Courier New',monospace;font-size:13px;background:#f9f9f9;padding:1rem;border-radius:8px;margin-bottom:1rem;"></div>
-        <div id="mpConfirmArea" style="display:none;margin-bottom:0.5rem;"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
-            <button class="btn btn-primary" onclick="printTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
-            <button class="btn btn-success" onclick="shareWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
-            <button class="btn btn-secondary" onclick="toggleSellEmail()" style="flex:1;min-width:120px;">✉️ Email</button>
-            <button class="btn btn-secondary" onclick="closeTicketModal()" style="flex:1;min-width:80px;">Cerrar</button>
-        </div>
-        <div id="sellEmailArea" style="display:none;margin-top:0.5rem;">
-            <div style="display:flex;gap:0.5rem;">
-                <input type="email" id="sellEmailInput" class="form-control" placeholder="cliente@email.com">
-                <button class="btn btn-sm btn-primary" onclick="sendSellEmail()">Enviar</button>
+<div id="ticketModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">✅ Venta Exitosa</span>
+                <button type="button" class="btn-close" onclick="closeTicketModal()"></button>
             </div>
-            <div id="sellEmailMsg" style="font-size:0.8rem;margin-top:0.3rem;"></div>
+            <div class="modal-body">
+                <div id="ticketContent" data-business-name="{{ business_name }}" class="p-3 mb-3 bg-light rounded" style="font-family:'Courier New',monospace;font-size:13px;"></div>
+                <div id="mpConfirmArea" class="d-none mb-1"></div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary flex-fill" onclick="printTicket()" style="min-width:120px;">🖨 Imprimir</button>
+                    <button class="btn btn-success flex-fill" onclick="shareWhatsApp()" style="min-width:120px;">📱 WhatsApp</button>
+                    <button class="btn btn-secondary flex-fill" onclick="toggleSellEmail()" style="min-width:120px;">✉️ Email</button>
+                    <button class="btn btn-secondary flex-fill" onclick="closeTicketModal()" style="min-width:80px;">Cerrar</button>
+                </div>
+                <div id="sellEmailArea" class="d-none mt-1">
+                    <div class="d-flex gap-2">
+                        <input type="email" id="sellEmailInput" class="form-control" placeholder="cliente@email.com">
+                        <button class="btn btn-sm btn-primary" onclick="sendSellEmail()">Enviar</button>
+                    </div>
+                    <div id="sellEmailMsg" class="small mt-1"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -182,8 +190,8 @@ function showTicket(data) {
     const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
     let itemsHtml = '';
     data.items.forEach(item => {
-        itemsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">
-            <span style="flex:1;">${item.product_name}</span>
+        itemsHtml += `<div class="d-flex justify-content-between" style="font-size:12px;padding:2px 0;">
+            <span class="flex-fill">${item.product_name}</span>
             <span style="width:30px;text-align:center;">${item.quantity}</span>
             <span style="width:70px;text-align:right;">${fmt(item.subtotal)}</span>
         </div>`;
@@ -192,56 +200,56 @@ function showTicket(data) {
     let extraHtml = '';
     if (data.mp_init_point) {
         extraHtml = `
-            <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #999;text-align:center;">
-                <p style="font-size:12px;font-weight:600;margin-bottom:6px;">💳 Pagá con Mercado Pago</p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.mp_init_point)}" style="width:150px;height:150px;border-radius:8px;" alt="QR MP">
-                <p style="font-size:11px;color:#555;margin-top:6px;word-break:break-all;">${data.mp_init_point}</p>
+            <div class="mt-2 pt-2 text-center" style="border-top:1px dashed #999;">
+                <p class="small fw-semibold mb-1">💳 Pagá con Mercado Pago</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.mp_init_point)}" class="rounded" style="width:150px;height:150px;" alt="QR MP">
+                <p class="small text-muted mt-1" style="word-break:break-all;">${data.mp_init_point}</p>
             </div>
         `;
     }
     document.getElementById('ticketContent').innerHTML = `
-        <div style="text-align:center;margin-bottom:8px;">
-            <strong style="font-size:16px;">${bizName}</strong><br>
-            <span style="font-size:11px;color:#555;">Ticket #${data.sale_id}</span><br>
-            <span style="font-size:11px;color:#555;">${timeStr}</span><br>
-            <span style="font-size:11px;color:#555;">Atendió: ${data.user}</span>
+        <div class="text-center mb-2">
+            <strong class="fs-5">${bizName}</strong><br>
+            <span class="small text-muted">Ticket #${data.sale_id}</span><br>
+            <span class="small text-muted">${timeStr}</span><br>
+            <span class="small text-muted">Atendió: ${data.user}</span>
         </div>
-        <div style="border-top:1px dashed #999;margin:6px 0;"></div>
-        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:12px;">
-            <span style="flex:1;">Producto</span>
+        <hr class="my-1" style="border-top:1px dashed #999;">
+        <div class="d-flex justify-content-between fw-bold" style="font-size:12px;">
+            <span class="flex-fill">Producto</span>
             <span style="width:30px;text-align:center;">Cant</span>
             <span style="width:70px;text-align:right;">Subtotal</span>
         </div>
-        <div style="border-top:1px dashed #999;margin:6px 0;"></div>
+        <hr class="my-1" style="border-top:1px dashed #999;">
         ${itemsHtml}
-        <div style="border-top:1px dashed #999;margin:6px 0;"></div>
-        <div style="text-align:right;font-size:15px;font-weight:700;margin:4px 0;">TOTAL: ${fmt(data.total)}</div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;">
+        <hr class="my-1" style="border-top:1px dashed #999;">
+        <div class="text-end fs-5 fw-bold my-1">TOTAL: ${fmt(data.total)}</div>
+        <div class="d-flex justify-content-between" style="font-size:12px;">
             <span>Método de pago:</span>
             <span>${methodNames[data.payment_method] || data.payment_method}</span>
         </div>
         ${data.payment_method === 'cash' ? `
-        <div style="display:flex;justify-content:space-between;font-size:12px;">
+        <div class="d-flex justify-content-between" style="font-size:12px;">
             <span>Recibido:</span><span>${fmt(data.amount_paid)}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;">
-            <span>Vuelto:</span><span style="color:green;font-weight:700;">${fmt(data.change)}</span>
+        <div class="d-flex justify-content-between" style="font-size:12px;">
+            <span>Vuelto:</span><span class="text-success fw-bold">${fmt(data.change)}</span>
         </div>` : ''}
-        ${data.customer_email ? `<div style="border-top:1px dashed #999;margin:6px 0;"></div><div style="font-size:11px;">Email: ${data.customer_email}</div>` : ''}
+        ${data.customer_email ? `<hr class="my-1" style="border-top:1px dashed #999;"><div class="small">Email: ${data.customer_email}</div>` : ''}
         ${extraHtml}
-        <div id="mpStatusMsg" style="text-align:center;margin-top:8px;font-size:12px;"></div>
-        <div style="text-align:center;margin-top:8px;font-size:11px;color:#555;">¡Gracias por su compra!</div>
+        <div id="mpStatusMsg" class="text-center mt-2 small"></div>
+        <div class="text-center mt-2 small text-muted">¡Gracias por su compra!</div>
     `;
     if (data.mp_init_point) {
         document.getElementById('mpConfirmArea').innerHTML = `
-            <button class="btn btn-sm btn-primary" onclick="confirmMpPayment(${data.sale_id})" style="width:100%;padding:0.8rem;font-weight:600;">
+            <button class="btn btn-sm btn-primary w-100 py-3 fw-semibold" onclick="confirmMpPayment(${data.sale_id})">
                 🔄 Verificar pago
             </button>
-            <div style="font-size:11px;color:#888;text-align:center;margin-top:4px;">⏳ Esperando pago del cliente...</div>
+            <div class="small text-muted text-center mt-1">⏳ Esperando pago del cliente...</div>
         `;
-        document.getElementById('mpConfirmArea').style.display = 'block';
+        document.getElementById('mpConfirmArea').classList.remove('d-none');
     } else {
-        document.getElementById('mpConfirmArea').style.display = 'none';
+        document.getElementById('mpConfirmArea').classList.add('d-none');
         document.getElementById('mpConfirmArea').innerHTML = '';
     }
     openModal('ticketModal');
@@ -271,7 +279,7 @@ function closeTicketModal() {
 
 function toggleSellEmail() {
     const area = document.getElementById('sellEmailArea');
-    area.style.display = area.style.display === 'none' ? 'block' : 'none';
+    area.classList.toggle('d-none');
 }
 
 function sendSellEmail() {
@@ -306,7 +314,7 @@ function renderCart() {
     const el = document.getElementById('cartItems');
     const totalEl = document.getElementById('cartTotal');
     if (cart.length === 0) {
-        el.innerHTML = '<p style="color:var(--gray);text-align:center;padding:2rem;">Carrito vacío</p>';
+        el.innerHTML = '<p class="text-muted text-center p-4">Carrito vacío</p>';
         totalEl.textContent = '$0.00';
         return;
     }
@@ -316,10 +324,10 @@ function renderCart() {
                 <div class="name">${item.name}</div>
                 <div class="price">${fmt(item.unit_price)}</div>
             </div>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-                <button class="btn btn-sm btn-secondary" onclick="changeQty(${i}, -1)" style="font-weight:bold;">−</button>
-                <span style="font-weight:600;min-width:24px;text-align:center;">${item.quantity}</span>
-                <button class="btn btn-sm btn-secondary" onclick="changeQty(${i}, 1)" style="font-weight:bold;">+</button>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, -1)">−</button>
+                <span class="fw-semibold text-center" style="min-width:24px;">${item.quantity}</span>
+                <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, 1)">+</button>
                 <strong>${fmt(item.subtotal)}</strong>
                 <button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">&times;</button>
             </div>
@@ -422,18 +430,18 @@ document.getElementById('searchInput').addEventListener('input', function() {
         .then(r => r.json())
         .then(products => {
             if (products.length === 0) {
-                results.innerHTML = '<p style="padding:0.5rem;color:var(--gray);">Sin resultados</p>';
+                results.innerHTML = '<p class="p-2 text-muted">Sin resultados</p>';
                 return;
             }
             results.innerHTML = products.map(p => `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;border-bottom:1px solid var(--secondary);cursor:pointer;" onclick="addToCart({id:${p.id},code:'${p.code}',name:'${p.name}',price:${p.price}})">
+                <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor:pointer;" onclick="addToCart({id:${p.id},code:'${p.code}',name:'${p.name}',price:${p.price}})">
                     <div>
                         <strong>${p.name}</strong>
-                        <small style="color:var(--gray);"> (${p.code})</small>
+                        <small class="text-muted"> (${p.code})</small>
                     </div>
-                    <div style="text-align:right;">
+                    <div class="text-end">
                         <div>${fmt(p.price)}</div>
-                        <small style="color:var(--gray);">Stock: ${p.stock}</small>
+                        <small class="text-muted">Stock: ${p.stock}</small>
                     </div>
                 </div>
             `).join('');
@@ -453,10 +461,10 @@ function startMpPolling(saleId) {
                     mpPollTimer = null;
                     playSuccessSound();
                     document.getElementById('ticketContent').innerHTML +=
-                        '<div style="margin-top:10px;padding:8px;background:#d4edda;border-radius:6px;text-align:center;font-weight:600;color:#155724;">✅ Pago confirmado vía Mercado Pago</div>';
+                        '<div class="mt-2 p-2 text-center fw-semibold" style="background:#d4edda;border-radius:6px;color:#155724;">✅ Pago confirmado vía Mercado Pago</div>';
                     if (status.mp_payment_id) {
                         document.getElementById('ticketContent').innerHTML +=
-                            '<div style="font-size:11px;color:#555;text-align:center;">ID transacción: ' + status.mp_payment_id + '</div>';
+                            '<div class="small text-muted text-center">ID transacción: ' + status.mp_payment_id + '</div>';
                     }
                 }
             })
@@ -472,10 +480,10 @@ function confirmMpPayment(saleId) {
                 if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
                 playSuccessSound();
                 document.getElementById('ticketContent').innerHTML +=
-                    '<div style="margin-top:10px;padding:8px;background:#d4edda;border-radius:6px;text-align:center;font-weight:600;color:#155724;">✅ Pago verificado manualmente</div>';
+                    '<div class="mt-2 p-2 text-center fw-semibold" style="background:#d4edda;border-radius:6px;color:#155724;">✅ Pago verificado manualmente</div>';
                 if (status.mp_payment_id) {
                     document.getElementById('ticketContent').innerHTML +=
-                        '<div style="font-size:11px;color:#555;text-align:center;">ID transacción: ' + status.mp_payment_id + '</div>';
+                        '<div class="small text-muted text-center">ID transacción: ' + status.mp_payment_id + '</div>';
                 }
             } else {
                 alert('El pago aún no fue acreditado. Escaneá el QR o usá el link de pago.');

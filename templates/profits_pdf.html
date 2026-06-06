@@ -3,103 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <title>Ganancias - {{ biz_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
-        h1 { font-size: 18px; color: #3d5a80; margin-bottom: 4px; }
-        .subtitle { font-size: 12px; color: #666; margin-bottom: 16px; }
-        .summary { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .sum-item { background: #f5f8fa; border-left: 3px solid #3d5a80; padding: 10px 16px; border-radius: 6px; flex: 1; min-width: 100px; }
-        .sum-item .val { font-size: 18px; font-weight: 700; color: #3d5a80; }
-        .sum-item .lbl { font-size: 10px; color: #666; }
-        .sum-item.green { border-left-color: #28a745; }
-        .sum-item.green .val { color: #28a745; }
-        .sum-item.orange { border-left-color: #ee6c4d; }
-        .sum-item.orange .val { color: #ee6c4d; }
-        .sum-item.dark { border-left-color: #293241; }
-        .sum-item.dark .val { color: #293241; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #3d5a80; color: #fff; padding: 6px 8px; text-align: left; font-size: 10px; text-transform: uppercase; }
-        td { padding: 5px 8px; border-bottom: 1px solid #ddd; font-size: 11px; }
-        tr:nth-child(even) td { background: #f5f8fa; }
-        .pos { color: #28a745; font-weight: 600; }
-        .neg { color: #dc3545; font-weight: 600; }
-        .footer { margin-top: 16px; font-size: 10px; color: #999; text-align: center; }
         @media print { body { padding: 0; } }
     </style>
 </head>
 <body>
-    <h1>{{ biz_name }}</h1>
-    <div class="subtitle">
-        Reporte de Ganancias{% if date_from %} | Desde: {{ date_from }}{% endif %}{% if date_to %} | Hasta: {{ date_to }}{% endif %}
+    <div class="container">
+        <h1 class="fw-bold" style="font-size:18px;color:#3d5a80;">{{ biz_name }}</h1>
+        <p class="text-muted small mb-3">
+            Reporte de Ganancias{% if date_from %} | Desde: {{ date_from }}{% endif %}{% if date_to %} | Hasta: {{ date_to }}{% endif %}
+        </p>
+        <div class="row g-2 mb-3">
+            <div class="col-sm-3">
+                <div class="border-start border-3 border-success p-2 bg-light rounded">
+                    <p class="fs-5 fw-bold text-success mb-0">{{ total_revenue|fmt }}</p>
+                    <p class="small text-muted mb-0">Ingresos</p>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="border-start border-3 border-warning p-2 bg-light rounded">
+                    <p class="fs-5 fw-bold text-warning mb-0">{{ total_cost|fmt }}</p>
+                    <p class="small text-muted mb-0">Costos</p>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="border-start border-3 border-primary p-2 bg-light rounded">
+                    <p class="fs-5 fw-bold text-primary mb-0">{{ total_profit|fmt }}</p>
+                    <p class="small text-muted mb-0">Ganancia Neta</p>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="border-start border-3 border-dark p-2 bg-light rounded">
+                    <p class="fs-5 fw-bold mb-0">{{ "%.1f"|format(total_margin) }}%</p>
+                    <p class="small text-muted mb-0">Margen</p>
+                </div>
+            </div>
+        </div>
+        {% if items %}
+        {% if product_breakdown %}
+        <h2 class="fs-6 fw-bold" style="color:#3d5a80;margin:16px 0 8px;">Desglose por Producto</h2>
+        <table class="table table-bordered table-sm">
+            <thead class="table-primary">
+                <tr>
+                    <th>Producto</th>
+                    <th>Unids.</th>
+                    <th>Ingreso</th>
+                    <th>Costo</th>
+                    <th>Ganancia</th>
+                    <th>Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in product_breakdown %}
+                <tr>
+                    <td class="fw-semibold">{{ p.name }}</td>
+                    <td>{{ p.qty }}</td>
+                    <td>{{ p.revenue|fmt }}</td>
+                    <td>{{ p.cost|fmt }}</td>
+                    <td class="{% if p.profit >= 0 %}text-success fw-semibold{% else %}text-danger fw-semibold{% endif %}">{{ p.profit|fmt }}</td>
+                    <td>{{ "%.1f"|format(p.margin) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        <h2 class="fs-6 fw-bold" style="color:#3d5a80;margin:16px 0 8px;">Detalle por Venta</h2>
+        <table class="table table-bordered table-sm">
+            <thead class="table-primary">
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Items</th>
+                    <th>Ingreso</th>
+                    <th>Costo</th>
+                    <th>Ganancia</th>
+                    <th>Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in items %}
+                <tr>
+                    <td>{{ i.id }}</td>
+                    <td>{{ i.date }}</td>
+                    <td>{{ i.user }}</td>
+                    <td>{{ i.items_count }}</td>
+                    <td>{{ i.revenue|fmt }}</td>
+                    <td>{{ i.cost|fmt }}</td>
+                    <td class="{% if i.profit >= 0 %}text-success fw-semibold{% else %}text-danger fw-semibold{% endif %}">{{ i.profit|fmt }}</td>
+                    <td>{{ "%.1f"|format(i.margin) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-muted py-5">Sin ventas en este período.</p>
+        {% endif %}
+        <div class="text-center text-muted small mt-3">Generado el {{ now().strftime('%d/%m/%Y %H:%M') }}</div>
     </div>
-    <div class="summary">
-        <div class="sum-item green"><div class="val">{{ total_revenue|fmt }}</div><div class="lbl">Ingresos</div></div>
-        <div class="sum-item orange"><div class="val">{{ total_cost|fmt }}</div><div class="lbl">Costos</div></div>
-        <div class="sum-item"><div class="val">{{ total_profit|fmt }}</div><div class="lbl">Ganancia Neta</div></div>
-        <div class="sum-item dark"><div class="val">{{ "%.1f"|format(total_margin) }}%</div><div class="lbl">Margen</div></div>
-    </div>
-    {% if items %}
-    {% if product_breakdown %}
-    <h2 style="font-size:13px;color:#3d5a80;margin:16px 0 8px;">📦 Desglose por Producto</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Unids.</th>
-                <th>Ingreso</th>
-                <th>Costo</th>
-                <th>Ganancia</th>
-                <th>Margen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in product_breakdown %}
-            <tr>
-                <td><strong>{{ p.name }}</strong></td>
-                <td>{{ p.qty }}</td>
-                <td>{{ p.revenue|fmt }}</td>
-                <td>{{ p.cost|fmt }}</td>
-                <td class="{% if p.profit >= 0 %}pos{% else %}neg{% endif %}">{{ p.profit|fmt }}</td>
-                <td>{{ "%.1f"|format(p.margin) }}%</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <div style="margin-bottom:16px;"></div>
-    {% endif %}
-    <h2 style="font-size:13px;color:#3d5a80;margin:0 0 8px;">📋 Detalle por Venta</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>Items</th>
-                <th>Ingreso</th>
-                <th>Costo</th>
-                <th>Ganancia</th>
-                <th>Margen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for i in items %}
-            <tr>
-                <td>{{ i.id }}</td>
-                <td>{{ i.date }}</td>
-                <td>{{ i.user }}</td>
-                <td>{{ i.items_count }}</td>
-                <td>{{ i.revenue|fmt }}</td>
-                <td>{{ i.cost|fmt }}</td>
-                <td class="{% if i.profit >= 0 %}pos{% else %}neg{% endif %}">{{ i.profit|fmt }}</td>
-                <td>{{ "%.1f"|format(i.margin) }}%</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="text-align:center;color:#999;padding:40px;">Sin ventas en este período.</p>
-    {% endif %}
-    <div class="footer">Generado el {{ now().strftime('%d/%m/%Y %H:%M') }}</div>
 </body>
 </html>

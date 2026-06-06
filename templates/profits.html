@@ -1,59 +1,79 @@
 {% extends "base.html" %}
 {% block title %}Ganancias{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1.5rem;">📊 Reporte de Ganancias</h2>
+<h2 class="mb-4">📊 Reporte de Ganancias</h2>
 
-<div class="card">
-    <div class="card-header">🔍 Filtros</div>
-    <form method="GET">
-        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr auto auto;align-items:end;">
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Desde</label>
-                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">🔍 Filtros</div>
+    <div class="card-body">
+        <form method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Desde</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Producto</label>
+                    <select name="product_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos los productos</option>
+                        {% for p in products %}
+                        <option value="{{ p.id }}" {% if product_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="/profits/pdf?date_from={{ date_from }}&date_to={{ date_to }}&product_id={{ product_id if product_id else '' }}" target="_blank" class="btn btn-secondary d-inline-flex align-items-center gap-1">📄 PDF</a>
+                </div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Hasta</label>
-                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Producto</label>
-                <select name="product_id" class="form-control" onchange="this.form.submit()">
-                    <option value="">Todos los productos</option>
-                    {% for p in products %}
-                    <option value="{{ p.id }}" {% if product_id == p.id %}selected{% endif %}>{{ p.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Filtrar</button>
-            <a href="/profits/pdf?date_from={{ date_from }}&date_to={{ date_to }}&product_id={{ product_id if product_id else '' }}" target="_blank" class="btn btn-secondary" style="align-self:flex-end;display:inline-flex;align-items:center;gap:0.3rem;">📄 PDF</a>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
-<div class="grid grid-4" style="margin-bottom:1rem;">
-    <div class="stat-card success">
-        <div class="number">{{ total_revenue|fmt }}</div>
-        <div class="label">💰 Ingresos</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-success h-100">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-success">{{ total_revenue|fmt }}</div>
+                <div class="text-muted small">💰 Ingresos</div>
+            </div>
+        </div>
     </div>
-    <div class="stat-card warning">
-        <div class="number">{{ total_cost|fmt }}</div>
-        <div class="label">📦 Costos</div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-warning h-100">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-warning">{{ total_cost|fmt }}</div>
+                <div class="text-muted small">📦 Costos</div>
+            </div>
+        </div>
     </div>
-    <div class="stat-card" style="border-left-color:var(--primary);">
-        <div class="number" style="color:var(--primary);">{{ total_profit|fmt }}</div>
-        <div class="label">📈 Ganancia Neta</div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-primary h-100">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold text-primary">{{ total_profit|fmt }}</div>
+                <div class="text-muted small">📈 Ganancia Neta</div>
+            </div>
+        </div>
     </div>
-    <div class="stat-card" style="border-left-color:var(--dark);">
-        <div class="number" style="color:var(--dark);">{{ "%.1f"|format(total_margin) }}%</div>
-        <div class="label">🎯 Margen</div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-dark h-100">
+            <div class="card-body text-center">
+                <div class="fs-2 fw-bold">{{ "%.1f"|format(total_margin) }}%</div>
+                <div class="text-muted small">🎯 Margen</div>
+            </div>
+        </div>
     </div>
 </div>
 
 {% if product_breakdown %}
-<div class="card">
-    <div class="card-header">📦 Desglose por Producto</div>
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">📦 Desglose por Producto</div>
     <div class="table-responsive">
-        <table class="table">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
                     <th>Producto</th>
@@ -67,11 +87,11 @@
             <tbody>
                 {% for p in product_breakdown %}
                 <tr>
-                    <td><strong>{{ p.name }}</strong></td>
+                    <td class="fw-bold">{{ p.name }}</td>
                     <td>{{ p.qty }}</td>
                     <td>{{ p.revenue|fmt }}</td>
                     <td>{{ p.cost|fmt }}</td>
-                    <td style="color:{% if p.profit >= 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
+                    <td class="{% if p.profit >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
                         {% if p.profit >= 0 %}+{% endif %}{{ p.profit|fmt }}
                     </td>
                     <td>{{ "%.1f"|format(p.margin) }}%</td>
@@ -83,10 +103,10 @@
 </div>
 {% endif %}
 
-<div class="card">
-    <div class="card-header">📋 Detalle por Venta</div>
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">📋 Detalle por Venta</div>
     <div class="table-responsive">
-        <table class="table">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
                     <th>#</th>
@@ -102,19 +122,19 @@
             <tbody>
                 {% for i in items %}
                 <tr>
-                    <td><strong>{{ i.id }}</strong></td>
+                    <td class="fw-bold">{{ i.id }}</td>
                     <td>{{ i.date }}</td>
                     <td>{{ i.user }}</td>
                     <td>{{ i.items_count }}</td>
                     <td>{{ i.revenue|fmt }}</td>
                     <td>{{ i.cost|fmt }}</td>
-                    <td style="color:{% if i.profit >= 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
+                    <td class="{% if i.profit >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
                         {% if i.profit >= 0 %}+{% endif %}{{ i.profit|fmt }}
                     </td>
                     <td>{{ "%.1f"|format(i.margin) }}%</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" style="text-align:center;color:var(--gray);padding:2rem;">Sin ventas en este período</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">Sin ventas en este período</td></tr>
                 {% endfor %}
             </tbody>
         </table>

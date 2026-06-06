@@ -1,82 +1,88 @@
 {% extends "base.html" %}
 {% block title %}Backups{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1.5rem;">Gestión de Backups</h2>
+<h2 class="text-primary mb-4">Gestión de Backups</h2>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">📦 Crear Backup</div>
-    <p style="font-size:0.9rem;color:var(--gray);margin-bottom:1rem;">
-        Generá una copia de seguridad de toda la base de datos (productos, ventas, usuarios, configuraciones).
-        El archivo se descargará como <strong>.zip</strong>.
-    </p>
-    <form method="POST" action="{{ url_for('backup_create') }}">
-        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:0.5rem;">
-            <span style="font-size:1.2rem;">📦</span> Crear Backup Ahora
-        </button>
-    </form>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Generá una copia de seguridad de toda la base de datos (productos, ventas, usuarios, configuraciones).
+            El archivo se descargará como <strong>.zip</strong>.
+        </p>
+        <form method="POST" action="{{ url_for('backup_create') }}">
+            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <span class="fs-5">📦</span> Crear Backup Ahora
+            </button>
+        </form>
+    </div>
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">🗄️ Backups Disponibles</div>
-    {% if backups %}
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Archivo</th>
-                    <th>Tamaño</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for b in backups %}
-                <tr>
-                    <td style="font-family:monospace;font-size:0.85rem;">{{ b.name }}</td>
-                    <td>
-                        {% if b.size < 1024 %}
-                            {{ b.size }} B
-                        {% elif b.size < 1048576 %}
-                            {{ "%.1f"|format(b.size / 1024) }} KB
-                        {% else %}
-                            {{ "%.1f"|format(b.size / 1048576) }} MB
-                        {% endif %}
-                    </td>
-                    <td>{{ b.mtime }}</td>
-                    <td class="table-actions">
-                        <a href="{{ url_for('backup_download', name=b.name) }}" class="btn btn-sm btn-secondary" style="display:inline-flex;align-items:center;gap:0.3rem;">⬇ Descargar</a>
-                        <form method="POST" action="{{ url_for('backup_restore', name=b.name) }}" style="display:inline;" onsubmit="return confirm('¿Restaurar este backup?\n\nSe perderán TODOS los datos actuales y serán reemplazados por los del backup.\n\nEsta acción no se puede deshacer.')">
-                            <button type="submit" class="btn btn-sm btn-accent" style="display:inline-flex;align-items:center;gap:0.3rem;">♻ Restaurar</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="card-body">
+        {% if backups %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Archivo</th>
+                        <th>Tamaño</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in backups %}
+                    <tr>
+                        <td class="font-monospace small">{{ b.name }}</td>
+                        <td>
+                            {% if b.size < 1024 %}
+                                {{ b.size }} B
+                            {% elif b.size < 1048576 %}
+                                {{ "%.1f"|format(b.size / 1024) }} KB
+                            {% else %}
+                                {{ "%.1f"|format(b.size / 1048576) }} MB
+                            {% endif %}
+                        </td>
+                        <td>{{ b.mtime }}</td>
+                        <td>
+                            <a href="{{ url_for('backup_download', name=b.name) }}" class="btn btn-sm btn-secondary d-inline-flex align-items-center gap-1">⬇ Descargar</a>
+                            <form method="POST" action="{{ url_for('backup_restore', name=b.name) }}" class="d-inline" onsubmit="return confirm('¿Restaurar este backup?\n\nSe perderán TODOS los datos actuales y serán reemplazados por los del backup.\n\nEsta acción no se puede deshacer.')">
+                                <button type="submit" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">♻ Restaurar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <div class="fs-1 mb-2">🗄️</div>
+            <p class="mb-0">No hay backups todavía. Creá uno para proteger tus datos.</p>
+        </div>
+        {% endif %}
     </div>
-    {% else %}
-    <div style="text-align:center;padding:2rem;color:var(--gray);">
-        <div style="font-size:3rem;margin-bottom:0.5rem;">🗄️</div>
-        <p>No hay backups todavía. Creá uno para proteger tus datos.</p>
-    </div>
-    {% endif %}
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">⏰ Backup Automático</div>
-    <p style="font-size:0.9rem;color:var(--gray);margin-bottom:1rem;">
-        Configurá la app para que genere backups automáticos cada cierto tiempo.
-        El proceso se ejecuta automáticamente al visitar esta página.
-    </p>
-    <form method="POST" action="{{ url_for('settings') }}">
-        <div class="form-row" style="grid-template-columns:1fr auto;align-items:end;">
-            <div class="form-group" style="margin-bottom:0;">
-                <label for="backup_interval">Intervalo entre backups (horas)</label>
-                <input type="number" id="backup_interval" name="backup_interval" class="form-control" value="{{ configs.get('backup_interval', '0') }}" min="0" style="max-width:200px;">
-                <small style="color:var(--gray);display:block;margin-top:0.3rem;">0 = desactivado</small>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Configurá la app para que genere backups automáticos cada cierto tiempo.
+            El proceso se ejecuta automáticamente al visitar esta página.
+        </p>
+        <form method="POST" action="{{ url_for('settings') }}">
+            <div class="d-flex align-items-end gap-3">
+                <div class="mb-0 flex-grow-1" style="max-width:200px;">
+                    <label for="backup_interval" class="form-label">Intervalo entre backups (horas)</label>
+                    <input type="number" id="backup_interval" name="backup_interval" class="form-control" value="{{ configs.get('backup_interval', '0') }}" min="0">
+                    <div class="form-text">0 = desactivado</div>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
             </div>
-            <button type="submit" class="btn btn-primary">Guardar</button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 {% endblock %}

@@ -1,223 +1,251 @@
 {% extends "base.html" %}
 {% block title %}Configuración{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1.5rem;">Configuración del Sistema</h2>
+<h2 class="text-primary mb-4">Configuración del Sistema</h2>
 
-<div class="card">
+<!-- Identidad del Local -->
+<div class="card shadow-sm mb-4">
     <div class="card-header">Identidad del Local</div>
-    <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-            <form method="POST">
-                <div class="form-group">
-                    <label for="business_name">Nombre del sistema</label>
-                    <input type="text" id="business_name" name="business_name" class="form-control"
-                           value="{{ configs.get('business_name', 'NexoControl') }}" placeholder="SmartPOS">
+    <div class="card-body">
+        <div class="row g-4 align-items-start">
+            <div class="col-md">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="business_name" class="form-label">Nombre del sistema</label>
+                        <input type="text" id="business_name" name="business_name" class="form-control"
+                               value="{{ configs.get('business_name', 'NexoControl') }}" placeholder="SmartPOS">
+                    </div>
+                    <div class="mb-3">
+                        <label for="local_name" class="form-label">Nombre del local / negocio</label>
+                        <input type="text" id="local_name" name="local_name" class="form-control"
+                               value="{{ configs.get('local_name', '') }}" placeholder="Kiosco Loco 24Hs - Isidro Casanova">
+                        <small class="text-muted">Opcional. Se muestra debajo del nombre del sistema.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar nombre</button>
+                </form>
+            </div>
+            <div class="col-md-auto text-center">
+                <label class="form-label d-block">Logo del local</label>
+                {% if logo_url %}
+                <img src="{{ url_for('static', filename=logo_url) }}" class="img-fluid mb-2 border rounded" style="max-width:120px;max-height:80px;">
+                <form method="POST" action="{{ url_for('delete_logo') }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm">Eliminar logo</button>
+                </form>
+                {% else %}
+                <div class="d-inline-flex align-items-center justify-content-center mb-2 border border-2 rounded" style="width:120px;height:80px;border-style:dashed !important;">
+                    <span class="text-muted small">Sin logo</span>
                 </div>
-                <div class="form-group">
-                    <label for="local_name">Nombre del local / negocio</label>
-                    <input type="text" id="local_name" name="local_name" class="form-control"
-                           value="{{ configs.get('local_name', '') }}" placeholder="Kiosco Loco 24Hs - Isidro Casanova">
-                    <small style="color:var(--gray);">Opcional. Se muestra debajo del nombre del sistema.</small>
-                </div>
-                <button type="submit" class="btn btn-sm btn-primary">Guardar nombre</button>
-            </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('upload_logo') }}" enctype="multipart/form-data">
+                    <input type="file" name="logo" accept="image/*" class="form-control form-control-sm w-auto d-inline-block" required>
+                    <button type="submit" class="btn btn-primary btn-sm mt-1">Subir logo</button>
+                </form>
+            </div>
         </div>
-        <div style="text-align:center;min-width:150px;">
-            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.5rem;">Logo del local</label>
-            {% if logo_url %}
-            <img src="{{ url_for('static', filename=logo_url) }}" style="max-width:120px;max-height:80px;border-radius:8px;border:2px solid var(--secondary);margin-bottom:0.5rem;">
-            <form method="POST" action="{{ url_for('delete_logo') }}" style="display:inline;">
-                <button type="submit" class="btn btn-sm btn-danger">Eliminar logo</button>
-            </form>
-            {% else %}
-            <div style="width:120px;height:80px;background:var(--light);border-radius:8px;border:2px dashed var(--secondary);display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--gray);margin:0 auto 0.5rem;">Sin logo</div>
-            {% endif %}
-            <form method="POST" action="{{ url_for('upload_logo') }}" enctype="multipart/form-data">
-                <input type="file" name="logo" accept="image/*" style="font-size:0.8rem;max-width:150px;" required>
-                <button type="submit" class="btn btn-sm btn-primary" style="margin-top:0.3rem;">Subir logo</button>
-            </form>
+    </div>
+</div>
+
+<!-- Parámetros de Stock + Email + SMTP (misma forma) -->
+<form method="POST">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">Parámetros de Stock</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="low_stock_threshold" class="form-label">Stock mínimo (alerta de stock bajo)</label>
+                    <input type="number" id="low_stock_threshold" name="low_stock_threshold" class="form-control"
+                           value="{{ configs.get('low_stock_threshold', '10') }}" min="1">
+                    <small class="text-muted">Productos por debajo de esta cantidad se marcan en rojo</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="critical_stock_threshold" class="form-label">Stock crítico (alerta por email)</label>
+                    <input type="number" id="critical_stock_threshold" name="critical_stock_threshold" class="form-control"
+                           value="{{ configs.get('critical_stock_threshold', '5') }}" min="1">
+                    <small class="text-muted">Al llegar a este valor, la app envía un email al dueño listando los productos críticos</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="default_currency" class="form-label">Moneda por defecto</label>
+                    <select id="default_currency" name="default_currency" class="form-select">
+                        <option value="ARS" {{ 'selected' if configs.get('default_currency') == 'ARS' else '' }}>ARS - Peso Argentino</option>
+                        <option value="USD" {{ 'selected' if configs.get('default_currency') == 'USD' else '' }}>USD - Dólar</option>
+                        <option value="EUR" {{ 'selected' if configs.get('default_currency') == 'EUR' else '' }}>EUR - Euro</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card-header" style="margin-top:1.5rem;">Configuración General</div>
-    <form method="POST">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="low_stock_threshold">Stock mínimo (alerta de stock bajo)</label>
-            <input type="number" id="low_stock_threshold" name="low_stock_threshold" class="form-control"
-                   value="{{ configs.get('low_stock_threshold', '10') }}" min="1">
-                <small style="color:var(--gray);">Productos por debajo de esta cantidad se marcan en rojo</small>
-            </div>
-            <div class="form-group">
-                <label for="critical_stock_threshold">Stock crítico (alerta por email)</label>
-                <input type="number" id="critical_stock_threshold" name="critical_stock_threshold" class="form-control"
-                       value="{{ configs.get('critical_stock_threshold', '5') }}" min="1">
-                <small style="color:var(--gray);">Al llegar a este valor, la app envía un email al dueño listando los productos críticos</small>
-            </div>
-            <div class="form-group">
-                <label for="default_currency">Moneda por defecto</label>
-                <select id="default_currency" name="default_currency" class="form-control">
-                    <option value="ARS" {{ 'selected' if configs.get('default_currency') == 'ARS' else '' }}>ARS - Peso Argentino</option>
-                    <option value="USD" {{ 'selected' if configs.get('default_currency') == 'USD' else '' }}>USD - Dólar</option>
-                    <option value="EUR" {{ 'selected' if configs.get('default_currency') == 'EUR' else '' }}>EUR - Euro</option>
-                </select>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">Email del Dueño</div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Cada vez que se realiza una venta, se enviará una copia del ticket a este email además del email del cliente.
+            </p>
+            <div class="mb-3">
+                <label for="owner_email" class="form-label">Email del dueño del local</label>
+                <input type="email" id="owner_email" name="owner_email" class="form-control"
+                       value="{{ configs.get('owner_email', '') }}" placeholder="dueño@email.com">
             </div>
         </div>
+    </div>
 
-        <div class="card-header" style="margin-top:1.5rem;">Email del Dueño</div>
-        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
-            Cada vez que se realiza una venta, se enviará una copia del ticket a este email además del email del cliente.
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">Configuración SMTP</div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Completá los datos de tu servidor de correo saliente. Ej: Gmail, Outlook, o tu proveedor.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="smtp_host" class="form-label">Servidor SMTP</label>
+                    <input type="text" id="smtp_host" name="smtp_host" class="form-control"
+                           value="{{ configs.get('smtp_host', '') }}" placeholder="smtp.gmail.com">
+                </div>
+                <div class="col-md-6">
+                    <label for="smtp_port" class="form-label">Puerto</label>
+                    <input type="number" id="smtp_port" name="smtp_port" class="form-control"
+                           value="{{ configs.get('smtp_port', '587') }}" placeholder="587">
+                </div>
+                <div class="col-md-6">
+                    <label for="smtp_user" class="form-label">Usuario / Email</label>
+                    <input type="text" id="smtp_user" name="smtp_user" class="form-control"
+                           value="{{ configs.get('smtp_user', '') }}" placeholder="tucorreo@gmail.com">
+                </div>
+                <div class="col-md-6">
+                    <label for="smtp_password" class="form-label">Contraseña</label>
+                    <input type="password" id="smtp_password" name="smtp_password" class="form-control"
+                           value="{{ configs.get('smtp_password', '') }}" placeholder="••••••••">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100 mb-4">Guardar Configuración</button>
+</form>
+
+<!-- Mercado Pago -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header">Mercado Pago</div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Configurá el <strong>Access Token</strong> de Mercado Pago para generar pagos QR dinámicos.
+            Creá una aplicación en <a href="https://www.mercadopago.com.ar/developers" target="_blank" class="text-decoration-none">Mercado Pago Developers</a> y copiá tu Access Token acá.
         </p>
-        <div class="form-group">
-            <label for="owner_email">Email del dueño del local</label>
-            <input type="email" id="owner_email" name="owner_email" class="form-control"
-                   value="{{ configs.get('owner_email', '') }}" placeholder="dueño@email.com">
-        </div>
-
-        <div class="card-header" style="margin-top:1.5rem;">Configuración SMTP (para enviar emails)</div>
-        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
-            Completá los datos de tu servidor de correo saliente. Ej: Gmail, Outlook, o tu proveedor.
-        </p>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="smtp_host">Servidor SMTP</label>
-                <input type="text" id="smtp_host" name="smtp_host" class="form-control"
-                       value="{{ configs.get('smtp_host', '') }}" placeholder="smtp.gmail.com">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="mp_access_token" class="form-label">Access Token (producción)</label>
+                <input type="text" id="mp_access_token" name="mp_access_token" class="form-control"
+                       value="{{ configs.get('mp_access_token', '') }}" placeholder="APP_USR-xxxxxxxxxx-xxxxxx-xxxxxxxxxxxx-xxxxxxxx">
+                <small class="text-muted d-block mt-1">Empieza con APP_USR-... Lo encontrás en Credenciales → Access Token</small>
             </div>
-            <div class="form-group">
-                <label for="smtp_port">Puerto</label>
-                <input type="number" id="smtp_port" name="smtp_port" class="form-control"
-                       value="{{ configs.get('smtp_port', '587') }}" placeholder="587">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="smtp_user">Usuario / Email</label>
-                <input type="text" id="smtp_user" name="smtp_user" class="form-control"
-                       value="{{ configs.get('smtp_user', '') }}" placeholder="tucorreo@gmail.com">
-            </div>
-            <div class="form-group">
-                <label for="smtp_password">Contraseña</label>
-                <input type="password" id="smtp_password" name="smtp_password" class="form-control"
-                       value="{{ configs.get('smtp_password', '') }}" placeholder="••••••••">
-            </div>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Guardar Configuración</button>
-    </form>
-
-    <div class="card-header" style="margin-top:1.5rem;">💳 Mercado Pago</div>
-    <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
-        Configurá el <strong>Access Token</strong> de Mercado Pago para generar pagos QR dinámicos.
-        Creá una aplicación en <a href="https://www.mercadopago.com.ar/developers" target="_blank" style="color:var(--primary);">Mercado Pago Developers</a> y copiá tu Access Token acá.
-    </p>
-    <form method="POST">
-        <div class="form-group">
-            <label for="mp_access_token">Access Token (producción)</label>
-            <input type="text" id="mp_access_token" name="mp_access_token" class="form-control"
-                   value="{{ configs.get('mp_access_token', '') }}" placeholder="APP_USR-xxxxxxxxxx-xxxxxx-xxxxxxxxxxxx-xxxxxxxx">
-            <small style="color:var(--gray);display:block;margin-top:0.3rem;">Empieza con APP_USR-... Lo encontrás en Credenciales → Access Token</small>
-        </div>
-        <button type="submit" class="btn btn-primary">Guardar Access Token</button>
-    </form>
+            <button type="submit" class="btn btn-primary">Guardar Access Token</button>
+        </form>
+    </div>
 </div>
 
-<div class="card">
-    <div class="card-header">⚠️ Backups Automáticos</div>
-    <form method="POST" action="{{ url_for('save_backup_config') }}">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="backup_interval">Intervalo entre backups (horas)</label>
-                <input type="number" id="backup_interval" name="backup_interval" class="form-control"
-                       value="{{ configs.get('backup_interval', '0') }}" min="0" step="1">
-                <small style="color:var(--gray);">Poner 0 para desactivar backups automáticos</small>
+<!-- Backups -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header">Backups Automáticos</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('save_backup_config') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="backup_interval" class="form-label">Intervalo entre backups (horas)</label>
+                    <input type="number" id="backup_interval" name="backup_interval" class="form-control"
+                           value="{{ configs.get('backup_interval', '0') }}" min="0" step="1">
+                    <small class="text-muted">Poner 0 para desactivar backups automáticos</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="backup_max_count" class="form-label">Máximo de backups a conservar</label>
+                    <input type="number" id="backup_max_count" name="backup_max_count" class="form-control"
+                           value="{{ configs.get('backup_max_count', '20') }}" min="0" step="1">
+                    <small class="text-muted">Poner 0 para conservar todos. Cuando se supera este número, se borran los más viejos.</small>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="backup_max_count">Máximo de backups a conservar</label>
-                <input type="number" id="backup_max_count" name="backup_max_count" class="form-control"
-                       value="{{ configs.get('backup_max_count', '20') }}" min="0" step="1">
-                <small style="color:var(--gray);">Poner 0 para conservar todos. Cuando se supera este número, se borran los más viejos.</small>
-            </div>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Guardar Configuración de Backups</button>
-    </form>
+            <button type="submit" class="btn btn-primary w-100">Guardar Configuración de Backups</button>
+        </form>
+    </div>
 </div>
 
-<div class="card">
+<!-- Permisos -->
+<div class="card shadow-sm mb-4">
     <div class="card-header">Permisos por Rol</div>
-    <p style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">
-        Activá o desactivá permisos específicos para cada rol. Los cambios son inmediatos.
-        Si querés volver al comportamiento original, borrá los permisos editados desde la base de datos.
-    </p>
-    <form method="POST" action="{{ url_for('save_permissions') }}">
-        <div style="overflow-x:auto;">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Permiso</th>
-                        <th style="text-align:center;">Admin</th>
-                        <th style="text-align:center;">Supervisor</th>
-                        <th style="text-align:center;">User</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set perm_groups = [
-                        ('📦 Productos', [
-                            ('can_view_products','Ver productos'),
-                            ('can_add_products','Agregar productos'),
-                            ('can_edit_products','Editar productos'),
-                            ('can_manage_products','Eliminar productos'),
-                        ]),
-                        ('🤝 Proveedores', [
-                            ('can_view_suppliers','Ver proveedores'),
-                            ('can_add_suppliers','Agregar proveedores'),
-                            ('can_edit_suppliers','Editar proveedores'),
-                            ('can_delete_suppliers','Eliminar proveedores'),
-                        ]),
-                        ('🏷️ Categorías', [
-                            ('can_view_categories','Ver categorías'),
-                            ('can_add_categories','Agregar categorías'),
-                            ('can_edit_categories','Editar categorías'),
-                            ('can_delete_categories','Eliminar categorías'),
-                        ]),
-                        ('👤 Usuarios', [
-                            ('can_manage_users','Gestionar usuarios'),
-                        ]),
-                        ('📊 Reportes', [
-                            ('can_view_history','Ver historial / Ganancias / Ranking'),
-                            ('can_view_charts','Ver gráficos del inicio'),
-                        ]),
-                        ('💰 Ventas', [
-                            ('can_sell','Vender / Cobrar'),
-                        ]),
-                        ('💳 Membresía', [
-                            ('can_pay_membership','Pagar membresía con MP'),
-                        ]),
-                    ] %}
-                    {% set default_perms = {
-                        'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true},
-                        'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true},
-                        'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true}
-                    } %}
-                    {% for group_name, perms in perm_groups %}
-                    <tr style="background:var(--light);font-weight:600;">
-                        <td colspan="4" style="padding:0.5rem 1rem;font-size:0.9rem;color:var(--primary);">{{ group_name }}</td>
-                    </tr>
-                    {% for pk, plabel in perms %}
-                    <tr>
-                        <td style="padding-left:2rem;">{{ plabel }}</td>
-                        {% for role in ['admin','supervisor','user'] %}
-                        {% set checked = role_perms.get(role, {}).get(pk, default_perms[role][pk]) %}
-                        <td style="text-align:center;">
-                            <input type="checkbox" name="{{ role }}_{{ pk }}" value="on" {{ 'checked' if checked else '' }} style="width:18px;height:18px;cursor:pointer;">
-                        </td>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Activá o desactivá permisos específicos para cada rol. Los cambios son inmediatos.
+            Si querés volver al comportamiento original, borrá los permisos editados desde la base de datos.
+        </p>
+        <form method="POST" action="{{ url_for('save_permissions') }}">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Permiso</th>
+                            <th class="text-center">Admin</th>
+                            <th class="text-center">Supervisor</th>
+                            <th class="text-center">User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set perm_groups = [
+                            ('📦 Productos', [
+                                ('can_view_products','Ver productos'),
+                                ('can_add_products','Agregar productos'),
+                                ('can_edit_products','Editar productos'),
+                                ('can_manage_products','Eliminar productos'),
+                            ]),
+                            ('🤝 Proveedores', [
+                                ('can_view_suppliers','Ver proveedores'),
+                                ('can_add_suppliers','Agregar proveedores'),
+                                ('can_edit_suppliers','Editar proveedores'),
+                                ('can_delete_suppliers','Eliminar proveedores'),
+                            ]),
+                            ('🏷️ Categorías', [
+                                ('can_view_categories','Ver categorías'),
+                                ('can_add_categories','Agregar categorías'),
+                                ('can_edit_categories','Editar categorías'),
+                                ('can_delete_categories','Eliminar categorías'),
+                            ]),
+                            ('👤 Usuarios', [
+                                ('can_manage_users','Gestionar usuarios'),
+                            ]),
+                            ('📊 Reportes', [
+                                ('can_view_history','Ver historial / Ganancias / Ranking'),
+                                ('can_view_charts','Ver gráficos del inicio'),
+                            ]),
+                            ('💰 Ventas', [
+                                ('can_sell','Vender / Cobrar'),
+                            ]),
+                            ('💳 Membresía', [
+                                ('can_pay_membership','Pagar membresía con MP'),
+                            ]),
+                        ] %}
+                        {% set default_perms = {
+                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true},
+                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true},
+                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true}
+                        } %}
+                        {% for group_name, perms in perm_groups %}
+                        <tr class="table-light fw-semibold">
+                            <td colspan="4" class="py-2 text-primary">{{ group_name }}</td>
+                        </tr>
+                        {% for pk, plabel in perms %}
+                        <tr>
+                            <td class="ps-4">{{ plabel }}</td>
+                            {% for role in ['admin','supervisor','user'] %}
+                            {% set checked = role_perms.get(role, {}).get(pk, default_perms[role][pk]) %}
+                            <td class="text-center">
+                                <input type="checkbox" name="{{ role }}_{{ pk }}" value="on" {{ 'checked' if checked else '' }} class="form-check-input">
+                            </td>
+                            {% endfor %}
+                        </tr>
                         {% endfor %}
-                    </tr>
-                    {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">Guardar Permisos</button>
-    </form>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Permisos</button>
+        </form>
+    </div>
 </div>
 {% endblock %}

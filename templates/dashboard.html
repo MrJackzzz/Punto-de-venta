@@ -1,89 +1,113 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1.5rem;">Panel de Control</h2>
+<h2 class="text-primary mb-4">Panel de Control</h2>
 
-<div class="grid grid-4">
-    <div class="stat-card">
-        <div class="number">{{ total_products }}</div>
-        <div class="label">Productos</div>
+<div class="row g-3">
+    <div class="col-md-3 col-12">
+        <div class="stat-card">
+            <div class="number">{{ total_products }}</div>
+            <div class="label">Productos</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="number">{{ categories_count }}</div>
-        <div class="label">Categorías</div>
+    <div class="col-md-3 col-12">
+        <div class="stat-card">
+            <div class="number">{{ categories_count }}</div>
+            <div class="label">Categorías</div>
+        </div>
     </div>
-    <div class="stat-card warning">
-        <div class="number">{{ low_stock }}</div>
-        <div class="label">Stock Bajo (&lt;{{ low_stock_threshold }})</div>
+    <div class="col-md-3 col-12">
+        <div class="stat-card warning">
+            <div class="number">{{ low_stock }}</div>
+            <div class="label">Stock Bajo (&lt;{{ low_stock_threshold }})</div>
+        </div>
     </div>
-    <div class="stat-card success">
-        <div class="number">{{ today_sales }}</div>
-        <div class="label">Ventas Hoy</div>
+    <div class="col-md-3 col-12">
+        <div class="stat-card success">
+            <div class="number">{{ today_sales }}</div>
+            <div class="label">Ventas Hoy</div>
+        </div>
     </div>
 </div>
 
 {% if current_user.can_view_charts() %}
-<div class="grid grid-2" style="margin-top:1rem;">
-    <div class="card">
-        <div class="card-header">Ventas de los Últimos 7 Días</div>
-        <canvas id="salesChart" height="180"></canvas>
-        <p id="salesEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin datos de ventas</p>
-    </div>
-    <div class="card">
-        <div class="card-header">Productos Más Vendidos</div>
-        <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;">
-            <select id="topMonth" class="form-control" style="max-width:140px;" onchange="loadTopChart()">
-                <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
-                <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
-                <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
-                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
-            </select>
-            <select id="topYear" class="form-control" style="max-width:100px;" onchange="loadTopChart()"></select>
+<div class="row g-4 mt-3">
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">Ventas de los Últimos 7 Días</div>
+            <div class="card-body">
+                <canvas id="salesChart" height="180"></canvas>
+                <p id="salesEmpty" class="d-none text-center text-muted py-4">Sin datos de ventas</p>
+            </div>
         </div>
-        <canvas id="topProductsChart" height="180"></canvas>
-        <p id="topEmpty" style="display:none;text-align:center;color:var(--gray);padding:2rem;">Sin ventas en ese período</p>
+    </div>
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">Productos Más Vendidos</div>
+            <div class="card-body">
+                <div class="d-flex gap-2 mb-3">
+                    <select id="topMonth" class="form-select" style="max-width:140px;" onchange="loadTopChart()">
+                        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                        <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                        <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+                    </select>
+                    <select id="topYear" class="form-select" style="max-width:100px;" onchange="loadTopChart()"></select>
+                </div>
+                <canvas id="topProductsChart" height="180"></canvas>
+                <p id="topEmpty" class="d-none text-center text-muted py-4">Sin ventas en ese período</p>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
 
-<div class="grid grid-2" style="margin-top:0.5rem;">
-    <div class="card">
-        <div class="card-header">Acceso Rápido</div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.8rem;">
-            {% if current_user.can_view_products() %}
-            <a href="{{ url_for('products') }}" class="btn btn-primary">Ingresar Mercadería</a>
-            {% endif %}
-            <a href="{{ url_for('sell') }}" class="btn btn-success">Ir a Vender</a>
-            {% if current_user.can_manage_suppliers() %}
-            <a href="{{ url_for('suppliers') }}" class="btn btn-secondary">Proveedores</a>
-            {% endif %}
-            {% if current_user.can_view_history() %}
-            <a href="{{ url_for('history') }}" class="btn btn-secondary">Ver Historial</a>
-            {% endif %}
+<div class="row g-3 mt-2">
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">Acceso Rápido</div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    {% if current_user.can_view_products() %}
+                    <a href="{{ url_for('products') }}" class="btn btn-primary">Ingresar Mercadería</a>
+                    {% endif %}
+                    <a href="{{ url_for('sell') }}" class="btn btn-success">Ir a Vender</a>
+                    {% if current_user.can_manage_suppliers() %}
+                    <a href="{{ url_for('suppliers') }}" class="btn btn-secondary">Proveedores</a>
+                    {% endif %}
+                    {% if current_user.can_view_history() %}
+                    <a href="{{ url_for('history') }}" class="btn btn-secondary">Ver Historial</a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
-    <div class="card">
-        <div class="card-header">Tu Rol</div>
-        <p style="font-size:1.1rem;">
-            <span class="badge badge-{{ current_user.role }}">{{ current_user.role|upper }}</span>
-        </p>
-        <ul style="margin-top:0.8rem;padding-left:1.5rem;color:var(--gray);line-height:1.8;">
-            {% if current_user.role == 'admin' %}
-            <li>Control total del sistema</li>
-            <li>Configuración de negocio</li>
-            <li>Gestión de usuarios y permisos</li>
-            <li>CRUD completo de productos, proveedores, categorías</li>
-            <li>Acceso a historial completo</li>
-            {% elif current_user.role == 'supervisor' %}
-            <li>Gestión de productos y proveedores</li>
-            <li>Gestión de usuarios (crear/editar)</li>
-            <li>Acceso a historial de movimientos</li>
-            {% else %}
-            <li>Ingreso de mercadería</li>
-            <li>Cobro de productos (código / escaneo)</li>
-            <li>Cálculo de vuelto</li>
-            {% endif %}
-        </ul>
+    <div class="col-md-6 col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">Tu Rol</div>
+            <div class="card-body">
+                <p class="fs-5">
+                    <span class="badge badge-{{ current_user.role }}">{{ current_user.role|upper }}</span>
+                </p>
+                <ul class="mt-2 ps-3 text-muted" style="line-height:1.8;">
+                    {% if current_user.role == 'admin' %}
+                    <li>Control total del sistema</li>
+                    <li>Configuración de negocio</li>
+                    <li>Gestión de usuarios y permisos</li>
+                    <li>CRUD completo de productos, proveedores, categorías</li>
+                    <li>Acceso a historial completo</li>
+                    {% elif current_user.role == 'supervisor' %}
+                    <li>Gestión de productos y proveedores</li>
+                    <li>Gestión de usuarios (crear/editar)</li>
+                    <li>Acceso a historial de movimientos</li>
+                    {% else %}
+                    <li>Ingreso de mercadería</li>
+                    <li>Cobro de productos (código / escaneo)</li>
+                    <li>Cálculo de vuelto</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -96,12 +120,12 @@ function loadSalesChart() {
         .then(d => {
             if (salesChart) salesChart.destroy();
             if (!d.labels || d.labels.length === 0) {
-                document.getElementById('salesChart').style.display = 'none';
-                document.getElementById('salesEmpty').style.display = 'block';
+                document.getElementById('salesChart').classList.add('d-none');
+                document.getElementById('salesEmpty').classList.remove('d-none');
                 return;
             }
-            document.getElementById('salesChart').style.display = 'block';
-            document.getElementById('salesEmpty').style.display = 'none';
+            document.getElementById('salesChart').classList.remove('d-none');
+            document.getElementById('salesEmpty').classList.add('d-none');
             salesChart = new Chart(document.getElementById('salesChart'), {
                 type: 'bar',
                 data: { labels: d.labels, datasets: [{
@@ -128,12 +152,12 @@ function loadTopChart() {
         .then(d => {
             if (topChart) topChart.destroy();
             if (!d.labels || d.labels.length === 0) {
-                document.getElementById('topProductsChart').style.display = 'none';
-                document.getElementById('topEmpty').style.display = 'block';
+                document.getElementById('topProductsChart').classList.add('d-none');
+                document.getElementById('topEmpty').classList.remove('d-none');
                 return;
             }
-            document.getElementById('topProductsChart').style.display = 'block';
-            document.getElementById('topEmpty').style.display = 'none';
+            document.getElementById('topProductsChart').classList.remove('d-none');
+            document.getElementById('topEmpty').classList.add('d-none');
             topChart = new Chart(document.getElementById('topProductsChart'), {
                 type: 'doughnut',
                 data: {

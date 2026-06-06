@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Planes{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:0.5rem;">📋 Planes y Precios</h2>
-<p style="color:var(--gray);margin-bottom:2rem;">Sistema de gestión comercial SmartPost — Elegí el plan que mejor se adapte a tu negocio.</p>
+<h2 class="text-primary mb-1">📋 Planes y Precios</h2>
+<p class="text-muted mb-4">Sistema de gestión comercial SmartPost — Elegí el plan que mejor se adapte a tu negocio.</p>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-bottom:2rem;">
+<div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
     {% set plans = [
         ('Kiosco / Almacén', '$8.000/mes', '#4caf50', [
             'Hasta 2 usuarios',
@@ -48,34 +48,40 @@
         ]),
     ] %}
     {% for name, price, color, features in plans %}
-    <div style="border:1px solid var(--secondary);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
-        <div style="background:{{ color }};color:#fff;padding:1.2rem;text-align:center;">
-            <h3 style="margin:0;font-size:1.1rem;">{{ name }}</h3>
-            <div style="font-size:1.5rem;font-weight:700;margin-top:0.5rem;">{{ price }}</div>
-        </div>
-        <div style="padding:1rem;flex:1;">
-            <ul style="list-style:none;padding:0;margin:0;">
-                {% for f in features %}
-                <li style="padding:0.4rem 0;border-bottom:1px solid var(--secondary);font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;">
-                    <span style="color:var(--success);">✓</span> {{ f }}
-                </li>
-                {% endfor %}
-            </ul>
+    <div class="col">
+        <div class="card shadow-sm h-100 text-center">
+            <div class="card-header text-white" style="background:{{ color }};">
+                <h3 class="card-title mb-0" style="font-size:1.1rem;">{{ name }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="fw-bold fs-3 text-primary mb-3">{{ price }}</div>
+                <ul class="list-unstyled mb-0">
+                    {% for f in features %}
+                    <li class="d-flex gap-2 py-2 border-bottom">
+                        <i class="bi bi-check-lg text-success flex-shrink-0 mt-1"></i>
+                        <span>{{ f }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer bg-white border-top-0">
+                <button class="btn btn-primary">Elegir plan</button>
+            </div>
         </div>
     </div>
     {% endfor %}
 </div>
 
-<div class="card" style="margin-top:1.5rem;">
+<div class="card mt-4">
     <div class="card-header">📌 Comparativa detallada</div>
     <div class="table-responsive">
-    <table class="table">
+    <table class="table table-hover align-middle mb-0">
         <thead>
             <tr>
                 <th>Funcionalidad</th>
-                <th style="text-align:center;">Kiosco</th>
-                <th style="text-align:center;">Mediano</th>
-                <th style="text-align:center;">Grande</th>
+                <th class="text-center">Kiosco</th>
+                <th class="text-center">Mediano</th>
+                <th class="text-center">Grande</th>
             </tr>
         </thead>
         <tbody>
@@ -102,9 +108,9 @@
             {% for label, kiosko, mediano, grande in rows %}
             <tr>
                 <td><strong>{{ label }}</strong></td>
-                <td style="text-align:center;">{{ kiosko }}</td>
-                <td style="text-align:center;">{{ mediano }}</td>
-                <td style="text-align:center;">{{ grande }}</td>
+                <td class="text-center">{{ kiosko }}</td>
+                <td class="text-center">{{ mediano }}</td>
+                <td class="text-center">{{ grande }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -112,8 +118,8 @@
     </div>
 </div>
 
-<div style="text-align:center;margin:2rem 0;padding:1.5rem;background:var(--light);border-radius:8px;">
-    <p style="font-size:1rem;margin-bottom:1rem;">¿Consultas o necesitás un plan personalizado?</p>
+<div class="text-center my-4 p-4 bg-light rounded">
+    <p class="mb-3">¿Consultas o necesitás un plan personalizado?</p>
     <button class="btn btn-primary" onclick="sendPlanesEmail()">📧 Enviar planes por email</button>
     <a href="{{ url_for('planes_pdf') }}" class="btn btn-secondary" target="_blank">📄 Descargar PDF</a>
 </div>

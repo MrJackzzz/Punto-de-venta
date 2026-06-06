@@ -1,80 +1,108 @@
 {% extends "base.html" %}
 {% block title %}Usuarios{% endblock %}
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-    <h2 style="color:var(--primary);">Gestión de Usuarios</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary">Gesti&oacute;n de Usuarios</h2>
     <button class="btn btn-primary" onclick="openModal('userModal')">+ Nuevo Usuario</button>
 </div>
 
-<div class="card">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Creado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for u in users %}
-            <tr>
-                <td><strong>{{ u.username }}</strong></td>
-                <td><span class="badge badge-{{ u.role }}">{{ u.role|upper }}</span></td>
-                <td>
-                    {% if u.active %}
-                    <span class="badge badge-active">Activo</span>
-                    {% else %}
-                    <span class="badge badge-inactive">Inactivo</span>
-                    {% endif %}
-                </td>
-                <td>{{ to_ar(u.created_at).strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
-                <td class="table-actions">
-                    {% if current_user.role == 'admin' and u.id != current_user.id %}
-                    <form method="POST" action="{{ url_for('user_toggle', id=u.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm {{ 'btn-danger' if u.active else 'btn-success' }}">
-                            {{ 'Desactivar' if u.active else 'Activar' }}
-                        </button>
-                    </form>
-                    <button class="btn btn-sm btn-secondary" onclick="resetPass({{ u.id }})">Reset Pass</button>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" style="text-align:center;color:var(--gray);">No hay usuarios</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td class="small text-muted">{{ u.get_full_name() }}</td>
+                    <td>
+                        {% if u.role == 'admin' %}
+                        <span class="badge bg-primary">{{ u.role|upper }}</span>
+                        {% elif u.role == 'supervisor' %}
+                        <span class="badge bg-dark">{{ u.role|upper }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ u.role|upper }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.active %}
+                        <span class="badge bg-success">Activo</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ to_ar(u.created_at).strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
+                    <td class="text-nowrap">
+                        {% if current_user.role == 'admin' and u.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('user_toggle', id=u.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm {{ 'btn-danger' if u.active else 'btn-success' }}">
+                                {{ 'Desactivar' if u.active else 'Activar' }}
+                            </button>
+                        </form>
+                        <button class="btn btn-sm btn-secondary" onclick="resetPass({{ u.id }})">Reset Pass</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted">No hay usuarios</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<div id="userModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span>Nuevo Usuario</span>
-            <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+<div id="userModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Usuario</h5>
+                <button type="button" class="btn-close" onclick="closeModal('userModal')" aria-label="Cerrar"></button>
+            </div>
+            <form method="POST" action="{{ url_for('user_add') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nombre de usuario</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">Nombre</label>
+                            <input type="text" id="first_name" name="first_name" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Apellido</label>
+                            <input type="text" id="last_name" name="last_name" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contrase&ntilde;a</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rol</label>
+                        <select id="role" name="role" class="form-select">
+                            <option value="user">Usuario</option>
+                            <option value="supervisor">Supervisor</option>
+                            {% if current_user.role == 'admin' %}
+                            <option value="admin">Admin</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">Crear Usuario</button>
+                </div>
+            </form>
         </div>
-        <form method="POST" action="{{ url_for('user_add') }}">
-            <div class="form-group">
-                <label for="username">Nombre de usuario</label>
-                <input type="text" id="username" name="username" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="role">Rol</label>
-                <select id="role" name="role" class="form-control">
-                    <option value="user">Usuario</option>
-                    <option value="supervisor">Supervisor</option>
-                    {% if current_user.role == 'admin' %}
-                    <option value="admin">Admin</option>
-                    {% endif %}
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;">Crear Usuario</button>
-        </form>
     </div>
 </div>
 

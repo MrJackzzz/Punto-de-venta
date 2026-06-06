@@ -1,77 +1,81 @@
 {% extends "base.html" %}
 {% block title %}Membresía{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1rem;">💳 Membresía</h2>
+<h2 class="text-primary mb-3">💳 Membresía</h2>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">Configuración de Suscripción</div>
     <form method="POST">
-        <div class="form-group">
-            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                <input type="hidden" name="membership_enabled" value="false">
-                <input type="checkbox" name="membership_enabled" value="true" {% if m.membership_enabled == 'true' %}checked{% endif %} onchange="this.previousElementSibling.value = this.checked ? 'true' : 'false'">
-                Habilitar sistema de membresía
-            </label>
-            <small style="color:var(--gray);">Si desactivás, la app funciona libremente sin restricciones.</small>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="membership_price">Precio mensual ($)</label>
-                <input type="number" id="membership_price" name="membership_price" class="form-control" step="0.01" min="0" value="{{ m.membership_price }}">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+                    <input type="hidden" name="membership_enabled" value="false">
+                    <input type="checkbox" name="membership_enabled" value="true" {% if m.membership_enabled == 'true' %}checked{% endif %} onchange="this.previousElementSibling.value = this.checked ? 'true' : 'false'">
+                    Habilitar sistema de membresía
+                </label>
+                <small class="text-muted">Si desactivás, la app funciona libremente sin restricciones.</small>
             </div>
-            <div class="form-group">
-                <label for="membership_grace_days">Días de gracia</label>
-                <input type="number" id="membership_grace_days" name="membership_grace_days" class="form-control" min="0" value="{{ m.membership_grace_days }}">
-                <small style="color:var(--gray);">Días después del vencimiento antes de bloquear el sistema.</small>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="membership_price" class="form-label">Precio mensual ($)</label>
+                    <input type="number" id="membership_price" name="membership_price" class="form-control" step="0.01" min="0" value="{{ m.membership_price }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="membership_grace_days" class="form-label">Días de gracia</label>
+                    <input type="number" id="membership_grace_days" name="membership_grace_days" class="form-control" min="0" value="{{ m.membership_grace_days }}">
+                    <small class="text-muted">Días después del vencimiento antes de bloquear el sistema.</small>
+                </div>
             </div>
+            <div class="mb-3">
+                <label for="membership_payment_info" class="form-label">Información de pago para el cliente</label>
+                <textarea id="membership_payment_info" name="membership_payment_info" class="form-control" rows="3">{{ m.membership_payment_info }}</textarea>
+                <small class="text-muted">Alias, CBU, link de MP, etc. Se muestra al cliente si la membresía está vencida.</small>
+            </div>
+            <div class="mb-3">
+                <label for="membership_expiry" class="form-label">Fecha de vencimiento (opcional)</label>
+                <input type="date" id="membership_expiry" name="membership_expiry" class="form-control" value="{{ m.membership_expiry or '' }}">
+                <small class="text-muted">Si se deja vacía, podés fijarla después con "Registrar pago" o "Pagar con MP".</small>
+            </div>
+            <div class="mb-3">
+                <label for="mp_membership_access_token" class="form-label">Access Token de Mercado Pago (membresía)</label>
+                <input type="password" id="mp_membership_access_token" name="mp_membership_access_token" class="form-control" value="{{ m.mp_membership_access_token or '' }}">
+                <small class="text-muted">APP_USR-... Tu token de MP para cobrar membresías (distinto al de ventas).</small>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Guardar configuración</button>
         </div>
-        <div class="form-group">
-            <label for="membership_payment_info">Información de pago para el cliente</label>
-            <textarea id="membership_payment_info" name="membership_payment_info" class="form-control" rows="3">{{ m.membership_payment_info }}</textarea>
-            <small style="color:var(--gray);">Alias, CBU, link de MP, etc. Se muestra al cliente si la membresía está vencida.</small>
-        </div>
-        <div class="form-group">
-            <label for="membership_expiry">Fecha de vencimiento (opcional)</label>
-            <input type="date" id="membership_expiry" name="membership_expiry" class="form-control" value="{{ m.membership_expiry or '' }}">
-            <small style="color:var(--gray);">Si se deja vacía, podés fijarla después con "Registrar pago" o "Pagar con MP".</small>
-        </div>
-        <div class="form-group">
-            <label for="mp_membership_access_token">Access Token de Mercado Pago (membresía)</label>
-            <input type="password" id="mp_membership_access_token" name="mp_membership_access_token" class="form-control" value="{{ m.mp_membership_access_token or '' }}">
-            <small style="color:var(--gray);">APP_USR-... Tu token de MP para cobrar membresías (distinto al de ventas).</small>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Guardar configuración</button>
     </form>
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">Estado actual</div>
-    {% if m.membership_enabled == 'true' %}
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
-            <div>
-                <p style="margin-bottom:0.3rem;">Vencimiento: <strong id="expiryDisplay">{{ m.membership_expiry or 'Sin configurar' }}</strong></p>
-                {% if m.membership_expiry %}
-                    {% if m.membership_expiry > now().strftime('%Y-%m-%d') %}
-                        <p style="color:var(--success);">✅ Al día</p>
+    <div class="card-body">
+        {% if m.membership_enabled == 'true' %}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <p class="mb-1">Vencimiento: <strong id="expiryDisplay">{{ m.membership_expiry or 'Sin configurar' }}</strong></p>
+                    {% if m.membership_expiry %}
+                        {% if m.membership_expiry > now().strftime('%Y-%m-%d') %}
+                            <p class="text-success">✅ Al día</p>
+                        {% else %}
+                            <p class="text-danger">🔴 Vencido</p>
+                        {% endif %}
                     {% else %}
-                        <p style="color:var(--danger);">🔴 Vencido</p>
+                        <p class="text-muted">Sin fecha de vencimiento configurada.</p>
                     {% endif %}
-                {% else %}
-                    <p style="color:var(--gray);">Sin fecha de vencimiento configurada.</p>
-                {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-success" onclick="registerPayment()">💰 +1 mes (próximo día 1)</button>
+                    <button class="btn btn-primary" onclick="payMembershipMP()" id="mpBtn">💳 Pagar con MP</button>
+                </div>
             </div>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                <button class="btn btn-success" onclick="registerPayment()">💰 +1 mes (próximo día 1)</button>
-                <button class="btn btn-primary" onclick="payMembershipMP()" id="mpBtn">💳 Pagar con MP</button>
-            </div>
+            <div id="paymentMsg" class="mt-2 small"></div>
+        {% else %}
+            <p class="text-muted mb-0">🟢 Sistema de membresía desactivado — la app funciona libremente.</p>
+        {% endif %}
+        <div class="mt-3 pt-2 border-top small text-muted d-flex justify-content-between flex-wrap gap-2">
+            <span>ID del sistema: <code class="bg-light px-1 rounded">{{ m.instance_id }}</code></span>
+            <span class="opacity-50">Usado para identificar pagos de membresía</span>
         </div>
-        <div id="paymentMsg" style="margin-top:0.8rem;font-size:0.9rem;"></div>
-    {% else %}
-        <p style="color:var(--gray);">🟢 Sistema de membresía desactivado — la app funciona libremente.</p>
-    {% endif %}
-    <div style="margin-top:1rem;padding-top:0.8rem;border-top:1px solid var(--secondary);font-size:0.8rem;color:var(--gray);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
-        <span>ID del sistema: <code style="background:var(--light);padding:0.1rem 0.4rem;border-radius:4px;">{{ m.instance_id }}</code></span>
-        <span style="opacity:0.6;">Usado para identificar pagos de membresía</span>
     </div>
 </div>
 
@@ -88,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'approved') {
-                    msgEl.innerHTML = '<span style="color:var(--success);">✅ Pago confirmado. Membresía actualizada.</span>';
+                    msgEl.innerHTML = '<span class="text-success">✅ Pago confirmado. Membresía actualizada.</span>';
                     setTimeout(function(){ location.reload(); }, 2000);
                 } else if (data.status === 'pending') {
                     setTimeout(pollStatus, 5000);
@@ -107,15 +111,15 @@ function registerPayment() {
         .then(r => r.json())
         .then(data => {
             if (data.error) {
-                msgEl.innerHTML = '<span style="color:var(--danger);">Error: ' + data.error + '</span>';
+                msgEl.innerHTML = '<span class="text-danger">Error: ' + data.error + '</span>';
             } else {
-                msgEl.innerHTML = '<span style="color:var(--success);">✅ Pago registrado. Nueva fecha de vencimiento: <strong>' + data.new_expiry + '</strong></span>';
+                msgEl.innerHTML = '<span class="text-success">✅ Pago registrado. Nueva fecha de vencimiento: <strong>' + data.new_expiry + '</strong></span>';
                 document.getElementById('expiryDisplay').textContent = data.new_expiry;
                 document.getElementById('membership_expiry').value = data.new_expiry;
             }
         })
         .catch(() => {
-            msgEl.innerHTML = '<span style="color:var(--danger);">Error al procesar el pago</span>';
+            msgEl.innerHTML = '<span class="text-danger">Error al procesar el pago</span>';
         })
         .finally(() => {
             btn.disabled = false;
@@ -132,7 +136,7 @@ function payMembershipMP() {
         .then(r => r.json())
         .then(data => {
             if (data.error) {
-                msgEl.innerHTML = '<span style="color:var(--danger);">Error: ' + data.error + '</span>';
+                msgEl.innerHTML = '<span class="text-danger">Error: ' + data.error + '</span>';
                 btn.disabled = false;
                 btn.textContent = '💳 Pagar con MP';
                 return;
@@ -140,7 +144,7 @@ function payMembershipMP() {
             window.location.href = data.init_point;
         })
         .catch(() => {
-            msgEl.innerHTML = '<span style="color:var(--danger);">Error de conexión</span>';
+            msgEl.innerHTML = '<span class="text-danger">Error de conexión</span>';
             btn.disabled = false;
             btn.textContent = '💳 Pagar con MP';
         });
@@ -158,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'approved') {
-                    msgEl.innerHTML = '<span style="color:var(--success);">✅ Pago confirmado. Membresía actualizada.</span>';
+                    msgEl.innerHTML = '<span class="text-success">✅ Pago confirmado. Membresía actualizada.</span>';
                     setTimeout(function(){ location.reload(); }, 2000);
                 } else if (data.status === 'pending') {
                     setTimeout(pollStatus, 5000);

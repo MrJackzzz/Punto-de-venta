@@ -2,66 +2,62 @@
 <html>
 <head>
 <meta charset="utf-8">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-@page { margin: 1.5cm; size: A4 landscape; }
-body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; color: #333; }
-h1 { color: #3d5a80; text-align: center; margin-bottom: 0.3cm; font-size: 18pt; }
-h2 { color: #555; text-align: center; font-weight: normal; font-size: 11pt; margin-bottom: 0.8cm; }
-table { width: 100%; border-collapse: collapse; margin-bottom: 0.8cm; }
-th { background: #3d5a80; color: #fff; padding: 8px 6px; text-align: center; font-size: 9pt; }
-th:first-child { text-align: left; }
-td { padding: 5px 6px; border-bottom: 1px solid #ddd; font-size: 8.5pt; }
-td:first-child { font-weight: bold; }
-td { text-align: center; }
-tr:nth-child(even) { background: #f5f8fc; }
-.footer { text-align: center; font-size: 8pt; color: #999; margin-top: 0.5cm; }
-.plan-header { margin-top: 0.5cm; }
+    @page { margin: 1.5cm; size: A4 landscape; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; color: #333; }
+    .table th, .table td { text-align: center; vertical-align: middle; }
+    .table td:first-child { text-align: left; font-weight: bold; }
+    .plan-header { margin-top: 0.5cm; }
+    @media print { body { padding: 0; } }
 </style>
 </head>
 <body>
-<h1>SmartPost — Planes y Precios</h1>
-<h2>Sistema de Gestión Comercial</h2>
+<div class="container text-center">
+    <h1 class="fw-bold" style="color:#3d5a80;font-size:18pt;">SmartPost &mdash; Planes y Precios</h1>
+    <h2 class="text-muted fw-normal mb-4" style="font-size:11pt;">Sistema de Gesti&oacute;n Comercial</h2>
 
-<table>
-    <thead>
-        <tr>
-            <th style="width:30%;">Funcionalidad</th>
-            <th style="width:17%;">Kiosco $8.000/mes</th>
-            <th style="width:17%;">Mediano $18.000/mes</th>
-            <th style="width:17%;">Grande $50.000/mes</th>
-            <th style="width:17%;">Puesta en Marcha $250.000</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr><td>Usuarios</td><td>Hasta 2</td><td>Hasta 5</td><td>Ilimitados</td><td>—</td></tr>
-        <tr><td>Productos y stock</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Proveedores</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Categorías</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Ventas + Ticket imprimible</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Dashboard con gráficos</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Modo oscuro</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Historial de ventas</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Reportes PDF</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Exportar CSV</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Ranking de productos</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Alertas de stock crítico</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Mercado Pago integrado</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Backups automáticos</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-        <tr><td>Permisos por rol</td><td>—</td><td>—</td><td>✅</td><td>—</td></tr>
-        <tr><td>Membresía automática con MP</td><td>—</td><td>—</td><td>✅</td><td>—</td></tr>
-        <tr><td>Multi-caja / sucursal</td><td>—</td><td>—</td><td>✅</td><td>—</td></tr>
-        <tr><td>Soporte</td><td>Email</td><td>Prioritario</td><td>24/7</td><td>Incluido</td></tr>
-        <tr><td>Instalación y configuración</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
-        <tr><td>Carga inicial de productos</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
-        <tr><td>Personalización de marca</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
-        <tr><td>Capacitación del equipo</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
-    </tbody>
-</table>
+    <table class="table table-bordered">
+        <thead class="table-primary">
+            <tr>
+                <th style="width:30%;">Funcionalidad</th>
+                <th style="width:17%;">Kiosco $8.000/mes</th>
+                <th style="width:17%;">Mediano $18.000/mes</th>
+                <th style="width:17%;">Grande $50.000/mes</th>
+                <th style="width:17%;">Puesta en Marcha $250.000</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Usuarios</td><td>Hasta 2</td><td>Hasta 5</td><td>Ilimitados</td><td>&mdash;</td></tr>
+            <tr><td>Productos y stock</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Proveedores</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Categor&iacute;as</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Ventas + Ticket imprimible</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Dashboard con gr&aacute;ficos</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Modo oscuro</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Historial de ventas</td><td>✅</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Reportes PDF</td><td>&mdash;</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Exportar CSV</td><td>&mdash;</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Ranking de productos</td><td>&mdash;</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Alertas de stock cr&iacute;tico</td><td>&mdash;</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Mercado Pago integrado</td><td>&mdash;</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Backups autom&aacute;ticos</td><td>&mdash;</td><td>✅</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Permisos por rol</td><td>&mdash;</td><td>&mdash;</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Membres&iacute;a autom&aacute;tica con MP</td><td>&mdash;</td><td>&mdash;</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Multi-caja / sucursal</td><td>&mdash;</td><td>&mdash;</td><td>✅</td><td>&mdash;</td></tr>
+            <tr><td>Soporte</td><td>Email</td><td>Prioritario</td><td>24/7</td><td>Incluido</td></tr>
+            <tr><td>Instalaci&oacute;n y configuraci&oacute;n</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>✅</td></tr>
+            <tr><td>Carga inicial de productos</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>✅</td></tr>
+            <tr><td>Personalizaci&oacute;n de marca</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>✅</td></tr>
+            <tr><td>Capacitaci&oacute;n del equipo</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>✅</td></tr>
+        </tbody>
+    </table>
 
-<div class="footer">
-    SmartPost © 2026 v1.0 — Todos los derechos reservados.<br>
-    Desarrollado por Ezequiel Funes<br>
-    Precios en pesos argentinos. IVA incluido.
+    <div class="text-muted small mt-3">
+        SmartPost &copy; 2026 v1.0 &mdash; Todos los derechos reservados.<br>
+        Desarrollado por Ezequiel Funes<br>
+        Precios en pesos argentinos. IVA incluido.
+    </div>
 </div>
 </body>
 </html>

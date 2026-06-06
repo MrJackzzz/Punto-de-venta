@@ -1,53 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Proveedores{% endblock %}
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-    <h2 style="color:var(--primary);">Proveedores</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary">Proveedores</h2>
     {% if current_user.can_add_suppliers() %}
     <button class="btn btn-primary" onclick="openModal('supplierModal')">+ Nuevo Proveedor</button>
     {% endif %}
 </div>
 
-<div class="card">
-    <div class="search-box">
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
         <input type="text" id="supplierSearch" class="form-control" placeholder="Buscar por nombre, teléfono, email, contacto..." oninput="filterSuppliers()">
     </div>
-    <div class="table-responsive">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Contacto</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Dirección</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="suppliersBody">
-            {% for s in suppliers %}
-            <tr>
-                <td><strong>{{ s.name }}</strong></td>
-                <td>{{ s.contact or '-' }}</td>
-                <td>{{ s.phone or '-' }}</td>
-                <td>{{ s.email or '-' }}</td>
-                <td>{{ s.address or '-' }}</td>
-                <td class="table-actions">
-                    {% if current_user.can_edit_suppliers() %}
-                    <button class="btn btn-sm btn-secondary" onclick="editSupplier({{ s.id }}, '{{ s.name|e }}', '{{ s.contact|e }}', '{{ s.phone|e }}', '{{ s.email|e }}', '{{ s.address|e }}')">Editar</button>
-                    {% endif %}
-                    {% if current_user.can_delete_suppliers() %}
-                    <form method="POST" action="{{ url_for('supplier_delete', id=s.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ s.name }}?')">Eliminar</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" style="text-align:center;color:var(--gray);">No hay proveedores registrados</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Dirección</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="suppliersBody">
+                    {% for s in suppliers %}
+                    <tr>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td>{{ s.contact or '-' }}</td>
+                        <td>{{ s.phone or '-' }}</td>
+                        <td>{{ s.email or '-' }}</td>
+                        <td>{{ s.address or '-' }}</td>
+                        <td>
+                            {% if current_user.can_edit_suppliers() %}
+                            <button class="btn btn-sm btn-warning" onclick="editSupplier({{ s.id }}, '{{ s.name|e }}', '{{ s.contact|e }}', '{{ s.phone|e }}', '{{ s.email|e }}', '{{ s.address|e }}')">Editar</button>
+                            {% endif %}
+                            {% if current_user.can_delete_suppliers() %}
+                            <form method="POST" action="{{ url_for('supplier_delete', id=s.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ s.name }}?')">Eliminar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted">No hay proveedores registrados</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -62,37 +64,44 @@ function filterSuppliers() {
 }
 </script>
 
-<div id="supplierModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span id="supplierModalTitle">Nuevo Proveedor</span>
-            <button class="modal-close" onclick="closeModal('supplierModal')">&times;</button>
+<div id="supplierModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="supplierModalTitle">Nuevo Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" onclick="closeModal('supplierModal')"></button>
+            </div>
+            <form id="supplierForm" method="POST" action="/suppliers/add">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="s_name" class="form-label">Nombre</label>
+                        <input type="text" id="s_name" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="s_contact" class="form-label">Contacto</label>
+                        <input type="text" id="s_contact" name="contact" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="s_phone" class="form-label">Teléfono</label>
+                            <input type="text" id="s_phone" name="phone" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="s_email" class="form-label">Email</label>
+                            <input type="email" id="s_email" name="email" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="s_address" class="form-label">Dirección</label>
+                        <textarea id="s_address" name="address" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="closeModal('supplierModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
         </div>
-        <form id="supplierForm" method="POST" action="/suppliers/add">
-            <div class="form-group">
-                <label for="s_name">Nombre</label>
-                <input type="text" id="s_name" name="name" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="s_contact">Contacto</label>
-                <input type="text" id="s_contact" name="contact" class="form-control">
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="s_phone">Teléfono</label>
-                    <input type="text" id="s_phone" name="phone" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="s_email">Email</label>
-                    <input type="email" id="s_email" name="email" class="form-control">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="s_address">Dirección</label>
-                <textarea id="s_address" name="address" class="form-control" rows="2"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;">Guardar</button>
-        </form>
     </div>
 </div>
 
@@ -107,7 +116,5 @@ function editSupplier(id, name, contact, phone, email, address) {
     document.getElementById('s_address').value = address;
     openModal('supplierModal');
 }
-
-
 </script>
 {% endblock %}

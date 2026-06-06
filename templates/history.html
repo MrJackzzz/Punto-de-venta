@@ -1,60 +1,62 @@
 {% extends "base.html" %}
 {% block title %}Historial{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1rem;">Historial de Movimientos</h2>
+<h2 class="text-primary mb-3">Historial de Movimientos</h2>
 
-<div class="grid grid-3" id="summaryCards" style="margin-bottom:1rem;"></div>
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-3" id="summaryCards"></div>
 
-<div class="card">
+<div class="card shadow-sm mb-3">
     <div class="card-header">Filtros</div>
-    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:0.8rem;">
-        <div class="form-group">
-            <label for="filterUser">Usuario</label>
-            <select id="filterUser" class="form-control" onchange="applyFilters()">
-                <option value="">Todos</option>
-                {% for u in users %}
-                <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
-                {% endfor %}
-            </select>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="filterUser" class="form-label">Usuario</label>
+                <select id="filterUser" class="form-select" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filterAction" class="form-label">Acción</label>
+                <select id="filterAction" class="form-select" onchange="applyFilters()">
+                    <option value="">Todas</option>
+                    <option value="sale">Venta</option>
+                    <option value="product_create">Crear Producto</option>
+                    <option value="product_edit">Editar Producto</option>
+                    <option value="product_delete">Eliminar Producto</option>
+                    <option value="supplier_create">Crear Proveedor</option>
+                    <option value="supplier_edit">Editar Proveedor</option>
+                    <option value="supplier_delete">Eliminar Proveedor</option>
+                    <option value="user_create">Crear Usuario</option>
+                    <option value="user_toggle">Estado Usuario</option>
+                    <option value="user_reset_pass">Reset Pass</option>
+                    <option value="login">Inicio Sesión</option>
+                    <option value="logout">Cierre Sesión</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filterDateFrom" class="form-label">Desde</label>
+                <input type="date" id="filterDateFrom" class="form-control" onchange="applyFilters()">
+            </div>
+            <div class="col-md-3">
+                <label for="filterDateTo" class="form-label">Hasta</label>
+                <input type="date" id="filterDateTo" class="form-control" onchange="applyFilters()">
+            </div>
         </div>
-        <div class="form-group">
-            <label for="filterAction">Acción</label>
-            <select id="filterAction" class="form-control" onchange="applyFilters()">
-                <option value="">Todas</option>
-                <option value="sale">Venta</option>
-                <option value="product_create">Crear Producto</option>
-                <option value="product_edit">Editar Producto</option>
-                <option value="product_delete">Eliminar Producto</option>
-                <option value="supplier_create">Crear Proveedor</option>
-                <option value="supplier_edit">Editar Proveedor</option>
-                <option value="supplier_delete">Eliminar Proveedor</option>
-                <option value="user_create">Crear Usuario</option>
-                <option value="user_toggle">Estado Usuario</option>
-                <option value="user_reset_pass">Reset Pass</option>
-                <option value="login">Inicio Sesión</option>
-                <option value="logout">Cierre Sesión</option>
-            </select>
+        <div class="d-flex gap-2 flex-wrap mt-3">
+            <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Limpiar filtros</button>
+            <a href="javascript:exportCSV()" class="btn btn-primary btn-sm">📥 CSV</a>
+            <a href="javascript:exportPDF()" class="btn btn-secondary btn-sm">📄 PDF</a>
+            <span class="small text-muted align-self-center" id="resultCount"></span>
         </div>
-        <div class="form-group">
-            <label for="filterDateFrom">Desde</label>
-            <input type="date" id="filterDateFrom" class="form-control" onchange="applyFilters()">
-        </div>
-        <div class="form-group">
-            <label for="filterDateTo">Hasta</label>
-            <input type="date" id="filterDateTo" class="form-control" onchange="applyFilters()">
-        </div>
-    </div>
-    <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
-        <button class="btn btn-sm btn-secondary" onclick="clearFilters()">Limpiar filtros</button>
-        <a href="javascript:exportCSV()" class="btn btn-sm btn-primary">📥 CSV</a>
-        <a href="javascript:exportPDF()" class="btn btn-sm btn-secondary">📄 PDF</a>
-        <span style="font-size:0.85rem;color:var(--gray);align-self:center;" id="resultCount"></span>
     </div>
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="table-responsive">
-        <table class="table">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
                     <th>Fecha y Hora</th>
@@ -65,43 +67,47 @@
                 </tr>
             </thead>
             <tbody id="logsBody">
-                <tr><td colspan="5" style="text-align:center;color:var(--gray);">Cargando...</td></tr>
+                <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
             </tbody>
         </table>
     </div>
-    <div style="text-align:center;margin-top:0.5rem;font-size:0.8rem;color:var(--gray);" id="liveIndicator">● Actualizando...</div>
+    <div class="text-center mt-2 small text-muted pb-2" id="liveIndicator">● Actualizando...</div>
 </div>
 
-<div id="saleDetailModal" class="modal">
-    <div class="modal-content" style="max-width:500px;">
-        <div class="modal-header">
-            <span id="saleDetailTitle">Detalle de Venta</span>
-            <button class="modal-close" onclick="closeModal('saleDetailModal')">&times;</button>
-        </div>
-        <div id="saleDetailBody"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--secondary);">
-            <button class="btn btn-primary" onclick="printSaleTicket()" style="flex:1;min-width:120px;">🖨 Imprimir</button>
-            <button class="btn btn-success" onclick="shareSaleWhatsApp()" style="flex:1;min-width:120px;">📱 WhatsApp</button>
-            <button class="btn btn-secondary" onclick="toggleSaleEmail()" style="flex:1;min-width:120px;">✉️ Email</button>
-            <button class="btn btn-secondary" onclick="closeModal('saleDetailModal')" style="flex:1;min-width:80px;">Cerrar</button>
-        </div>
-        <div id="saleEmailArea" style="display:none;margin-top:0.5rem;">
-            <div style="display:flex;gap:0.5rem;">
-                <input type="email" id="saleEmailInput" class="form-control" placeholder="cliente@email.com">
-                <button class="btn btn-sm btn-primary" onclick="sendSaleEmail()">Enviar</button>
+<div id="saleDetailModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="saleDetailTitle" class="modal-title fs-5">Detalle de Venta</span>
+                <button type="button" class="btn-close" onclick="closeModal('saleDetailModal')"></button>
             </div>
-            <div id="saleEmailMsg" style="font-size:0.8rem;margin-top:0.3rem;"></div>
+            <div class="modal-body" id="saleDetailBody"></div>
+            <div class="modal-footer d-flex flex-wrap gap-2">
+                <button class="btn btn-primary flex-fill" onclick="printSaleTicket()" style="min-width:120px;">🖨 Imprimir</button>
+                <button class="btn btn-success flex-fill" onclick="shareSaleWhatsApp()" style="min-width:120px;">📱 WhatsApp</button>
+                <button class="btn btn-secondary flex-fill" onclick="toggleSaleEmail()" style="min-width:120px;">✉️ Email</button>
+                <button class="btn btn-secondary flex-fill" onclick="closeModal('saleDetailModal')" style="min-width:80px;">Cerrar</button>
+            </div>
+            <div id="saleEmailArea" class="px-3 pb-3" style="display:none;">
+                <div class="d-flex gap-2">
+                    <input type="email" id="saleEmailInput" class="form-control" placeholder="cliente@email.com">
+                    <button class="btn btn-primary btn-sm" onclick="sendSaleEmail()">Enviar</button>
+                </div>
+                <div id="saleEmailMsg" class="small mt-1"></div>
+            </div>
         </div>
     </div>
 </div>
 
-<div id="logDetailModal" class="modal">
-    <div class="modal-content" style="max-width:500px;">
-        <div class="modal-header">
-            <span id="logDetailTitle">Detalle del Movimiento</span>
-            <button class="modal-close" onclick="closeModal('logDetailModal')">&times;</button>
+<div id="logDetailModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="logDetailTitle" class="modal-title fs-5">Detalle del Movimiento</span>
+                <button type="button" class="btn-close" onclick="closeModal('logDetailModal')"></button>
+            </div>
+            <div class="modal-body" id="logDetailBody"></div>
         </div>
-        <div id="logDetailBody"></div>
     </div>
 </div>
 
@@ -124,20 +130,21 @@ function viewSale(saleId) {
             lastViewedSale = data;
             const methodNames = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'};
             let html = `
-                <div style="margin-bottom:1rem;font-size:0.9rem;">
+                <div class="mb-2 small">
                     <strong>#${data.id}</strong> | ${data.date}<br>
                     Atendió: <strong>${data.user}</strong><br>
                     Método: ${methodNames[data.payment_method] || data.payment_method}<br>
-                    <span style="font-size:1.2rem;font-weight:700;color:var(--primary);">Total: ${fmt(data.total)}</span>
+                    <span class="fs-5 fw-bold text-primary">Total: ${fmt(data.total)}</span>
                 </div>
-                <table class="table">
-                    <thead><tr><th>Producto</th><th>Cant</th><th>P/U</th><th>Subtotal</th></tr></thead>
-                    <tbody>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead><tr><th>Producto</th><th>Cant</th><th>P/U</th><th>Subtotal</th></tr></thead>
+                        <tbody>
             `;
             data.items.forEach(item => {
                 html += `<tr><td>${item.product_name}</td><td>${item.quantity}</td><td>${fmt(item.unit_price)}</td><td>${fmt(item.subtotal)}</td></tr>`;
             });
-            html += `</tbody></table>`;
+            html += `</tbody></table></div>`;
             document.getElementById('saleDetailBody').innerHTML = html;
             document.getElementById('saleDetailTitle').textContent = '🧾 Venta #' + data.id;
             openModal('saleDetailModal');
@@ -215,7 +222,7 @@ function applyFilters() {
             const countEl = document.getElementById('resultCount');
 
             if (!data.logs.length) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Sin resultados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin resultados</td></tr>';
                 countEl.textContent = '0 movimientos';
             } else {
                 tbody.innerHTML = data.logs.map(log => {
@@ -223,7 +230,7 @@ function applyFilters() {
                     return `<tr${extra}>
                         <td>${log.time}</td>
                         <td>${log.user}</td>
-                        <td><span class="badge badge-${log.role}">${log.role.toUpperCase()}</span></td>
+                        <td><span class="badge bg-${log.role}">${log.role.toUpperCase()}</span></td>
                         <td>${log.action}</td>
                         <td>${log.description}</td>
                     </tr>`;
@@ -234,17 +241,23 @@ function applyFilters() {
 
             const summaryEl = document.getElementById('summaryCards');
             summaryEl.innerHTML = `
-                <div class="stat-card">
-                    <div class="number">${data.summary.total_logs}</div>
-                    <div class="label">Movimientos</div>
+                <div class="col">
+                    <div class="card shadow-sm text-center p-3">
+                        <div class="fs-3 fw-bold">${data.summary.total_logs}</div>
+                        <div class="text-muted small">Movimientos</div>
+                    </div>
                 </div>
-                <div class="stat-card success">
-                    <div class="number">${fmt(data.summary.total_sales_amount)}</div>
-                    <div class="label">Total vendido (${data.summary.sale_count} ventas)</div>
+                <div class="col">
+                    <div class="card shadow-sm text-center p-3 border-success">
+                        <div class="fs-3 fw-bold text-success">${fmt(data.summary.total_sales_amount)}</div>
+                        <div class="text-muted small">Total vendido (${data.summary.sale_count} ventas)</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="number">${data.summary.total_sales_qty}</div>
-                    <div class="label">Unidades vendidas</div>
+                <div class="col">
+                    <div class="card shadow-sm text-center p-3">
+                        <div class="fs-3 fw-bold">${data.summary.total_sales_qty}</div>
+                        <div class="text-muted small">Unidades vendidas</div>
+                    </div>
                 </div>
             `;
         });
@@ -275,21 +288,21 @@ function viewLog(logId) {
                 'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass'
             };
             let html = `
-                <div style="margin-bottom:1rem;font-size:0.9rem;">
+                <div class="mb-2 small">
                     <strong>${data.time}</strong><br>
                     Usuario: <strong>${data.user}</strong> (${data.role.toUpperCase()})<br>
                     Acción: <strong>${actionNames[data.action] || data.action}</strong>
                 </div>
             `;
             if (data.changes && data.changes.length) {
-                html += `<div style="margin-bottom:0.5rem;font-weight:600;">Producto: ${data.product_name}</div>`;
-                html += `<table class="table"><thead><tr><th>Campo</th><th>Valor anterior</th><th>Valor nuevo</th></tr></thead><tbody>`;
+                html += `<div class="mb-1 fw-semibold">Producto: ${data.product_name}</div>`;
+                html += `<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Campo</th><th>Valor anterior</th><th>Valor nuevo</th></tr></thead><tbody>`;
                 data.changes.forEach(c => {
-                    html += `<tr><td>${c.field}</td><td style="color:#999;">${c.old}</td><td style="color:var(--success);font-weight:600;">${c.new}</td></tr>`;
+                    html += `<tr><td>${c.field}</td><td class="text-secondary">${c.old}</td><td class="text-success fw-semibold">${c.new}</td></tr>`;
                 });
-                html += `</tbody></table>`;
+                html += `</tbody></table></div>`;
             } else {
-                html += `<div style="padding:1rem;background:var(--bg);border-radius:8px;">${data.description}</div>`;
+                html += `<div class="p-3 bg-light rounded-3">${data.description}</div>`;
             }
             document.getElementById('logDetailBody').innerHTML = html;
             document.getElementById('logDetailTitle').textContent = '📋 ' + (actionNames[data.action] || data.action);

@@ -1,22 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Sistema Suspendido{% endblock %}
 {% block content %}
-<div style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
-    <div class="card" style="text-align:center;max-width:450px;">
-        <div style="font-size:3rem;margin-bottom:1rem;">🚫</div>
-        <h2 style="color:var(--accent);margin-bottom:1rem;">Sistema Suspendido</h2>
-        <p style="color:var(--gray);margin-bottom:1.5rem;">
-            La membresía de este sistema ha vencido. Realizá el pago para continuar usando el sistema.
-        </p>
-        {% if payment_info %}
-        <div style="background:var(--light);padding:1rem;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;">
-            <strong style="color:var(--primary);">Datos para el pago:</strong><br>
-            {{ payment_info|nl2br }}
+<div class="d-flex align-items-center justify-content-center" style="min-height:60vh;">
+    <div class="card shadow-sm" style="text-align:center;max-width:450px;">
+        <div class="card-body">
+            <div class="fs-1 mb-3">🚫</div>
+            <h2 class="mb-3" style="color:var(--accent);">Sistema Suspendido</h2>
+            <p class="text-muted mb-3">
+                La membresía de este sistema ha vencido. Realizá el pago para continuar usando el sistema.
+            </p>
+            {% if payment_info %}
+            <div class="bg-light p-3 rounded-3 mb-3 small">
+                <strong class="text-primary">Datos para el pago:</strong><br>
+                {{ payment_info|nl2br }}
+            </div>
+            {% endif %}
+            <button class="btn btn-success w-100 mb-3" onclick="payMembershipMP()" id="mpBtn">💳 Pagar con Mercado Pago</button>
+            <div id="mpStatus" class="small text-muted"></div>
+            <p class="small text-muted mt-3 mb-0">El sistema se desbloqueará automáticamente al confirmar el pago.</p>
         </div>
-        {% endif %}
-        <button class="btn btn-success" onclick="payMembershipMP()" id="mpBtn" style="width:100%;margin-bottom:1rem;">💳 Pagar con Mercado Pago</button>
-        <div id="mpStatus" style="font-size:0.85rem;color:var(--gray);"></div>
-        <p style="font-size:0.85rem;color:var(--gray);margin-top:1rem;">El sistema se desbloqueará automáticamente al confirmar el pago.</p>
     </div>
 </div>
 
@@ -30,7 +32,7 @@ function payMembershipMP() {
         .then(r => r.json())
         .then(data => {
             if (data.error) {
-                statusEl.innerHTML = '<span style="color:var(--danger);">Error: ' + data.error + '</span>';
+                statusEl.innerHTML = '<span class="text-danger">Error: ' + data.error + '</span>';
                 btn.disabled = false;
                 btn.textContent = '💳 Pagar con Mercado Pago';
                 return;
@@ -38,7 +40,7 @@ function payMembershipMP() {
             window.location.href = data.init_point;
         })
         .catch(() => {
-            statusEl.innerHTML = '<span style="color:var(--danger);">Error de conexión</span>';
+            statusEl.innerHTML = '<span class="text-danger">Error de conexión</span>';
             btn.disabled = false;
             btn.textContent = '💳 Pagar con Mercado Pago';
         });

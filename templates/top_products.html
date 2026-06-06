@@ -1,36 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Ranking Productos{% endblock %}
 {% block content %}
-<h2 style="color:var(--primary);margin-bottom:1.5rem;">🏆 Ranking de Productos Más Vendidos</h2>
+<h2 class="text-primary mb-4">🏆 Ranking de Productos Más Vendidos</h2>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">🔍 Filtros</div>
-    <form method="GET">
-        <div class="form-row" style="grid-template-columns:1fr 1fr auto;align-items:end;">
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Desde</label>
-                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+    <div class="card-body">
+        <form method="GET">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Desde</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                </div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Hasta</label>
-                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
-            </div>
-            <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Filtrar</button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
     {% if products %}
     <div class="table-responsive">
-        <table class="table">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
                     <th style="width:50px;">#</th>
                     <th>Código</th>
                     <th>Producto</th>
-                    <th style="text-align:center;">Cantidad Vendida</th>
-                    <th style="text-align:right;">Total Vendido</th>
+                    <th class="text-center">Cantidad Vendida</th>
+                    <th class="text-end">Total Vendido</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,30 +42,30 @@
                 <tr>
                     <td>
                         {% if loop.index == 1 %}
-                        <span style="font-size:1.3rem;">🥇</span>
+                        <span class="fs-5">🥇</span>
                         {% elif loop.index == 2 %}
-                        <span style="font-size:1.3rem;">🥈</span>
+                        <span class="fs-5">🥈</span>
                         {% elif loop.index == 3 %}
-                        <span style="font-size:1.3rem;">🥉</span>
+                        <span class="fs-5">🥉</span>
                         {% else %}
                         <strong>{{ loop.index }}</strong>
                         {% endif %}
                     </td>
-                    <td style="font-family:monospace;font-size:0.85rem;">{{ p.code }}</td>
+                    <td class="font-monospace small">{{ p.code }}</td>
                     <td><strong>{{ p.name }}</strong></td>
-                    <td style="text-align:center;">
-                        <span class="badge badge-primary" style="background:var(--primary);color:#fff;font-size:0.85rem;">{{ p.total_qty }}</span>
+                    <td class="text-center">
+                        <span class="badge bg-primary text-white">{{ p.total_qty }}</span>
                     </td>
-                    <td style="text-align:right;font-weight:600;">{{ p.total_amount|fmt }}</td>
+                    <td class="text-end fw-semibold">{{ p.total_amount|fmt }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% else %}
-    <div style="text-align:center;padding:2rem;color:var(--gray);">
-        <div style="font-size:3rem;margin-bottom:0.5rem;">📦</div>
-        <p>Sin ventas en este período</p>
+    <div class="card-body text-center text-muted">
+        <div class="fs-1 mb-2">📦</div>
+        <p class="mb-0">Sin ventas en este período</p>
     </div>
     {% endif %}
 </div>

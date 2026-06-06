@@ -503,7 +503,7 @@ def history_export():
     for log in logs:
         writer.writerow([
             to_ar(log.created_at).strftime('%d/%m/%Y %H:%M'),
-            log.user.username, log.user.role,
+            log.user.get_full_name(), log.user.role,
             action_map.get(log.action, log.action), log.description
         ])
     output.seek(0)
@@ -631,7 +631,7 @@ def profits():
         items_detail.append({
             'id': s.id,
             'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
-            'user': s.user.username,
+            'user': s.user.get_full_name(),
             'items_count': len(filtered_items) if product_id else s.items.count(),
             'revenue': revenue,
             'cost': cost,
@@ -736,7 +736,7 @@ def profits_pdf():
         items_detail.append({
             'id': s.id,
             'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
-            'user': s.user.username,
+            'user': s.user.get_full_name(),
             'items_count': len(filtered_items) if product_id else s.items.count(),
             'revenue': revenue,
             'cost': cost,
@@ -908,7 +908,7 @@ def checkout():
         'change': change,
         'payment_method': payment_method,
         'items': items_json,
-        'user': current_user.username
+        'user': current_user.get_full_name()
     })
 
 
@@ -1300,12 +1300,14 @@ def user_add():
     username = request.form.get('username')
     password = request.form.get('password')
     role = request.form.get('role', 'user')
+    first_name = request.form.get('first_name', '')
+    last_name = request.form.get('last_name', '')
 
     if User.query.filter_by(username=username).first():
         flash('El usuario ya existe.', 'danger')
         return redirect(url_for('users'))
 
-    user = User(username=username, role=role, active=True)
+    user = User(username=username, role=role, active=True, first_name=first_name, last_name=last_name)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
@@ -1421,7 +1423,7 @@ def api_history():
     for log in logs:
         entry = {
             'id': log.id,
-            'user': log.user.username,
+            'user': log.user.get_full_name(),
             'role': log.user.role,
             'action': action_map.get(log.action, log.action),
             'action_key': log.action,
@@ -1456,7 +1458,7 @@ def api_log_detail(id):
         return jsonify({'error': 'No encontrado'}), 404
     result = {
         'id': log.id,
-        'user': log.user.username,
+        'user': log.user.get_full_name(),
         'role': log.user.role,
         'action': log.action,
         'description': log.description,
@@ -1572,7 +1574,7 @@ def send_ticket_email(sale, sale_items, customer_email=None):
             <p style="margin:5px 0 0;font-size:13px;">Ticket #{sale.id}</p>
         </div>
         <div style="background:#f9f9f9;padding:15px;border:1px solid #ddd;">
-            <p style="font-size:12px;color:#555;">{to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M')} | Atendió: {sale.user.username}</p>
+            <p style="font-size:12px;color:#555;">{to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M')} | Atendió: {sale.user.get_full_name()}</p>
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <tr style="font-weight:700;border-bottom:2px solid #ddd;">
                     <td style="padding:5px;">Producto</td>
@@ -2060,6 +2062,12 @@ def init_app():
         for col, col_type in [('mp_payment_id', 'VARCHAR(100)'), ('mp_status', 'VARCHAR(20)')]:
             try:
                 db.session.execute(db.text(f'ALTER TABLE sale ADD COLUMN {col} {col_type} DEFAULT \'\''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        for col, col_type in [('first_name', 'VARCHAR(100) DEFAULT \'\''), ('last_name', 'VARCHAR(100) DEFAULT \'\'')]:
+            try:
+                db.session.execute(db.text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
                 db.session.commit()
             except Exception:
                 db.session.rollback()

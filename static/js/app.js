@@ -3,11 +3,19 @@ function fmt(amount) {
 }
 
 function openModal(id) {
-    document.getElementById(id).classList.add('active');
+    const el = document.getElementById(id);
+    if (el) {
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.show();
+    }
 }
 
 function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
+    const el = document.getElementById(id);
+    if (el) {
+        const modal = bootstrap.Modal.getInstance(el);
+        if (modal) modal.hide();
+    }
 }
 
 function toggleMenu() {
@@ -17,12 +25,6 @@ function toggleMenu() {
 function toggleMobileMenu() {
     document.getElementById('mobileNav').classList.toggle('open');
 }
-
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
-    }
-});
 
 document.addEventListener('DOMContentLoaded', function() {
     const alerts = document.querySelectorAll('.alert');
