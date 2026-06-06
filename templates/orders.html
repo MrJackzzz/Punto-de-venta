@@ -99,6 +99,8 @@
 
 <script>
 const products = {{ products|tojson }};
+const productUnitTypes = {};
+products.forEach(function(p) { productUnitTypes[p.id] = p.unit_type || 'unit'; });
 let cart = [];
 
 function renderSearchResults(query) {

@@ -3,60 +3,34 @@
 {% block content %}
 <h2 class="text-primary mb-1"><i class="bi bi-journal-text"></i> Planes y Precios</h2>
 <p class="text-muted mb-4">Sistema de gestión comercial SmartPost — Elegí el plan que mejor se adapte a tu negocio.</p>
+{% if current_user.role == 'admin' %}
+<div class="mb-3">
+    <button class="btn btn-outline-primary btn-sm" onclick="openModal('editPlanesModal')"><i class="bi bi-pencil"></i> Editar Planes</button>
+</div>
+{% endif %}
 
-<div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
-    {% set plans = [
-        ('Kiosco / Almacén', '$8.000/mes', '#4caf50', [
-            'Hasta 2 usuarios',
-            'Gestión de productos y stock',
-            'Proveedores y categorías',
-            'Ventas + ticket imprimible',
-            'Historial de ventas',
-            'Dashboard con gráficos',
-            'Modo oscuro',
-            'Soporte por email',
-        ]),
-        ('Comercio Mediano', '$18.000/mes', '#2196f3', [
-            'Hasta 5 usuarios',
-            'Todo lo del Plan Básico',
-            'Mercado Pago integrado',
-            'Backups automáticos',
-            'Reportes PDF y CSV',
-            'Ranking de productos',
-            'Alertas de stock crítico',
-            'Soporte prioritario',
-        ]),
-        ('Comercio Grande', '$50.000/mes', '#9c27b0', [
-            'Usuarios ilimitados',
-            'Todo lo del Plan Mediano',
-            'Multi-caja / multi-sucursal',
-            'Membresía con MP automático',
-            'Permisos por rol configurables',
-            'Exportación avanzada',
-            'Capacitación incluida',
-            'Soporte 24/7',
-        ]),
-        ('Puesta en Marcha', '$250.000 (único pago)', '#ff9800', [
-            'Instalación y configuración',
-            'Carga inicial de productos',
-            'Personalización de logo y marca',
-            'Configuración de MP y email',
-            'Capacitación del equipo',
-            'Puesta a punto del sistema',
-            'Documentación del setup',
-            'Válido para cualquier plan',
-        ]),
-    ] %}
-    {% for name, price, color, features in plans %}
+{% if plans and plans|length > 0 %}
+{% set default_plans = plans %}
+{% else %}
+{% set default_plans = [
+    {'name': 'Kiosco / Almacén', 'price': '$8.000/mes', 'color': '#4caf50', 'features': ['Hasta 2 usuarios', 'Gestión de productos y stock', 'Proveedores y categorías', 'Ventas + ticket imprimible', 'Historial de ventas', 'Dashboard con gráficos', 'Modo oscuro', 'Soporte por email']},
+    {'name': 'Comercio Mediano', 'price': '$18.000/mes', 'color': '#2196f3', 'features': ['Hasta 5 usuarios', 'Todo lo del Plan Básico', 'Mercado Pago integrado', 'Backups automáticos', 'Reportes PDF y CSV', 'Ranking de productos', 'Alertas de stock crítico', 'Soporte prioritario']},
+    {'name': 'Comercio Grande', 'price': '$50.000/mes', 'color': '#9c27b0', 'features': ['Usuarios ilimitados', 'Todo lo del Plan Mediano', 'Multi-caja / multi-sucursal', 'Membresía con MP automático', 'Permisos por rol configurables', 'Exportación avanzada', 'Capacitación incluida', 'Soporte 24/7']},
+    {'name': 'Puesta en Marcha', 'price': '$250.000 (único pago)', 'color': '#ff9800', 'features': ['Instalación y configuración', 'Carga inicial de productos', 'Personalización de logo y marca', 'Configuración de MP y email', 'Capacitación del equipo', 'Puesta a punto del sistema', 'Documentación del setup', 'Válido para cualquier plan']}
+] %}
+{% endif %}
+
+<div class="row row-cols-1 row-cols-md-4 g-4 mb-4" id="planesContainer">
+    {% for plan in default_plans %}
     <div class="col">
         <div class="card shadow-sm h-100 text-center">
-            <div class="card-header text-white" style="background:{{ color }};">
-                <h3 class="card-title mb-0" style="font-size:1.1rem;">{{ name }}</h3>
+            <div class="card-header text-white" style="background:{{ plan.color }};">
+                <h3 class="card-title mb-0" style="font-size:1.1rem;">{{ plan.name }}</h3>
             </div>
             <div class="card-body">
-                <div class="fw-bold fs-3 text-primary mb-3">{{ price }}</div>
+                <div class="fw-bold fs-3 text-primary mb-3">{{ plan.price }}</div>
                 <ul class="list-unstyled mb-0">
-                    {% for f in features %}
+                    {% for f in plan.features %}
                     <li class="d-flex gap-2 py-2 border-bottom">
                         <i class="bi bi-check-lg text-success flex-shrink-0 mt-1"></i>
                         <span>{{ f }}</span>
@@ -123,6 +97,86 @@
     <button class="btn btn-primary" onclick="sendPlanesEmail()"><i class="bi bi-envelope"></i> Enviar planes por email</button>
     <a href="{{ url_for('planes_pdf') }}" class="btn btn-secondary" target="_blank"><i class="bi bi-file-text"></i> Descargar PDF</a>
 </div>
+
+{% if current_user.role == 'admin' %}
+<div id="editPlanesModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Planes</h5>
+                <button type="button" class="btn-close" onclick="closeModal('editPlanesModal')"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Editá el nombre, precio, color y características de cada plan.</p>
+                <div id="planesEditor"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="savePlanes()">Guardar Planes</button>
+                <button class="btn btn-secondary" onclick="closeModal('editPlanesModal')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPlanesEditor() {
+    let plans = {{ default_plans|tojson }};
+    let html = plans.map((plan, i) => `
+        <div class="card mb-3 p-3">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label small">Nombre</label>
+                    <input class="form-control form-control-sm plan-name" value="${plan.name}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Precio</label>
+                    <input class="form-control form-control-sm plan-price" value="${plan.price}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Color (hex)</label>
+                    <input class="form-control form-control-sm plan-color" value="${plan.color}">
+                </div>
+            </div>
+            <div class="mt-2">
+                <label class="form-label small">Características (una por línea)</label>
+                <textarea class="form-control form-control-sm plan-features" rows="4">${plan.features.join('\n')}</textarea>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('planesEditor').innerHTML = html;
+}
+
+function savePlanes() {
+    const cards = document.querySelectorAll('#planesEditor .card');
+    const plans = Array.from(cards).map(card => ({
+        name: card.querySelector('.plan-name').value,
+        price: card.querySelector('.plan-price').value,
+        color: card.querySelector('.plan-color').value,
+        features: card.querySelector('.plan-features').value.split('\n').filter(f => f.trim())
+    }));
+    const btn = document.querySelector('button[onclick="savePlanes()"]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    fetch('/api/planes/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({plans: plans})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { alert('Error: ' + data.error); return; }
+        location.reload();
+    })
+    .catch(() => { alert('Error al guardar'); })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Guardar Planes';
+    });
+}
+
+document.getElementById('editPlanesModal').addEventListener('shown.bs.modal', openPlanesEditor);
+</script>
+{% endif %}
 
 <script>
 function sendPlanesEmail() {

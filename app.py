@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
-from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category
+from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder
 from datetime import datetime, timezone, timedelta
 AR_TZ = timezone(timedelta(hours=-3))
 
@@ -10,7 +10,7 @@ def to_ar(dt):
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
-from sqlalchemy import func
+from sqlalchemy import func, or_
 import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -1362,7 +1362,8 @@ def history():
         flash('No tienes permiso.', 'danger')
         return redirect(url_for('dashboard'))
     users = User.query.order_by(User.username).all()
-    return render_template('history.html', users=users)
+    products = Product.query.order_by(Product.name).all()
+    return render_template('history.html', users=users, products=products)
 
 
 @app.route('/api/history')
@@ -1375,6 +1376,7 @@ def api_history():
     action = request.args.get('action', '').strip()
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
+    product_id = request.args.get('product_id', type=int)
 
     query = MovementLog.query
 
@@ -1394,6 +1396,31 @@ def api_history():
             query = query.filter(MovementLog.created_at <= dt_to)
         except ValueError:
             pass
+
+    if product_id:
+        product = db.session.get(Product, product_id)
+        if product:
+            sale_ids_with_product = [
+                r[0] for r in db.session.query(SaleItem.sale_id).filter(
+                    SaleItem.product_id == product_id
+                ).distinct().all()
+            ]
+            if sale_ids_with_product:
+                query = query.filter(
+                    db.or_(
+                        MovementLog.description.ilike(f'%{product.code}%'),
+                        MovementLog.description.ilike(f'%{product.name}%'),
+                        db.and_(
+                            MovementLog.action == 'sale',
+                            db.or_(*[MovementLog.description.contains(f'#{sid}') for sid in sale_ids_with_product])
+                        )
+                    )
+                )
+            else:
+                query = query.filter(
+                    MovementLog.description.ilike(f'%{product.code}%') |
+                    MovementLog.description.ilike(f'%{product.name}%')
+                )
 
     logs = query.order_by(MovementLog.created_at.desc()).limit(500).all()
 
@@ -1632,7 +1659,7 @@ def orders():
     products = Product.query.order_by(Product.name).all()
     categories = Category.query.order_by(Category.name).all()
     pending = PendingOrder.query.filter_by(status='pending').order_by(PendingOrder.created_at.desc()).all()
-    products_json = [{'id': p.id, 'code': p.code, 'name': p.name, 'price': p.price, 'unit_type': p.unit_type} for p in products]
+    products_json = [{'id': p.id, 'code': p.code, 'name': p.name, 'price': p.price, 'unit_type': getattr(p, 'unit_type', 'unit')} for p in products]
     unit_types = ['unit', 'kg', 'g', 'liter', 'ml', 'm', 'cm', 'dozen', 'pack']
     return render_template('orders.html', products=products_json, categories=categories, pending=pending, unit_types=unit_types)
 
@@ -2131,7 +2158,26 @@ def membership_blocked():
 @app.route('/planes')
 @login_required
 def planes():
-    return render_template('planes.html')
+    plans_data = get_config('plans_data', '')
+    plans = json.loads(plans_data) if plans_data else []
+    return render_template('planes.html', plans=plans)
+
+
+@app.route('/api/planes/save', methods=['POST'])
+@login_required
+def planes_save():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    data = request.get_json()
+    if not data or 'plans' not in data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+    cfg = Config.query.filter_by(key='plans_data').first()
+    if cfg:
+        cfg.value = json.dumps(data['plans'], ensure_ascii=False)
+    else:
+        db.session.add(Config(key='plans_data', value=json.dumps(data['plans'], ensure_ascii=False)))
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @app.route('/planes/pdf')
