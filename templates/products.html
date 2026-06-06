@@ -28,6 +28,7 @@
                         <th>Precio</th>
                         <th>Moneda</th>
                         <th>Stock</th>
+                        <th>Unidad</th>
                         <th>Proveedor</th>
                         <th>Acciones</th>
                     </tr>
@@ -48,10 +49,11 @@
                             {{ p.stock }}
                             {% endif %}
                         </td>
+                        <td>{{ {'unit': 'Unidad', 'kg': 'KG', 'g': 'Gr', 'liter': 'Litro', 'ml': 'ML', 'm': 'Metro', 'cm': 'CM', 'dozen': 'Docena', 'pack': 'Pack'}.get(p.unit_type, p.unit_type) }}</td>
                         <td>{{ p.supplier.name if p.supplier else '-' }}</td>
                         <td>
                             {% if current_user.can_edit_products() %}
-                            <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }})">Editar</button>
+                            <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, '{{ p.unit_type }}', {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }})">Editar</button>
                             {% endif %}
                             {% if current_user.role == 'admin' %}
                             <form method="POST" action="{{ url_for('product_delete', id=p.id) }}" class="d-inline">
@@ -61,7 +63,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="9" class="text-center text-muted py-4">No hay productos registrados</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-4">No hay productos registrados</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -115,7 +117,17 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="stock" class="form-label">Stock</label>
-                                <input type="number" id="stock" name="stock" class="form-control" required>
+                                <input type="number" id="stock" name="stock" class="form-control" step="any" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="unit_type" class="form-label">Unidad de Medida</label>
+                                <select id="unit_type" name="unit_type" class="form-control">
+                                    {% for ut in unit_types %}
+                                    <option value="{{ ut }}">{{ {'unit': 'Unidad', 'kg': 'Kilogramo (KG)', 'g': 'Gramo (Gr)', 'liter': 'Litro', 'ml': 'Mililitro (ML)', 'm': 'Metro', 'cm': 'Centímetro (CM)', 'dozen': 'Docena', 'pack': 'Pack'}.get(ut, ut) }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -157,7 +169,7 @@
 </div>
 
 <script>
-function editProduct(id, code, name, cost, markup, currency, stock, supplierId, description, categoryId) {
+function editProduct(id, code, name, cost, markup, currency, stock, unitType, supplierId, description, categoryId) {
     document.getElementById('productModalTitle').textContent = 'Editar Producto';
     document.getElementById('productForm').action = '/products/edit/' + id;
     document.getElementById('code').value = code;
@@ -166,6 +178,7 @@ function editProduct(id, code, name, cost, markup, currency, stock, supplierId, 
     document.getElementById('markup_percentage').value = markup;
     document.getElementById('currency').value = currency;
     document.getElementById('stock').value = stock;
+    document.getElementById('unit_type').value = unitType;
     document.getElementById('supplier_id').value = supplierId || '';
     document.getElementById('category_id').value = categoryId || '';
     document.getElementById('description').value = description;

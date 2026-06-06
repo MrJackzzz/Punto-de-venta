@@ -136,7 +136,8 @@ class Product(db.Model):
     markup_percentage = db.Column(db.Float, nullable=False, default=0)
     price = db.Column(db.Float, nullable=False, default=0)
     currency = db.Column(db.String(10), nullable=False, default='ARS')
-    stock = db.Column(db.Integer, nullable=False, default=0)
+    stock = db.Column(db.Float, nullable=False, default=0)
+    unit_type = db.Column(db.String(20), nullable=False, default='unit')
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
@@ -180,7 +181,7 @@ class SaleItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sale_id = db.Column(db.Integer, db.ForeignKey('sale.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False, default=1)
+    quantity = db.Column(db.Float, nullable=False, default=1)
     unit_price = db.Column(db.Float, nullable=False)
     subtotal = db.Column(db.Float, nullable=False)
 

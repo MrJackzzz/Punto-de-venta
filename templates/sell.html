@@ -21,7 +21,7 @@
                         </div>
                         <div class="mb-3 col-6">
                             <label for="manualQty">Cantidad</label>
-                            <input type="number" id="manualQty" class="form-control" value="1" min="1">
+                            <input type="number" id="manualQty" class="form-control" value="1" min="0.1" step="any">
                         </div>
                     </div>
                     <button class="btn btn-primary" onclick="addByCode()">Agregar al Carrito</button>
@@ -124,7 +124,7 @@ function calculateChange() {
 }
 
 function getQty() {
-    return parseInt(document.getElementById('manualQty').value) || 1;
+    return parseFloat(document.getElementById('manualQty').value) || 1;
 }
 
 function addToCart(product) {
@@ -140,7 +140,8 @@ function addToCart(product) {
             name: product.name,
             unit_price: product.price,
             quantity: qty,
-            subtotal: product.price * qty
+            subtotal: product.price * qty,
+            unit_type: product.unit_type || 'unit'
         });
     }
     renderCart();
@@ -164,7 +165,8 @@ function addByCode() {
                     name: product.name,
                     unit_price: product.price,
                     quantity: qty,
-                    subtotal: product.price * qty
+                    subtotal: product.price * qty,
+                    unit_type: product.unit_type || 'unit'
                 });
             }
             renderCart();
@@ -175,8 +177,10 @@ function addByCode() {
 }
 
 function changeQty(index, delta) {
-    cart[index].quantity = Math.max(1, cart[index].quantity + delta);
-    cart[index].subtotal = cart[index].quantity * cart[index].unit_price;
+    const item = cart[index];
+    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.1 : 1;
+    item.quantity = Math.max(step, item.quantity + delta * step);
+    item.subtotal = item.quantity * item.unit_price;
     renderCart();
 }
 
@@ -196,7 +200,7 @@ function showTicket(data) {
     data.items.forEach(item => {
         itemsHtml += `<div class="d-flex justify-content-between" style="font-size:12px;padding:2px 0;">
             <span class="flex-fill">${item.product_name}</span>
-            <span style="width:30px;text-align:center;">${item.quantity}</span>
+            <span style="width:50px;text-align:center;">${item.quantity}${item.unit_type && item.unit_type !== 'unit' ? ' ' + item.unit_type : ''}</span>
             <span style="width:70px;text-align:right;">${fmt(item.subtotal)}</span>
         </div>`;
     });
@@ -221,7 +225,7 @@ function showTicket(data) {
         <hr class="my-1" style="border-top:1px dashed #999;">
         <div class="d-flex justify-content-between fw-bold" style="font-size:12px;">
             <span class="flex-fill">Producto</span>
-            <span style="width:30px;text-align:center;">Cant</span>
+            <span style="width:50px;text-align:center;">Cant</span>
             <span style="width:70px;text-align:right;">Subtotal</span>
         </div>
         <hr class="my-1" style="border-top:1px dashed #999;">
@@ -326,11 +330,11 @@ function renderCart() {
         <div class="cart-item">
             <div class="info">
                 <div class="name">${item.name}</div>
-                <div class="price">${fmt(item.unit_price)}</div>
+                <div class="price">${fmt(item.unit_price)}${item.unit_type && item.unit_type !== 'unit' ? ' / ' + item.unit_type : ''}</div>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, -1)">−</button>
-                <span class="fw-semibold text-center" style="min-width:24px;">${item.quantity}</span>
+                <span class="fw-semibold text-center" style="min-width:36px;">${(item.unit_type && item.unit_type !== 'unit' ? Number(item.quantity).toFixed(1) : item.quantity)}${item.unit_type && item.unit_type !== 'unit' ? ' ' + item.unit_type : ''}</span>
                 <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, 1)">+</button>
                 <strong>${fmt(item.subtotal)}</strong>
                 <button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">&times;</button>
@@ -364,7 +368,8 @@ function checkout() {
         body: JSON.stringify({
             items: cart.map(item => ({
                 product_id: item.product_id,
-                quantity: item.quantity
+                quantity: item.quantity,
+                unit_type: item.unit_type || 'unit'
             })),
             payment_method: method,
             amount_paid: method === 'cash' ? paid : total,
@@ -441,14 +446,14 @@ document.getElementById('searchInput').addEventListener('input', function() {
                 return;
             }
             results.innerHTML = products.map(p => `
-                <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor:pointer;" onclick="addToCart({id:${p.id},code:'${p.code}',name:'${p.name}',price:${p.price}})">
+                <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor:pointer;" onclick="addToCart({id:${p.id},code:'${p.code}',name:'${p.name}',price:${p.price},unit_type:'${p.unit_type}'})">
                     <div>
                         <strong>${p.name}</strong>
                         <small class="text-muted"> (${p.code})</small>
                     </div>
                     <div class="text-end">
                         <div>${fmt(p.price)}</div>
-                        <small class="text-muted">Stock: ${p.stock}</small>
+                        <small class="text-muted">Stock: ${(p.unit_type && p.unit_type !== 'unit' ? p.stock + ' ' + p.unit_type : p.stock)}</small>
                     </div>
                 </div>
             `).join('');

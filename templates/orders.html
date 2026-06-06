@@ -113,7 +113,7 @@ function renderSearchResults(query) {
         return;
     }
     el.innerHTML = filtered.map(p => `
-        <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor:pointer;" onclick="addToCart(${p.id},'${p.code.replace(/'/g,"\\'")}','${p.name.replace(/'/g,"\\'")}',${p.price})">
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor:pointer;" onclick="addToCart(${p.id},'${p.code.replace(/'/g,"\\'")}','${p.name.replace(/'/g,"\\'")}',${p.price},'${p.unit_type}')">
             <div>
                 <strong>${p.name}</strong>
                 <small class="text-muted"> (${p.code})</small>
@@ -125,13 +125,14 @@ function renderSearchResults(query) {
     `).join('');
 }
 
-function addToCart(id, code, name, price) {
+function addToCart(id, code, name, price, unitType) {
     const existing = cart.find(item => item.product_id === id);
+    const qty = (unitType && unitType !== 'unit') ? 1.0 : 1;
     if (existing) {
-        existing.quantity += 1;
+        existing.quantity += qty;
         existing.subtotal = existing.quantity * existing.unit_price;
     } else {
-        cart.push({ product_id: id, code: code, name: name, unit_price: price, quantity: 1, subtotal: price });
+        cart.push({ product_id: id, code: code, name: name, unit_price: price, quantity: qty, subtotal: price, unit_type: unitType || 'unit' });
     }
     renderCart();
     document.getElementById('searchInput').value = '';
@@ -140,8 +141,10 @@ function addToCart(id, code, name, price) {
 }
 
 function changeQty(index, delta) {
-    cart[index].quantity = Math.max(1, cart[index].quantity + delta);
-    cart[index].subtotal = cart[index].quantity * cart[index].unit_price;
+    const item = cart[index];
+    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.1 : 1;
+    item.quantity = Math.max(step, item.quantity + delta * step);
+    item.subtotal = item.quantity * item.unit_price;
     renderCart();
 }
 
@@ -166,11 +169,12 @@ function renderCart() {
             <td><strong>${item.code}</strong></td>
             <td>${item.name}</td>
             <td>
-                <div class="input-group input-group-sm" style="max-width:110px;">
+                <div class="input-group input-group-sm" style="max-width:130px;">
                     <button class="btn btn-outline-secondary" onclick="changeQty(${i}, -1)">−</button>
-                    <input type="number" class="form-control text-center" value="${item.quantity}" min="1" style="width:40px;" onchange="setQty(${i}, this.value)" onfocus="this.select()">
+                    <input type="number" class="form-control text-center" value="${item.quantity}" min="${(item.unit_type && item.unit_type !== 'unit') ? '0.1' : '1'}" step="${(item.unit_type && item.unit_type !== 'unit') ? '0.1' : '1'}" style="width:50px;" onchange="setQty(${i}, this.value)" onfocus="this.select()">
                     <button class="btn btn-outline-secondary" onclick="changeQty(${i}, 1)">+</button>
                 </div>
+                ${item.unit_type && item.unit_type !== 'unit' ? '<small class="d-block text-muted">' + item.unit_type + '</small>' : ''}
             </td>
             <td>${fmt(item.unit_price)}</td>
             <td>${fmt(item.subtotal)}</td>
@@ -182,9 +186,11 @@ function renderCart() {
 }
 
 function setQty(index, val) {
-    const qty = parseInt(val) || 1;
-    cart[index].quantity = Math.max(1, qty);
-    cart[index].subtotal = cart[index].quantity * cart[index].unit_price;
+    const item = cart[index];
+    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.1 : 1;
+    const qty = parseFloat(val) || step;
+    item.quantity = Math.max(step, qty);
+    item.subtotal = item.quantity * item.unit_price;
     renderCart();
 }
 
@@ -206,7 +212,8 @@ function saveOrder() {
                 name: item.name,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
-                subtotal: item.subtotal
+                subtotal: item.subtotal,
+                unit_type: item.unit_type || 'unit'
             })),
             customer_name: customerName,
             notes: notes,

@@ -5,7 +5,7 @@
 
 <!-- Identidad del Local -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header">Identidad del Local</div>
+    <div class="card-header card-header-primary">Identidad del Local</div>
     <div class="card-body">
         <div class="row g-4 align-items-start">
             <div class="col-md">
@@ -48,7 +48,7 @@
 <!-- Parámetros de Stock + Email + SMTP (misma forma) -->
 <form method="POST">
     <div class="card shadow-sm mb-4">
-        <div class="card-header">Parámetros de Stock</div>
+        <div class="card-header card-header-primary">Parámetros de Stock</div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -76,7 +76,7 @@
     </div>
 
     <div class="card shadow-sm mb-4">
-        <div class="card-header">Email del Dueño</div>
+        <div class="card-header card-header-primary">Email del Dueño</div>
         <div class="card-body">
             <p class="text-muted small mb-3">
                 Cada vez que se realiza una venta, se enviará una copia del ticket a este email además del email del cliente.
@@ -90,7 +90,7 @@
     </div>
 
     <div class="card shadow-sm mb-4">
-        <div class="card-header">Configuración SMTP</div>
+        <div class="card-header card-header-primary">Configuración SMTP</div>
         <div class="card-body">
             <p class="text-muted small mb-3">
                 Completá los datos de tu servidor de correo saliente. Ej: Gmail, Outlook, o tu proveedor.
@@ -125,7 +125,7 @@
 
 <!-- Mercado Pago -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header">Mercado Pago</div>
+    <div class="card-header card-header-primary">Mercado Pago</div>
     <div class="card-body">
         <p class="text-muted small mb-3">
             Configurá el <strong>Access Token</strong> de Mercado Pago para generar pagos QR dinámicos.
@@ -145,7 +145,7 @@
 
 <!-- Backups -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header">Backups Automáticos</div>
+    <div class="card-header card-header-primary">Backups Automáticos</div>
     <div class="card-body">
         <form method="POST" action="{{ url_for('save_backup_config') }}">
             <div class="row g-3">
@@ -169,7 +169,7 @@
 
 <!-- Permisos -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header">Multi-Sucursal</div>
+    <div class="card-header card-header-primary">Multi-Sucursal</div>
     <div class="card-body">
         <form method="POST">
             <div class="mb-3">
@@ -187,7 +187,7 @@
 
 <!-- Permisos -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header">Permisos por Rol</div>
+    <div class="card-header card-header-primary">Permisos por Rol</div>
     <div class="card-body">
         <p class="text-muted small mb-3">
             Activá o desactivá permisos específicos para cada rol. Los cambios son inmediatos.

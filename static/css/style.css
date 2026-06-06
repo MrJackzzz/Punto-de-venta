@@ -89,6 +89,9 @@ pre { white-space: pre-wrap; }
 .thead-primary th { background: var(--dark) !important; color: #fff !important; font-weight: 600; border-color: rgba(255,255,255,0.1) !important; }
 body.dark-mode .thead-primary th { background: #1e2335 !important; color: #8ab8d9 !important; }
 
+.card-header-primary { background: var(--dark) !important; color: #fff !important; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
+body.dark-mode .card-header-primary { background: #1e2335 !important; color: #8ab8d9 !important; }
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .sidebar { display: none; }

@@ -250,8 +250,9 @@ def products():
     products_list = Product.query.order_by(Product.name).all()
     suppliers = Supplier.query.order_by(Supplier.name).all()
     categories = Category.query.order_by(Category.name).all()
+    unit_types = ['unit', 'kg', 'g', 'liter', 'ml', 'm', 'cm', 'dozen', 'pack']
     return render_template('products.html', products=products_list, suppliers=suppliers,
-                           categories=categories, low_stock_threshold=threshold)
+                           categories=categories, low_stock_threshold=threshold, unit_types=unit_types)
 
 
 @app.route('/products/add', methods=['POST'])
@@ -264,7 +265,8 @@ def product_add():
     cost = float(request.form.get('cost', 0))
     markup = float(request.form.get('markup_percentage', 0))
     currency = request.form.get('currency', 'ARS')
-    stock = int(request.form.get('stock', 0))
+    stock = float(request.form.get('stock', 0))
+    unit_type = request.form.get('unit_type', 'unit')
     supplier_id = request.form.get('supplier_id')
     category_id = request.form.get('category_id')
     description = request.form.get('description', '')
@@ -276,7 +278,7 @@ def product_add():
     product = Product(
         code=code, name=name, cost=cost,
         markup_percentage=markup, currency=currency,
-        stock=stock, description=description
+        stock=stock, unit_type=unit_type, description=description
     )
     if supplier_id:
         product.supplier_id = int(supplier_id)
@@ -313,7 +315,8 @@ def product_edit(id):
     product.cost = float(request.form.get('cost', 0))
     product.markup_percentage = float(request.form.get('markup_percentage', 0))
     product.currency = request.form.get('currency', 'ARS')
-    product.stock = int(request.form.get('stock', 0))
+    product.stock = float(request.form.get('stock', 0))
+    product.unit_type = request.form.get('unit_type', 'unit')
     product.description = request.form.get('description', '')
     sid = request.form.get('supplier_id')
     product.supplier_id = int(sid) if sid else None
@@ -802,7 +805,8 @@ def sell():
         flash('No tienes permiso para vender.', 'danger')
         return redirect(url_for('dashboard'))
     products_list = Product.query.filter(Product.stock > 0).order_by(Product.name).all()
-    return render_template('sell.html', products=products_list)
+    unit_types = ['unit', 'kg', 'g', 'liter', 'ml', 'm', 'cm', 'dozen', 'pack']
+    return render_template('sell.html', products=products_list, unit_types=unit_types)
 
 
 @app.route('/api/product/<code>')
@@ -817,7 +821,8 @@ def api_product_by_code(code):
         'name': product.name,
         'price': product.price,
         'currency': product.currency,
-        'stock': product.stock
+        'stock': product.stock,
+        'unit_type': product.unit_type
     })
 
 
@@ -831,7 +836,8 @@ def api_products_search():
     ).limit(20).all()
     return jsonify([{
         'id': p.id, 'code': p.code, 'name': p.name,
-        'price': p.price, 'currency': p.currency, 'stock': p.stock
+        'price': p.price, 'currency': p.currency, 'stock': p.stock,
+        'unit_type': p.unit_type
     } for p in products_list])
 
 
@@ -853,7 +859,7 @@ def checkout():
         product = db.session.get(Product, item['product_id'])
         if not product or product.stock < item['quantity']:
             return jsonify({'error': f'Stock insuficiente para {product.name if product else "producto"}'}), 400
-        qty = int(item['quantity'])
+        qty = float(item['quantity'])
         unit_price = product.price
         subtotal = round(unit_price * qty, 2)
         total += subtotal
@@ -891,7 +897,8 @@ def checkout():
             'product_name': si['product'].name,
             'quantity': si['quantity'],
             'unit_price': si['unit_price'],
-            'subtotal': si['subtotal']
+            'subtotal': si['subtotal'],
+            'unit_type': si['product'].unit_type
         })
 
     db.session.commit()
@@ -1525,7 +1532,8 @@ def api_sale_items(sale_id):
         'product_name': item.product.name if item.product else 'Eliminado',
         'quantity': item.quantity,
         'unit_price': item.unit_price,
-        'subtotal': item.subtotal
+        'subtotal': item.subtotal,
+        'unit_type': item.product.unit_type if item.product else 'unit'
     } for item in sale.items]
     return jsonify({
         'id': sale.id,
@@ -1624,8 +1632,9 @@ def orders():
     products = Product.query.order_by(Product.name).all()
     categories = Category.query.order_by(Category.name).all()
     pending = PendingOrder.query.filter_by(status='pending').order_by(PendingOrder.created_at.desc()).all()
-    products_json = [{'id': p.id, 'code': p.code, 'name': p.name, 'price': p.price} for p in products]
-    return render_template('orders.html', products=products_json, categories=categories, pending=pending)
+    products_json = [{'id': p.id, 'code': p.code, 'name': p.name, 'price': p.price, 'unit_type': p.unit_type} for p in products]
+    unit_types = ['unit', 'kg', 'g', 'liter', 'ml', 'm', 'cm', 'dozen', 'pack']
+    return render_template('orders.html', products=products_json, categories=categories, pending=pending, unit_types=unit_types)
 
 
 @app.route('/api/orders')
@@ -2196,6 +2205,16 @@ def init_app():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        try:
+            db.session.execute(db.text('ALTER TABLE product ADD COLUMN unit_type VARCHAR(20) DEFAULT \'unit\''))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        try:
+            db.session.execute(db.text('ALTER TABLE sale_item ALTER COLUMN quantity TYPE FLOAT'))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         try:
             db.session.execute(db.text('SELECT 1 FROM pending_order LIMIT 1'))
         except Exception:
