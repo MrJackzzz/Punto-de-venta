@@ -38,7 +38,7 @@
                         <td><strong>{{ p.code }}</strong></td>
                         <td>{{ p.name }}</td>
                         <td class="text-truncate text-muted small" style="max-width:150px;" title="{{ p.description or '' }}">{{ p.description[:40] + '...' if p.description and p.description|length > 40 else p.description or '-' }}</td>
-                        <td>{% if p.category %}<span class="badge bg-secondary text-dark">{{ p.category.name }}</span>{% else %}-{% endif %}</td>
+                        <td>{% if p.category %}<span class="badge bg-primary text-white">{{ p.category.name }}</span>{% else %}-{% endif %}</td>
                         <td>{{ p.price|fmt }}</td>
                         <td>{{ p.currency }}</td>
                         <td>
