@@ -1441,6 +1441,41 @@ def history():
     return render_template('history.html', users=users, products=products)
 
 
+@app.route('/admin/clear-history', methods=['POST'])
+@login_required
+def clear_history():
+    if current_user.role != 'admin':
+        flash('Solo el admin puede limpiar el historial', 'danger')
+        return redirect(url_for('history'))
+    date_from = request.form.get('date_from', '').strip()
+    date_to = request.form.get('date_to', '').strip()
+    query_sales = Sale.query
+    query_logs = MovementLog.query
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query_sales = query_sales.filter(Sale.created_at >= dt_from)
+            query_logs = query_logs.filter(MovementLog.created_at >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query_sales = query_sales.filter(Sale.created_at <= dt_to)
+            query_logs = query_logs.filter(MovementLog.created_at <= dt_to)
+        except ValueError:
+            pass
+    sales = query_sales.all()
+    sale_ids = [s.id for s in sales]
+    if sale_ids:
+        SaleItem.query.filter(SaleItem.sale_id.in_(sale_ids)).delete(synchronize_session=False)
+        Sale.query.filter(Sale.id.in_(sale_ids)).delete(synchronize_session=False)
+    count = query_logs.delete(synchronize_session=False)
+    db.session.commit()
+    flash(f'Historial limpiado: {len(sale_ids)} ventas y {count} movimientos eliminados', 'success')
+    return redirect(url_for('history'))
+
+
 @app.route('/api/history')
 @login_required
 def api_history():
