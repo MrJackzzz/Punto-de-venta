@@ -194,12 +194,21 @@ def index():
     return redirect(url_for('login'))
 
 
-@app.route('/landing')
-def landing():
+@app.route('/api/public/systems')
+def api_public_systems():
     systems = System.query.filter_by(is_active=True).order_by(System.sort_order).all()
-    biz_name = get_config('business_name', 'SmartPost')
-    logo_url = get_config('logo_filename', '')
-    return render_template('landing.html', systems=systems, business_name=biz_name, logo_url=logo_url)
+    return jsonify([{
+        'id': s.id,
+        'name': s.name,
+        'tagline': s.tagline,
+        'description': s.description,
+        'logo_url': s.logo_url,
+        'price': s.price,
+        'category': s.category,
+        'demo_url': s.demo_url,
+        'features': [f.strip() for f in s.features.split('\n') if f.strip()] if s.features else [],
+        'sort_order': s.sort_order,
+    } for s in systems])
 
 
 @app.route('/login', methods=['GET', 'POST'])

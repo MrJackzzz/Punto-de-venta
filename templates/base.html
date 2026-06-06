@@ -67,7 +67,6 @@
             <span class="sidebar-user">{{ current_user.get_full_name() }}</span>
             <span class="sidebar-role">{{ current_user.role }}</span>
             <a href="{{ url_for('logout') }}" class="sidebar-logout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
-            <a href="{{ url_for('landing') }}" class="sidebar-logout" title="Ver landing" style="position:relative;right:auto;margin-left:auto;"><i class="bi bi-globe"></i></a>
         </div>
     </aside>
     <div class="main-area" id="mainArea">
@@ -107,7 +106,6 @@
             <div class="user-info desktop-only d-flex align-items-center gap-3 small">
                 <span>{{ current_user.get_full_name() }}</span>
                 <span class="badge bg-warning text-dark rounded-pill text-uppercase">{{ current_user.role }}</span>
-                <a href="{{ url_for('landing') }}" class="btn btn-sm btn-outline-light" title="Ver página pública"><i class="bi bi-globe"></i></a>
                 <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i></a>
             </div>
         </header>
