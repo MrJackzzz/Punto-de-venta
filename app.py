@@ -1312,6 +1312,8 @@ def users():
         flash('No tienes permiso.', 'danger')
         return redirect(url_for('dashboard'))
     users_list = User.query.order_by(User.username).all()
+    if current_user.role != 'admin':
+        users_list = [u for u in users_list if u.role != 'admin']
     configs = {c.key: c.value for c in Config.query.all()}
     return render_template('users.html', users=users_list, configs=configs)
 
@@ -1368,9 +1370,39 @@ def user_toggle(id):
 @app.route('/users/reset-password/<int:id>', methods=['POST'])
 @login_required
 def user_reset_password(id):
-    if current_user.role != 'admin':
-        flash('Solo Admin puede resetear contraseñas.', 'danger')
+    if not current_user.can_manage_users():
+        flash('Permiso denegado.', 'danger')
         return redirect(url_for('users'))
+    user = db.session.get(User, id)
+    if not user:
+        flash('Usuario no encontrado.', 'danger')
+        return redirect(url_for('users'))
+    password = request.form.get('password', '123456')
+    user.set_password(password)
+    db.session.commit()
+    log_movement(current_user, 'user_reset_pass', f'Contraseña reseteada para {user.username}')
+    flash(f'Contraseña de {user.username} reseteada.', 'success')
+    return redirect(url_for('users'))
+
+
+@app.route('/admin/change-password', methods=['POST'])
+@login_required
+def admin_change_password():
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('settings'))
+    current_pw = request.form.get('current_password', '')
+    new_pw = request.form.get('new_password', '')
+    if not current_user.check_password(current_pw):
+        flash('Contraseña actual incorrecta.', 'danger')
+        return redirect(url_for('settings'))
+    if len(new_pw) < 4:
+        flash('La nueva contraseña debe tener al menos 4 caracteres.', 'danger')
+        return redirect(url_for('settings'))
+    current_user.set_password(new_pw)
+    db.session.commit()
+    flash('Contraseña cambiada correctamente.', 'success')
+    return redirect(url_for('settings'))
     user = db.session.get(User, id)
     if user:
         new_pass = request.form.get('password', '123456')

@@ -39,146 +39,24 @@
                 <form method="POST" action="{{ url_for('upload_logo') }}" enctype="multipart/form-data">
                     <input type="file" name="logo" accept="image/*" class="form-control form-control-sm w-auto d-inline-block" required>
                     <button type="submit" class="btn btn-primary btn-sm mt-1">Subir logo</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Parámetros de Stock + Email + SMTP (misma forma) -->
-<form method="POST">
-    <div class="card shadow-sm mb-4">
-        <div class="card-header card-header-primary">Parámetros de Stock</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="low_stock_threshold" class="form-label">Stock mínimo (alerta de stock bajo)</label>
-                    <input type="number" id="low_stock_threshold" name="low_stock_threshold" class="form-control"
-                           value="{{ configs.get('low_stock_threshold', '10') }}" min="1">
-                    <small class="text-muted">Productos por debajo de esta cantidad se marcan en rojo</small>
-                </div>
-                <div class="col-md-6">
-                    <label for="critical_stock_threshold" class="form-label">Stock crítico (alerta por email)</label>
-                    <input type="number" id="critical_stock_threshold" name="critical_stock_threshold" class="form-control"
-                           value="{{ configs.get('critical_stock_threshold', '5') }}" min="1">
-                    <small class="text-muted">Al llegar a este valor, la app envía un email al dueño listando los productos críticos</small>
-                </div>
-                <div class="col-md-6">
-                    <label for="default_currency" class="form-label">Moneda por defecto</label>
-                    <select id="default_currency" name="default_currency" class="form-select">
-                        <option value="ARS" {{ 'selected' if configs.get('default_currency') == 'ARS' else '' }}>ARS - Peso Argentino</option>
-                        <option value="USD" {{ 'selected' if configs.get('default_currency') == 'USD' else '' }}>USD - Dólar</option>
-                        <option value="EUR" {{ 'selected' if configs.get('default_currency') == 'EUR' else '' }}>EUR - Euro</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header card-header-primary">Email del Dueño</div>
-        <div class="card-body">
-            <p class="text-muted small mb-3">
-                Cada vez que se realiza una venta, se enviará una copia del ticket a este email además del email del cliente.
-            </p>
-            <div class="mb-3">
-                <label for="owner_email" class="form-label">Email del dueño del local</label>
-                <input type="email" id="owner_email" name="owner_email" class="form-control"
-                       value="{{ configs.get('owner_email', '') }}" placeholder="dueño@email.com">
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header card-header-primary">Configuración SMTP</div>
-        <div class="card-body">
-            <p class="text-muted small mb-3">
-                Completá los datos de tu servidor de correo saliente. Ej: Gmail, Outlook, o tu proveedor.
-            </p>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="smtp_host" class="form-label">Servidor SMTP</label>
-                    <input type="text" id="smtp_host" name="smtp_host" class="form-control"
-                           value="{{ configs.get('smtp_host', '') }}" placeholder="smtp.gmail.com">
-                </div>
-                <div class="col-md-6">
-                    <label for="smtp_port" class="form-label">Puerto</label>
-                    <input type="number" id="smtp_port" name="smtp_port" class="form-control"
-                           value="{{ configs.get('smtp_port', '587') }}" placeholder="587">
-                </div>
-                <div class="col-md-6">
-                    <label for="smtp_user" class="form-label">Usuario / Email</label>
-                    <input type="text" id="smtp_user" name="smtp_user" class="form-control"
-                           value="{{ configs.get('smtp_user', '') }}" placeholder="tucorreo@gmail.com">
-                </div>
-                <div class="col-md-6">
-                    <label for="smtp_password" class="form-label">Contraseña</label>
-                    <input type="password" id="smtp_password" name="smtp_password" class="form-control"
-                           value="{{ configs.get('smtp_password', '') }}" placeholder="••••••••">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-primary w-100 mb-4">Guardar Configuración</button>
-</form>
-
-<!-- Límite de Usuarios -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header card-header-primary">Límite de Usuarios</div>
-    <div class="card-body">
-        <form method="POST">
-            <div class="mb-3">
-                <label for="max_users" class="form-label">Máximo de usuarios permitidos (sin contar Admin)</label>
-                <input type="number" id="max_users" name="max_users" class="form-control"
-                       value="{{ configs.get('max_users', '0') }}" min="0">
-                <small class="text-muted">Poner 0 para sin límite. El sistema no permitirá crear más usuarios que este número (útil para planes).</small>
-            </div>
-            <button type="submit" class="btn btn-primary">Guardar</button>
         </form>
     </div>
 </div>
 
-<!-- Mercado Pago -->
+<!-- Cambiar Contraseña -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header card-header-primary">Mercado Pago</div>
+    <div class="card-header card-header-primary">Cambiar Contraseña de Admin</div>
     <div class="card-body">
-        <p class="text-muted small mb-3">
-            Configurá el <strong>Access Token</strong> de Mercado Pago para generar pagos QR dinámicos.
-            Creá una aplicación en <a href="https://www.mercadopago.com.ar/developers" target="_blank" class="text-decoration-none">Mercado Pago Developers</a> y copiá tu Access Token acá.
-        </p>
-        <form method="POST">
+        <form method="POST" action="{{ url_for('admin_change_password') }}">
             <div class="mb-3">
-                <label for="mp_access_token" class="form-label">Access Token (producción)</label>
-                <input type="text" id="mp_access_token" name="mp_access_token" class="form-control"
-                       value="{{ configs.get('mp_access_token', '') }}" placeholder="APP_USR-xxxxxxxxxx-xxxxxx-xxxxxxxxxxxx-xxxxxxxx">
-                <small class="text-muted d-block mt-1">Empieza con APP_USR-... Lo encontrás en Credenciales → Access Token</small>
+                <label for="current_password" class="form-label">Contraseña actual</label>
+                <input type="password" id="current_password" name="current_password" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary">Guardar Access Token</button>
-        </form>
-    </div>
-</div>
-
-<!-- Backups -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header card-header-primary">Backups Automáticos</div>
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('save_backup_config') }}">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="backup_interval" class="form-label">Intervalo entre backups (horas)</label>
-                    <input type="number" id="backup_interval" name="backup_interval" class="form-control"
-                           value="{{ configs.get('backup_interval', '0') }}" min="0" step="1">
-                    <small class="text-muted">Poner 0 para desactivar backups automáticos</small>
-                </div>
-                <div class="col-md-6">
-                    <label for="backup_max_count" class="form-label">Máximo de backups a conservar</label>
-                    <input type="number" id="backup_max_count" name="backup_max_count" class="form-control"
-                           value="{{ configs.get('backup_max_count', '20') }}" min="0" step="1">
-                    <small class="text-muted">Poner 0 para conservar todos. Cuando se supera este número, se borran los más viejos.</small>
-                </div>
+            <div class="mb-3">
+                <label for="new_password" class="form-label">Nueva contraseña</label>
+                <input type="password" id="new_password" name="new_password" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Guardar Configuración de Backups</button>
+            <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
         </form>
     </div>
 </div>
