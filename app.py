@@ -11,7 +11,7 @@ def to_ar(dt):
     return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func, or_
-import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid
+import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -861,8 +861,12 @@ def checkout():
 
     total = 0
     sale_items = []
+
+    product_ids = [item['product_id'] for item in items_data]
+    products_map = {p.id: p for p in Product.query.filter(Product.id.in_(product_ids)).all()}
+
     for item in items_data:
-        product = db.session.get(Product, item['product_id'])
+        product = products_map.get(item['product_id'])
         if not product or product.stock < item['quantity']:
             return jsonify({'error': f'Stock insuficiente para {product.name if product else "producto"}'}), 400
         qty = float(item['quantity'])
@@ -910,8 +914,8 @@ def checkout():
     db.session.commit()
     log_movement(current_user, 'sale', f'Venta #{sale.id} - Total: ${total}')
 
-    sale_items_objs = SaleItem.query.filter_by(sale_id=sale.id).all()
-    send_ticket_email(sale, sale_items_objs, customer_email)
+    if customer_email:
+        threading.Thread(target=send_ticket_email, args=(sale, items_json, customer_email, current_user.get_full_name()), daemon=True).start()
 
     return jsonify({
         'success': True,
@@ -1222,7 +1226,14 @@ def api_send_ticket_email(id):
     if not sale:
         return jsonify({'error': 'Venta no encontrada'}), 404
     items = SaleItem.query.filter_by(sale_id=sale.id).all()
-    if send_ticket_email(sale, items, email):
+    items_json = [{
+        'product_name': item.product.name if item.product else 'Eliminado',
+        'quantity': item.quantity,
+        'unit_price': item.unit_price,
+        'subtotal': item.subtotal,
+        'unit_type': item.product.unit_type if item.product else 'unit'
+    } for item in items]
+    if send_ticket_email(sale, items_json, email, current_user.get_full_name()):
         return jsonify({'success': True, 'message': 'Ticket enviado por email'})
     else:
         return jsonify({'error': 'No se pudo enviar el email. Verificá la configuración SMTP en Admin > Config.'}), 500
@@ -1587,73 +1598,75 @@ def api_config(key):
     return jsonify({'key': key, 'value': None})
 
 
-def send_ticket_email(sale, sale_items, customer_email=None):
-    if not can_send_email():
-        return False
-
-    owner_email = Config.query.filter_by(key='owner_email').first()
-    owner_email = owner_email.value if owner_email else ''
-
-    if not customer_email and not owner_email:
-        return False
-
-    method_names = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'}
-    items_html = ''.join(
-        f'<tr><td>{item.product.name}</td><td style="text-align:center">{item.quantity}</td>'
-        f'<td style="text-align:right">${item.unit_price:.2f}</td>'
-        f'<td style="text-align:right">${item.subtotal:.2f}</td></tr>'
-        for item in sale_items
-    )
-
-    biz_name = get_config('business_name', 'NexoControl')
-    local = get_config('local_name', '')
-    html = f"""
-    <div style="font-family:Arial;max-width:400px;margin:0 auto;">
-        <div style="text-align:center;background:#3d5a80;color:#fff;padding:15px;border-radius:8px 8px 0 0;">
-            <h2 style="margin:0;">{biz_name}</h2>
-            {f'<p style="margin:2px 0 0;font-size:12px;">{local}</p>' if local else ''}
-            <p style="margin:5px 0 0;font-size:13px;">Ticket #{sale.id}</p>
-        </div>
-        <div style="background:#f9f9f9;padding:15px;border:1px solid #ddd;">
-            <p style="font-size:12px;color:#555;">{to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M')} | Atendió: {sale.user.get_full_name()}</p>
-            <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                <tr style="font-weight:700;border-bottom:2px solid #ddd;">
-                    <td style="padding:5px;">Producto</td>
-                    <td style="padding:5px;text-align:center;">Cant</td>
-                    <td style="padding:5px;text-align:right;">P/U</td>
-                    <td style="padding:5px;text-align:right;">Subtotal</td>
-                </tr>
-                {items_html}
-            </table>
-            <div style="border-top:2px solid #3d5a80;margin:10px 0;padding-top:10px;text-align:right;font-size:18px;font-weight:700;">
-                TOTAL: ${sale.total:.2f}
-            </div>
-            <p style="font-size:13px;">Método de pago: {method_names.get(sale.payment_method, sale.payment_method)}</p>
-            {f'<p style="font-size:13px;">Recibido: ${sale.amount_paid:.2f} | Vuelto: <span style="color:green;">${sale.change_amount:.2f}</span></p>' if sale.payment_method == 'cash' else ''}
-        </div>
-        <div style="text-align:center;padding:10px;font-size:12px;color:#555;">
-            ¡Gracias por su compra!
-        </div>
-    </div>
-    """
-
-    recipients = []
-    if customer_email:
-        recipients.append(customer_email)
-    if owner_email and owner_email != customer_email:
-        recipients.append(owner_email)
-
-    if not recipients:
-        return
-
-    for to in recipients:
-        try:
-            sent = send_email(to, f'Tu Ticket #{sale.id} - {biz_name}', html)
-            if not sent:
-                return False
-        except Exception:
+def send_ticket_email(sale, sale_items, customer_email=None, user_full_name=''):
+    with app.app_context():
+        if not can_send_email():
             return False
-    return True
+
+        owner_email = get_config('owner_email', '')
+        if not owner_email:
+            return False
+
+        if not customer_email and not owner_email:
+            return False
+
+        method_names = {'cash': 'Efectivo', 'card': 'Tarjeta', 'transfer': 'Transferencia'}
+        items_html = ''.join(
+            f'<tr><td>{item["product_name"]}</td><td style="text-align:center">{item["quantity"]}</td>'
+            f'<td style="text-align:right">${item["unit_price"]:.2f}</td>'
+            f'<td style="text-align:right">${item["subtotal"]:.2f}</td></tr>'
+            for item in sale_items
+        )
+
+        biz_name = get_config('business_name', 'NexoControl')
+        local = get_config('local_name', '')
+        html = f"""
+        <div style="font-family:Arial;max-width:400px;margin:0 auto;">
+            <div style="text-align:center;background:#3d5a80;color:#fff;padding:15px;border-radius:8px 8px 0 0;">
+                <h2 style="margin:0;">{biz_name}</h2>
+                {f'<p style="margin:2px 0 0;font-size:12px;">{local}</p>' if local else ''}
+                <p style="margin:5px 0 0;font-size:13px;">Ticket #{sale.id}</p>
+            </div>
+            <div style="background:#f9f9f9;padding:15px;border:1px solid #ddd;">
+                <p style="font-size:12px;color:#555;">{to_ar(sale.created_at).strftime('%d/%m/%Y %H:%M')} | Atendió: {user_full_name}</p>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <tr style="font-weight:700;border-bottom:2px solid #ddd;">
+                        <td style="padding:5px;">Producto</td>
+                        <td style="padding:5px;text-align:center;">Cant</td>
+                        <td style="padding:5px;text-align:right;">P/U</td>
+                        <td style="padding:5px;text-align:right;">Subtotal</td>
+                    </tr>
+                    {items_html}
+                </table>
+                <div style="border-top:2px solid #3d5a80;margin:10px 0;padding-top:10px;text-align:right;font-size:18px;font-weight:700;">
+                    TOTAL: ${sale.total:.2f}
+                </div>
+                <p style="font-size:13px;">Método de pago: {method_names.get(sale.payment_method, sale.payment_method)}</p>
+                {f'<p style="font-size:13px;">Recibido: ${sale.amount_paid:.2f} | Vuelto: <span style="color:green;">${sale.change_amount:.2f}</span></p>' if sale.payment_method == 'cash' else ''}
+            </div>
+            <div style="text-align:center;padding:10px;font-size:12px;color:#555;">
+                ¡Gracias por su compra!
+            </div>
+        </div>
+        """
+
+        recipients = []
+        if customer_email:
+            recipients.append(customer_email)
+        if owner_email and owner_email != customer_email:
+            recipients.append(owner_email)
+
+        if not recipients:
+            return
+
+        for to in recipients:
+            try:
+                sent = send_email(to, f'Tu Ticket #{sale.id} - {biz_name}', html)
+                if not sent:
+                    return False
+            except Exception:
+                return False
+        return True
 
 
 @app.route('/orders')
