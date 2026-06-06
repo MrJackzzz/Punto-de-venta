@@ -16,6 +16,10 @@
                 <option value="{{ c.name|lower }}">{{ c.name }}</option>
                 {% endfor %}
             </select>
+            <select id="sortOrder" class="form-control w-auto" onchange="filterProducts()">
+                <option value="">Orden por defecto</option>
+                <option value="stock_asc">Menor stock primero</option>
+            </select>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -188,7 +192,9 @@ function editProduct(id, code, name, cost, markup, currency, stock, unitType, su
 function filterProducts() {
     const q = document.getElementById('productSearch').value.toLowerCase();
     const cat = document.getElementById('categoryFilter').value;
-    const rows = document.querySelectorAll('#productsBody tr');
+    const sort = document.getElementById('sortOrder').value;
+    const tbody = document.getElementById('productsBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
     rows.forEach(row => {
         if (row.cells.length < 2) return;
         const code = (row.cells[0].textContent || '').toLowerCase();
@@ -198,6 +204,15 @@ function filterProducts() {
         const matchesCat = !cat || rowCat === cat;
         row.style.display = matchesSearch && matchesCat ? '' : 'none';
     });
+    if (sort === 'stock_asc') {
+        const visible = rows.filter(r => r.style.display !== 'none');
+        visible.sort((a, b) => {
+            const aVal = parseFloat(a.cells[6].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
+            const bVal = parseFloat(b.cells[6].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
+            return aVal - bVal;
+        });
+        visible.forEach(r => tbody.appendChild(r));
+    }
 }
 </script>
 {% endblock %}
