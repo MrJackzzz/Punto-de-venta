@@ -100,6 +100,25 @@ class User(UserMixin, db.Model):
     def can_pay_membership(self):
         return self._role_perm('can_pay_membership', self.role in ('admin', 'supervisor'))
 
+    def can_take_orders(self):
+        return self._role_perm('can_take_orders', self.role in ('admin', 'supervisor'))
+
+
+class PendingOrder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    items_json = db.Column(db.Text, nullable=False, default='[]')
+    customer_name = db.Column(db.String(200), default='')
+    notes = db.Column(db.Text, default='')
+    total = db.Column(db.Float, nullable=False, default=0)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at = db.Column(db.DateTime, nullable=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sale.id'), nullable=True)
+
+    user = db.relationship('User', backref='pending_orders')
+    sale = db.relationship('Sale', backref='pending_order')
+
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)

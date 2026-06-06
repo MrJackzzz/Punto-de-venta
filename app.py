@@ -1615,6 +1615,130 @@ def send_ticket_email(sale, sale_items, customer_email=None):
     return True
 
 
+@app.route('/orders')
+@login_required
+def orders():
+    if not current_user.can_take_orders():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+    products = Product.query.order_by(Product.name).all()
+    categories = Category.query.order_by(Category.name).all()
+    pending = PendingOrder.query.filter_by(status='pending').order_by(PendingOrder.created_at.desc()).all()
+    return render_template('orders.html', products=products, categories=categories, pending=pending)
+
+
+@app.route('/api/orders')
+@login_required
+def api_orders():
+    if not current_user.can_take_orders():
+        return {'error': 'Permiso denegado'}, 403
+    orders_list = PendingOrder.query.filter_by(status='pending').order_by(PendingOrder.created_at.desc()).all()
+    return {'orders': [{
+        'id': o.id,
+        'user': o.user.get_full_name(),
+        'items': json.loads(o.items_json),
+        'customer_name': o.customer_name,
+        'notes': o.notes,
+        'total': o.total,
+        'created_at': to_ar(o.created_at).strftime('%d/%m/%Y %H:%M'),
+    } for o in orders_list]}
+
+
+@app.route('/api/orders/create', methods=['POST'])
+@login_required
+def api_create_order():
+    if not current_user.can_take_orders():
+        return {'error': 'Permiso denegado'}, 403
+    data = request.get_json(force=True)
+    items = data.get('items', [])
+    if not items:
+        return {'error': 'Carrito vacío'}, 400
+    customer_name = data.get('customer_name', '').strip()
+    notes = data.get('notes', '').strip()
+    total = sum(item.get('subtotal', 0) for item in items)
+
+    pending_items = []
+    for item in items:
+        pending_items.append({
+            'product_id': item['product_id'],
+            'code': item.get('code', ''),
+            'name': item.get('name', ''),
+            'quantity': item['quantity'],
+            'unit_price': item['unit_price'],
+            'subtotal': item['subtotal'],
+        })
+
+    order = PendingOrder(
+        user_id=current_user.id,
+        items_json=json.dumps(pending_items, ensure_ascii=False),
+        customer_name=customer_name,
+        notes=notes,
+        total=total,
+        status='pending'
+    )
+    db.session.add(order)
+    db.session.commit()
+    log_movement(current_user, 'order_create', f'Pedido #{order.id} creado - ${total:.2f}')
+    return {'success': True, 'id': order.id}
+
+
+@app.route('/api/orders/<int:order_id>/complete', methods=['POST'])
+@login_required
+def api_complete_order(order_id):
+    if not current_user.can_take_orders():
+        return {'error': 'Permiso denegado'}, 403
+    order = db.session.get(PendingOrder, order_id)
+    if not order or order.status != 'pending':
+        return {'error': 'Pedido no encontrado o ya procesado'}, 404
+
+    items_data = json.loads(order.items_json)
+    sale = Sale(
+        user_id=current_user.id,
+        total=order.total,
+        payment_method='pending_order',
+        amount_paid=order.total,
+        change_amount=0,
+        customer_email='',
+    )
+    db.session.add(sale)
+    db.session.flush()
+
+    for item in items_data:
+        sale_item = SaleItem(
+            sale_id=sale.id,
+            product_id=item['product_id'],
+            quantity=item['quantity'],
+            unit_price=item['unit_price'],
+            subtotal=item['subtotal'],
+        )
+        db.session.add(sale_item)
+        product = db.session.get(Product, item['product_id'])
+        if product:
+            product.stock -= item['quantity']
+
+    order.status = 'completed'
+    order.completed_at = datetime.now(timezone.utc)
+    order.sale_id = sale.id
+    db.session.commit()
+    log_movement(current_user, 'order_complete', f'Pedido #{order.id} facturado como venta #{sale.id}')
+    return {'success': True, 'sale_id': sale.id}
+
+
+@app.route('/api/orders/<int:order_id>/cancel', methods=['POST'])
+@login_required
+def api_cancel_order(order_id):
+    if not current_user.can_take_orders():
+        return {'error': 'Permiso denegado'}, 403
+    order = db.session.get(PendingOrder, order_id)
+    if not order or order.status != 'pending':
+        return {'error': 'Pedido no encontrado o ya procesado'}, 404
+    order.status = 'cancelled'
+    order.completed_at = datetime.now(timezone.utc)
+    db.session.commit()
+    log_movement(current_user, 'order_cancel', f'Pedido #{order.id} cancelado')
+    return {'success': True}
+
+
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -2071,6 +2195,24 @@ def init_app():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        try:
+            db.session.execute(db.text('SELECT 1 FROM pending_order LIMIT 1'))
+        except Exception:
+            db.session.execute(db.text('''
+                CREATE TABLE pending_order (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES "user"(id),
+                    items_json TEXT NOT NULL DEFAULT '[]',
+                    customer_name VARCHAR(200) DEFAULT '',
+                    notes TEXT DEFAULT '',
+                    total FLOAT NOT NULL DEFAULT 0,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    created_at DATETIME,
+                    completed_at DATETIME,
+                    sale_id INTEGER REFERENCES sale(id)
+                )
+            '''))
+            db.session.commit()
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin', active=True)
             admin.set_password('admin123')
@@ -2088,6 +2230,7 @@ def init_app():
             'membership_grace_days': '5',
             'membership_expiry': '',
             'membership_payment_info': 'Alias: nesxocontrol.mp\nCBU: 0000000000000000000000',
+            'multi_branch_enabled': 'false',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
@@ -2100,7 +2243,7 @@ def init_app():
                          'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
                          'can_manage_users','can_view_history','can_sell',
                          'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
-                         'can_view_charts','can_pay_membership']
+                         'can_view_charts','can_pay_membership','can_take_orders']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
             'supervisor': {k: True for k in all_perm_keys},

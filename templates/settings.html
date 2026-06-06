@@ -169,6 +169,24 @@
 
 <!-- Permisos -->
 <div class="card shadow-sm mb-4">
+    <div class="card-header">Multi-Sucursal</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input type="hidden" name="multi_branch_enabled" value="false">
+                    <input type="checkbox" id="multi_branch_enabled" name="multi_branch_enabled" value="true" class="form-check-input" {{ 'checked' if configs.get('multi_branch_enabled') == 'true' else '' }} onchange="this.previousElementSibling.value = this.checked ? 'true' : 'false'">
+                    <label for="multi_branch_enabled" class="form-check-label">Habilitar multi-sucursal</label>
+                </div>
+                <small class="text-muted d-block mt-1">Permite acceder al sistema desde múltiples dispositivos/locales compartiendo la misma base de datos.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Permisos -->
+<div class="card shadow-sm mb-4">
     <div class="card-header">Permisos por Rol</div>
     <div class="card-body">
         <p class="text-muted small mb-3">
@@ -215,15 +233,16 @@
                             ]),
                             ('💰 Ventas', [
                                 ('can_sell','Vender / Cobrar'),
+                                ('can_take_orders','Tomar pedidos'),
                             ]),
                             ('💳 Membresía', [
                                 ('can_pay_membership','Pagar membresía con MP'),
                             ]),
                         ] %}
                         {% set default_perms = {
-                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true},
-                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true},
-                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true}
+                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true},
+                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true},
+                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false}
                         } %}
                         {% for group_name, perms in perm_groups %}
                         <tr class="table-light fw-semibold">

@@ -35,6 +35,9 @@
             <a href="{{ url_for('suppliers') }}" class="sidebar-link"><span class="si">🤝</span><span class="st">Proveedores</span></a>
             {% endif %}
             <a href="{{ url_for('sell') }}" class="sidebar-link"><span class="si">🛒</span><span class="st">Vender</span></a>
+            {% if current_user.can_take_orders() %}
+            <a href="{{ url_for('orders') }}" class="sidebar-link"><span class="si">📝</span><span class="st">Pedidos</span></a>
+            {% endif %}
             {% if current_user.can_view_history() %}
             <hr class="sidebar-divider">
             <a href="{{ url_for('profits') }}" class="sidebar-link"><span class="si">💰</span><span class="st">Ganancias</span></a>
@@ -77,6 +80,7 @@
                 <a href="{{ url_for('dashboard') }}">Inicio</a>
                 {% if current_user.can_view_products() %}<a href="{{ url_for('products') }}">Productos</a>{% endif %}
                 <a href="{{ url_for('sell') }}">Vender</a>
+                {% if current_user.can_take_orders() %}<a href="{{ url_for('orders') }}">Pedidos</a>{% endif %}
                 {% if current_user.can_view_suppliers() %}<a href="{{ url_for('suppliers') }}">Proveedores</a>{% endif %}
                 {% if current_user.can_view_categories() %}<a href="{{ url_for('categories') }}">Categorías</a>{% endif %}
                 {% if current_user.can_manage_users() %}<a href="{{ url_for('users') }}">Usuarios</a>{% endif %}

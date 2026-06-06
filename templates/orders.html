@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %}Tomar Pedidos{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-primary mb-0">Tomar Pedidos</h2>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Nuevo Pedido</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Buscar producto por código o nombre..." autofocus>
+                </div>
+                <div id="searchResults" class="overflow-auto mb-3" style="max-height:250px;"></div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Producto</th>
+                                <th style="width:80px;">Cantidad</th>
+                                <th>Precio Unit.</th>
+                                <th>Subtotal</th>
+                                <th style="width:50px;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody"></tbody>
+                    </table>
+                </div>
+                <p id="cartEmpty" class="text-muted text-center p-3 mb-0">Carrito vacío</p>
+
+                <div class="border-top pt-3 mt-3">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label for="customerName" class="form-label small">Nombre del cliente (opcional)</label>
+                            <input type="text" id="customerName" class="form-control" placeholder="Cliente">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="orderNotes" class="form-label small">Notas (opcional)</label>
+                            <textarea id="orderNotes" class="form-control" rows="1" placeholder="Notas del pedido"></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <strong class="fs-4" id="orderTotal">$0.00</strong>
+                        <button class="btn btn-primary" onclick="saveOrder()">Guardar Pedido</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Pedidos Pendientes</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>#ID</th>
+                                <th>Cliente</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Creado por</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for o in pending %}
+                            <tr>
+                                <td><strong>{{ o.id }}</strong></td>
+                                <td>{{ o.customer_name or '-' }}</td>
+                                <td>{{ o.items_json.split('"product_id":')|length - 1 if o.items_json else 0 }}</td>
+                                <td>{{ o.total|fmt }}</td>
+                                <td>{{ o.user.get_full_name() }}</td>
+                                <td>{{ to_ar(o.created_at).strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-success me-1" onclick="completeOrder({{ o.id }})">Facturar</button>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelOrder({{ o.id }})">Cancelar</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No hay pedidos pendientes</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const products = {{ products|tojson }};
+let cart = [];
+
+function renderSearchResults(query) {
+    const el = document.getElementById('searchResults');
+    if (!query) { el.innerHTML = ''; return; }
+    const q = query.toLowerCase();
+    const filtered = products.filter(p =>
+        p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+    );
+    if (filtered.length === 0) {
+        el.innerHTML = '<p class="p-2 text-muted small mb-0">Sin resultados</p>';
+        return;
+    }
+    el.innerHTML = filtered.map(p => `
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor:pointer;" onclick="addToCart(${p.id},'${p.code.replace(/'/g,"\\'")}','${p.name.replace(/'/g,"\\'")}',${p.price})">
+            <div>
+                <strong>${p.name}</strong>
+                <small class="text-muted"> (${p.code})</small>
+            </div>
+            <div class="text-end">
+                <div>${fmt(p.price)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addToCart(id, code, name, price) {
+    const existing = cart.find(item => item.product_id === id);
+    if (existing) {
+        existing.quantity += 1;
+        existing.subtotal = existing.quantity * existing.unit_price;
+    } else {
+        cart.push({ product_id: id, code: code, name: name, unit_price: price, quantity: 1, subtotal: price });
+    }
+    renderCart();
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchInput').focus();
+}
+
+function changeQty(index, delta) {
+    cart[index].quantity = Math.max(1, cart[index].quantity + delta);
+    cart[index].subtotal = cart[index].quantity * cart[index].unit_price;
+    renderCart();
+}
+
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+function renderCart() {
+    const tbody = document.getElementById('cartBody');
+    const empty = document.getElementById('cartEmpty');
+    const totalEl = document.getElementById('orderTotal');
+    if (cart.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        totalEl.textContent = '$0.00';
+        return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = cart.map((item, i) => `
+        <tr>
+            <td><strong>${item.code}</strong></td>
+            <td>${item.name}</td>
+            <td>
+                <div class="input-group input-group-sm" style="max-width:110px;">
+                    <button class="btn btn-outline-secondary" onclick="changeQty(${i}, -1)">−</button>
+                    <input type="number" class="form-control text-center" value="${item.quantity}" min="1" style="width:40px;" onchange="setQty(${i}, this.value)" onfocus="this.select()">
+                    <button class="btn btn-outline-secondary" onclick="changeQty(${i}, 1)">+</button>
+                </div>
+            </td>
+            <td>${fmt(item.unit_price)}</td>
+            <td>${fmt(item.subtotal)}</td>
+            <td><button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">&times;</button></td>
+        </tr>
+    `).join('');
+    const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    totalEl.textContent = fmt(total);
+}
+
+function setQty(index, val) {
+    const qty = parseInt(val) || 1;
+    cart[index].quantity = Math.max(1, qty);
+    cart[index].subtotal = cart[index].quantity * cart[index].unit_price;
+    renderCart();
+}
+
+function saveOrder() {
+    if (cart.length === 0) { alert('Agregá al menos un producto al pedido'); return; }
+    const customerName = document.getElementById('customerName').value.trim();
+    const notes = document.getElementById('orderNotes').value.trim();
+    const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const btn = document.querySelector('button[onclick="saveOrder()"]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    fetch('/api/orders/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            items: cart.map(item => ({
+                product_id: item.product_id,
+                quantity: item.quantity
+            })),
+            customer_name: customerName,
+            notes: notes,
+            total: total
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            btn.disabled = false;
+            btn.textContent = 'Guardar Pedido';
+            return;
+        }
+        cart = [];
+        renderCart();
+        document.getElementById('customerName').value = '';
+        document.getElementById('orderNotes').value = '';
+        btn.disabled = false;
+        btn.textContent = 'Guardar Pedido';
+        location.reload();
+    })
+    .catch(() => {
+        alert('Error al guardar el pedido');
+        btn.disabled = false;
+        btn.textContent = 'Guardar Pedido';
+    });
+}
+
+function completeOrder(id) {
+    if (!confirm('¿Facturar este pedido? Se completará la venta.')) return;
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '...';
+    fetch('/api/orders/' + id + '/complete', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.textContent = 'Facturar';
+                return;
+            }
+            window.location.href = '/sell';
+        })
+        .catch(() => {
+            alert('Error al facturar el pedido');
+            btn.disabled = false;
+            btn.textContent = 'Facturar';
+        });
+}
+
+function cancelOrder(id) {
+    if (!confirm('¿Cancelar este pedido?')) return;
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '...';
+    fetch('/api/orders/' + id + '/cancel', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.textContent = 'Cancelar';
+                return;
+            }
+            location.reload();
+        })
+        .catch(() => {
+            alert('Error al cancelar el pedido');
+            btn.disabled = false;
+            btn.textContent = 'Cancelar';
+        });
+}
+
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const first = document.querySelector('#searchResults > div');
+        if (first) first.click();
+    }
+});
+
+document.getElementById('searchInput').addEventListener('input', function() {
+    renderSearchResults(this.value.trim());
+});
+</script>
+{% endblock %}
