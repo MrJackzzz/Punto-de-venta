@@ -44,9 +44,10 @@
                     </div>
                 </div>
                 {% for p in products %}
-                <div class="form-check">
-                    <input class="form-check-input product-check" type="checkbox" value='{"code":"{{ p.code }}","name":"{{ p.name }}","price":"{{ p.price }}"}'>
-                    <label class="form-check-label small">{{ p.name }} <span class="text-muted">({{ p.code }})</span></label>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <input class="form-check-input product-check mt-0" type="checkbox" value='{"code":"{{ p.code }}","name":"{{ p.name }}","price":"{{ p.price }}"}'>
+                    <label class="form-check-label small flex-grow-1 text-truncate">{{ p.name }} <span class="text-muted">({{ p.code }})</span></label>
+                    <input type="number" class="form-control form-control-sm product-qty" value="1" min="1" style="width:50px;">
                 </div>
                 {% endfor %}
             </div>
@@ -85,58 +86,61 @@ function generateCodes() {
     wrapper.className = 'd-flex flex-wrap gap-3 justify-content-center';
     preview.appendChild(wrapper);
 
-    checked.forEach(cb => {
+    checked.forEach(function(cb) {
         const data = JSON.parse(cb.value);
-        const container = document.createElement('div');
-        container.className = 'text-center p-2 border rounded';
-        container.style.width = pxW + 20 + 'px';
+        const qty = parseInt(cb.closest('.d-flex')?.querySelector('.product-qty')?.value) || 1;
+        for (let rep = 0; rep < qty; rep++) {
+            const container = document.createElement('div');
+            container.className = 'text-center p-2 border rounded';
+            container.style.width = pxW + 20 + 'px';
 
-        const nameEl = document.createElement('div');
-        nameEl.className = 'small text-muted mb-1 text-truncate';
-        nameEl.textContent = data.name;
-        container.appendChild(nameEl);
+            const nameEl = document.createElement('div');
+            nameEl.className = 'small text-muted mb-1 text-truncate';
+            nameEl.textContent = data.name;
+            container.appendChild(nameEl);
 
-        if (type === 'qr') {
-            const img = document.createElement('img');
-            const size = Math.min(pxW, pxH);
-            img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(data.code);
-            img.style.width = size + 'px';
-            img.style.height = size + 'px';
-            img.alt = data.code;
-            container.appendChild(img);
-            wrapper.appendChild(container);
-        } else {
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.id = 'barcode_' + data.code.replace(/[^a-zA-Z0-9]/g, '_');
-            container.appendChild(svg);
-            wrapper.appendChild(container);
-            setTimeout(function() {
-                try {
-                    JsBarcode(svg, data.code, {
-                        format: type,
-                        width: 2,
-                        height: Math.min(pxH, 100),
-                        displayValue: true,
-                        fontSize: 14,
-                        margin: 5
-                    });
-                } catch(e) {
-                    JsBarcode(svg, data.code, {
-                        format: 'code128',
-                        width: 2,
-                        height: Math.min(pxH, 100),
-                        displayValue: true,
-                        fontSize: 14,
-                        margin: 5
-                    });
-                }
-            }, 10);
+            if (type === 'qr') {
+                const img = document.createElement('img');
+                const size = Math.min(pxW, pxH);
+                img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(data.code);
+                img.style.width = size + 'px';
+                img.style.height = size + 'px';
+                img.alt = data.code;
+                container.appendChild(img);
+                wrapper.appendChild(container);
+            } else {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.id = 'barcode_' + data.code.replace(/[^a-zA-Z0-9]/g, '_') + '_' + rep;
+                container.appendChild(svg);
+                wrapper.appendChild(container);
+                setTimeout(function() {
+                    try {
+                        JsBarcode(svg, data.code, {
+                            format: type,
+                            width: 2,
+                            height: Math.min(pxH, 100),
+                            displayValue: true,
+                            fontSize: 14,
+                            margin: 5
+                        });
+                    } catch(e) {
+                        JsBarcode(svg, data.code, {
+                            format: 'code128',
+                            width: 2,
+                            height: Math.min(pxH, 100),
+                            displayValue: true,
+                            fontSize: 14,
+                            margin: 5
+                        });
+                    }
+                }, 10);
+            }
+
+            const codeEl = document.createElement('div');
+            codeEl.className = 'small mt-1';
+            codeEl.textContent = data.code;
+            container.appendChild(codeEl);
         }
-
-        const codeEl = document.createElement('div');
-        codeEl.className = 'small mt-1';
-        codeEl.textContent = data.code;
-        container.appendChild(codeEl);
     });
 }
 
