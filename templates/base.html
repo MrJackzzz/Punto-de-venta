@@ -14,7 +14,7 @@
     {% if current_user.is_authenticated %}
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <button class="sidebar-toggle" onclick="toggleMenu()">☰</button>
+            <button class="sidebar-toggle" onclick="toggleMenu()"><i class="bi bi-list"></i></button>
             <span class="sidebar-brand">
                 <span style="display:block;font-size:1rem;">{{ business_name }}</span>
                 {% if local_name %}
@@ -23,51 +23,51 @@
             </span>
         </div>
         <nav class="sidebar-nav">
-            <a href="{{ url_for('dashboard') }}" class="sidebar-link"><span class="si">🏠</span><span class="st">Inicio</span></a>
+            <a href="{{ url_for('dashboard') }}" class="sidebar-link"><span class="si"><i class="bi bi-house"></i></span><span class="st">Inicio</span></a>
             <hr class="sidebar-divider">
             {% if current_user.can_view_products() %}
-            <a href="{{ url_for('products') }}" class="sidebar-link"><span class="si">📦</span><span class="st">Productos</span></a>
+            <a href="{{ url_for('products') }}" class="sidebar-link"><span class="si"><i class="bi bi-box-seam"></i></span><span class="st">Productos</span></a>
             {% endif %}
             {% if current_user.can_view_categories() %}
-            <a href="{{ url_for('categories') }}" class="sidebar-link"><span class="si">📂</span><span class="st">Categorías</span></a>
+            <a href="{{ url_for('categories') }}" class="sidebar-link"><span class="si"><i class="bi bi-folder"></i></span><span class="st">Categorías</span></a>
             {% endif %}
             {% if current_user.can_view_suppliers() %}
-            <a href="{{ url_for('suppliers') }}" class="sidebar-link"><span class="si">🤝</span><span class="st">Proveedores</span></a>
+            <a href="{{ url_for('suppliers') }}" class="sidebar-link"><span class="si"><i class="bi bi-handshake"></i></span><span class="st">Proveedores</span></a>
             {% endif %}
-            <a href="{{ url_for('sell') }}" class="sidebar-link"><span class="si">🛒</span><span class="st">Vender</span></a>
+            <a href="{{ url_for('sell') }}" class="sidebar-link"><span class="si"><i class="bi bi-cart"></i></span><span class="st">Vender</span></a>
             {% if current_user.can_take_orders() %}
-            <a href="{{ url_for('orders') }}" class="sidebar-link"><span class="si">📝</span><span class="st">Pedidos</span></a>
+            <a href="{{ url_for('orders') }}" class="sidebar-link"><span class="si"><i class="bi bi-clipboard"></i></span><span class="st">Pedidos</span></a>
             {% endif %}
             {% if current_user.can_view_history() %}
             <hr class="sidebar-divider">
-            <a href="{{ url_for('profits') }}" class="sidebar-link"><span class="si">💰</span><span class="st">Ganancias</span></a>
-            <a href="{{ url_for('top_products') }}" class="sidebar-link"><span class="si">🏆</span><span class="st">Ranking</span></a>
-            <a href="{{ url_for('history') }}" class="sidebar-link"><span class="si">📋</span><span class="st">Historial</span></a>
+            <a href="{{ url_for('profits') }}" class="sidebar-link"><span class="si"><i class="bi bi-graph-up-arrow"></i></span><span class="st">Ganancias</span></a>
+            <a href="{{ url_for('top_products') }}" class="sidebar-link"><span class="si"><i class="bi bi-trophy"></i></span><span class="st">Ranking</span></a>
+            <a href="{{ url_for('history') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Historial</span></a>
             {% endif %}
             {% if current_user.role == 'admin' or current_user.can_manage_users() %}
             <hr class="sidebar-divider">
             {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si">⚙️</span><span class="st">Config</span></a>
-            <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si">📋</span><span class="st">Planes</span></a>
-            <a href="{{ url_for('membership') }}" class="sidebar-link"><span class="si">💳</span><span class="st">Membresía</span></a>
-            <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si">💾</span><span class="st">Backups</span></a>
+            <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si"><i class="bi bi-gear"></i></span><span class="st">Config</span></a>
+            <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Planes</span></a>
+            <a href="{{ url_for('membership') }}" class="sidebar-link"><span class="si"><i class="bi bi-credit-card"></i></span><span class="st">Membresía</span></a>
+            <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
             {% endif %}
             {% if current_user.can_manage_users() %}
-            <a href="{{ url_for('users') }}" class="sidebar-link"><span class="si">👥</span><span class="st">Usuarios</span></a>
+            <a href="{{ url_for('users') }}" class="sidebar-link"><span class="si"><i class="bi bi-people"></i></span><span class="st">Usuarios</span></a>
             {% endif %}
             {% endif %}
         </nav>
         <div class="sidebar-footer">
-            <button id="darkToggle" class="sidebar-dark-btn" onclick="toggleDark()" title="Modo oscuro">🌙</button>
+            <button id="darkToggle" class="sidebar-dark-btn" onclick="toggleDark()" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
             <span class="sidebar-user">{{ current_user.get_full_name() }}</span>
             <span class="sidebar-role">{{ current_user.role }}</span>
-            <a href="{{ url_for('logout') }}" class="sidebar-logout" title="Cerrar sesión">🚪</a>
+            <a href="{{ url_for('logout') }}" class="sidebar-logout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
         </div>
     </aside>
     <div class="main-area" id="mainArea">
         <header class="topbar">
             <div class="d-flex align-items-center gap-3">
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()"><i class="bi bi-list"></i></button>
                 {% if logo_url %}
                 <img src="{{ url_for('static', filename=logo_url) }}" style="height:32px;" alt="Logo">
                 {% endif %}
@@ -108,7 +108,7 @@
             {{ membership_warning }}
             {% if current_user.is_authenticated and current_user.can_pay_membership() %}
             <div class="mt-1">
-                <button class="btn btn-sm btn-light" onclick="payMembershipBanner()" id="bannerMpBtn">💳 Pagar con Mercado Pago</button>
+                <button class="btn btn-sm btn-light" onclick="payMembershipBanner()" id="bannerMpBtn"><i class="bi bi-credit-card"></i> Pagar con Mercado Pago</button>
             </div>
             <div id="bannerMpMsg" class="mt-1 small"></div>
             {% endif %}
@@ -143,12 +143,12 @@
         document.body.classList.toggle('dark-mode');
         localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
         document.querySelectorAll('.sidebar-dark-btn').forEach(function(b) {
-            b.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+            b.innerHTML = document.body.classList.contains('dark-mode') ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
         });
     }
     if (localStorage.getItem('darkMode') === 'true') {
         document.body.classList.add('dark-mode');
-        document.querySelectorAll('.sidebar-dark-btn').forEach(function(b) { b.textContent = '☀️'; });
+        document.querySelectorAll('.sidebar-dark-btn').forEach(function(b) { b.innerHTML = '<i class="bi bi-sun"></i>'; });
     }
     function playBeep() {
         try {
@@ -169,14 +169,14 @@
                 if (data.error) {
                     const msgEl = document.getElementById('bannerMpMsg');
                     if (msgEl) msgEl.textContent = 'Error: ' + data.error;
-                    btn.disabled = false; btn.textContent = '💳 Pagar con Mercado Pago';
+                    btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con Mercado Pago';
                     return;
                 }
                 window.location.href = data.init_point;
             }).catch(() => {
                 const msgEl = document.getElementById('bannerMpMsg');
                 if (msgEl) msgEl.textContent = 'Error de conexión';
-                btn.disabled = false; btn.textContent = '💳 Pagar con Mercado Pago';
+                btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con Mercado Pago';
             });
     }
     </script>

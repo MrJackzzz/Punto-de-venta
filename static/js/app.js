@@ -36,3 +36,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     });
 });
+
+document.addEventListener('input', function(e) {
+    const tag = e.target.tagName;
+    if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page')) {
+        if (e.target.type === 'text' || e.target.type === 'search' || !e.target.type) {
+            if (!e.target.classList.contains('no-upper')) {
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                e.target.value = e.target.value.toUpperCase();
+                e.target.setSelectionRange(start, end);
+            }
+        }
+    }
+});

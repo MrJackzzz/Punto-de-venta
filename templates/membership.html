@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Membresía{% endblock %}
 {% block content %}
-<h2 class="text-primary mb-3">💳 Membresía</h2>
+<h2 class="text-primary mb-3"><i class="bi bi-credit-card"></i> Membresía</h2>
 
 <div class="card shadow-sm">
     <div class="card-header">Configuración de Suscripción</div>
@@ -55,22 +55,22 @@
                     <p class="mb-1">Vencimiento: <strong id="expiryDisplay">{{ m.membership_expiry or 'Sin configurar' }}</strong></p>
                     {% if m.membership_expiry %}
                         {% if m.membership_expiry > now().strftime('%Y-%m-%d') %}
-                            <p class="text-success">✅ Al día</p>
+                            <p class="text-success"><i class="bi bi-check-circle-fill text-success"></i> Al día</p>
                         {% else %}
-                            <p class="text-danger">🔴 Vencido</p>
+                            <p class="text-danger"><i class="bi bi-circle-fill text-danger"></i> Vencido</p>
                         {% endif %}
                     {% else %}
                         <p class="text-muted">Sin fecha de vencimiento configurada.</p>
                     {% endif %}
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-success" onclick="registerPayment()">💰 +1 mes (próximo día 1)</button>
-                    <button class="btn btn-primary" onclick="payMembershipMP()" id="mpBtn">💳 Pagar con MP</button>
+                    <button class="btn btn-success" onclick="registerPayment()"><i class="bi bi-graph-up-arrow"></i> +1 mes (próximo día 1)</button>
+                    <button class="btn btn-primary" onclick="payMembershipMP()" id="mpBtn"><i class="bi bi-credit-card"></i> Pagar con MP</button>
                 </div>
             </div>
             <div id="paymentMsg" class="mt-2 small"></div>
         {% else %}
-            <p class="text-muted mb-0">🟢 Sistema de membresía desactivado — la app funciona libremente.</p>
+            <p class="text-muted mb-0"><i class="bi bi-circle-fill text-success"></i> Sistema de membresía desactivado — la app funciona libremente.</p>
         {% endif %}
         <div class="mt-3 pt-2 border-top small text-muted d-flex justify-content-between flex-wrap gap-2">
             <span>ID del sistema: <code class="bg-light px-1 rounded">{{ m.instance_id }}</code></span>
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'approved') {
-                    msgEl.innerHTML = '<span class="text-success">✅ Pago confirmado. Membresía actualizada.</span>';
+                    msgEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill text-success"></i> Pago confirmado. Membresía actualizada.</span>';
                     setTimeout(function(){ location.reload(); }, 2000);
                 } else if (data.status === 'pending') {
                     setTimeout(pollStatus, 5000);
@@ -113,7 +113,7 @@ function registerPayment() {
             if (data.error) {
                 msgEl.innerHTML = '<span class="text-danger">Error: ' + data.error + '</span>';
             } else {
-                msgEl.innerHTML = '<span class="text-success">✅ Pago registrado. Nueva fecha de vencimiento: <strong>' + data.new_expiry + '</strong></span>';
+                msgEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill text-success"></i> Pago registrado. Nueva fecha de vencimiento: <strong>' + data.new_expiry + '</strong></span>';
                 document.getElementById('expiryDisplay').textContent = data.new_expiry;
                 document.getElementById('membership_expiry').value = data.new_expiry;
             }
@@ -123,7 +123,7 @@ function registerPayment() {
         })
         .finally(() => {
             btn.disabled = false;
-            btn.textContent = '💰 +1 mes (próximo día 1)';
+            btn.innerHTML = '<i class="bi bi-graph-up-arrow"></i> +1 mes (próximo día 1)';
         });
 }
 
@@ -138,7 +138,7 @@ function payMembershipMP() {
             if (data.error) {
                 msgEl.innerHTML = '<span class="text-danger">Error: ' + data.error + '</span>';
                 btn.disabled = false;
-                btn.textContent = '💳 Pagar con MP';
+                btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con MP';
                 return;
             }
             window.location.href = data.init_point;
@@ -146,7 +146,7 @@ function payMembershipMP() {
         .catch(() => {
             msgEl.innerHTML = '<span class="text-danger">Error de conexión</span>';
             btn.disabled = false;
-            btn.textContent = '💳 Pagar con MP';
+            btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con MP';
         });
 }
 
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'approved') {
-                    msgEl.innerHTML = '<span class="text-success">✅ Pago confirmado. Membresía actualizada.</span>';
+                    msgEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill text-success"></i> Pago confirmado. Membresía actualizada.</span>';
                     setTimeout(function(){ location.reload(); }, 2000);
                 } else if (data.status === 'pending') {
                     setTimeout(pollStatus, 5000);

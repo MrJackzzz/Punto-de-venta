@@ -4,7 +4,7 @@
 <div class="d-flex align-items-center justify-content-center" style="min-height:60vh;">
     <div class="card shadow-sm" style="text-align:center;max-width:450px;">
         <div class="card-body">
-            <div class="fs-1 mb-3">🚫</div>
+            <div class="fs-1 mb-3"><i class="bi bi-slash-circle"></i></div>
             <h2 class="mb-3" style="color:var(--accent);">Sistema Suspendido</h2>
             <p class="text-muted mb-3">
                 La membresía de este sistema ha vencido. Realizá el pago para continuar usando el sistema.
@@ -15,7 +15,7 @@
                 {{ payment_info|nl2br }}
             </div>
             {% endif %}
-            <button class="btn btn-success w-100 mb-3" onclick="payMembershipMP()" id="mpBtn">💳 Pagar con Mercado Pago</button>
+            <button class="btn btn-success w-100 mb-3" onclick="payMembershipMP()" id="mpBtn"><i class="bi bi-credit-card"></i> Pagar con Mercado Pago</button>
             <div id="mpStatus" class="small text-muted"></div>
             <p class="small text-muted mt-3 mb-0">El sistema se desbloqueará automáticamente al confirmar el pago.</p>
         </div>
@@ -34,7 +34,7 @@ function payMembershipMP() {
             if (data.error) {
                 statusEl.innerHTML = '<span class="text-danger">Error: ' + data.error + '</span>';
                 btn.disabled = false;
-                btn.textContent = '💳 Pagar con Mercado Pago';
+                btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con Mercado Pago';
                 return;
             }
             window.location.href = data.init_point;
@@ -42,7 +42,7 @@ function payMembershipMP() {
         .catch(() => {
             statusEl.innerHTML = '<span class="text-danger">Error de conexión</span>';
             btn.disabled = false;
-            btn.textContent = '💳 Pagar con Mercado Pago';
+            btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con Mercado Pago';
         });
 }
 </script>

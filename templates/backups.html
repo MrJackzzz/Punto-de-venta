@@ -4,7 +4,7 @@
 <h2 class="text-primary mb-4">Gestión de Backups</h2>
 
 <div class="card shadow-sm">
-    <div class="card-header">📦 Crear Backup</div>
+    <div class="card-header"><i class="bi bi-box-seam"></i> Crear Backup</div>
     <div class="card-body">
         <p class="text-muted small mb-3">
             Generá una copia de seguridad de toda la base de datos (productos, ventas, usuarios, configuraciones).
@@ -12,14 +12,14 @@
         </p>
         <form method="POST" action="{{ url_for('backup_create') }}">
             <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
-                <span class="fs-5">📦</span> Crear Backup Ahora
+                <span class="fs-5"><i class="bi bi-box-seam"></i></span> Crear Backup Ahora
             </button>
         </form>
     </div>
 </div>
 
 <div class="card shadow-sm">
-    <div class="card-header">🗄️ Backups Disponibles</div>
+    <div class="card-header"><i class="bi bi-archive"></i> Backups Disponibles</div>
     <div class="card-body">
         {% if backups %}
         <div class="table-responsive">
@@ -47,9 +47,9 @@
                         </td>
                         <td>{{ b.mtime }}</td>
                         <td>
-                            <a href="{{ url_for('backup_download', name=b.name) }}" class="btn btn-sm btn-secondary d-inline-flex align-items-center gap-1">⬇ Descargar</a>
+                            <a href="{{ url_for('backup_download', name=b.name) }}" class="btn btn-sm btn-secondary d-inline-flex align-items-center gap-1"><i class="bi bi-download"></i> Descargar</a>
                             <form method="POST" action="{{ url_for('backup_restore', name=b.name) }}" class="d-inline" onsubmit="return confirm('¿Restaurar este backup?\n\nSe perderán TODOS los datos actuales y serán reemplazados por los del backup.\n\nEsta acción no se puede deshacer.')">
-                                <button type="submit" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">♻ Restaurar</button>
+                                <button type="submit" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1"><i class="bi bi-arrow-repeat"></i> Restaurar</button>
                             </form>
                         </td>
                     </tr>
@@ -59,7 +59,7 @@
         </div>
         {% else %}
         <div class="text-center py-4 text-muted">
-            <div class="fs-1 mb-2">🗄️</div>
+            <div class="fs-1 mb-2"><i class="bi bi-archive"></i></div>
             <p class="mb-0">No hay backups todavía. Creá uno para proteger tus datos.</p>
         </div>
         {% endif %}
@@ -67,7 +67,7 @@
 </div>
 
 <div class="card shadow-sm">
-    <div class="card-header">⏰ Backup Automático</div>
+    <div class="card-header"><i class="bi bi-alarm"></i> Backup Automático</div>
     <div class="card-body">
         <p class="text-muted small mb-3">
             Configurá la app para que genere backups automáticos cada cierto tiempo.

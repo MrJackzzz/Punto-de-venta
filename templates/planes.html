@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Planes{% endblock %}
 {% block content %}
-<h2 class="text-primary mb-1">📋 Planes y Precios</h2>
+<h2 class="text-primary mb-1"><i class="bi bi-journal-text"></i> Planes y Precios</h2>
 <p class="text-muted mb-4">Sistema de gestión comercial SmartPost — Elegí el plan que mejor se adapte a tu negocio.</p>
 
 <div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
@@ -73,7 +73,7 @@
 </div>
 
 <div class="card mt-4">
-    <div class="card-header">📌 Comparativa detallada</div>
+    <div class="card-header"><i class="bi bi-pin"></i> Comparativa detallada</div>
     <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
         <thead>
@@ -87,30 +87,30 @@
         <tbody>
             {% set rows = [
                 ('Usuarios', 'Hasta 2', 'Hasta 5', 'Ilimitados'),
-                ('Productos y stock', '✅', '✅', '✅'),
-                ('Proveedores', '✅', '✅', '✅'),
-                ('Categorías', '✅', '✅', '✅'),
-                ('Ventas + Ticket', '✅', '✅', '✅'),
-                ('Dashboard y gráficos', '✅', '✅', '✅'),
-                ('Modo oscuro', '✅', '✅', '✅'),
-                ('Historial de ventas', '✅', '✅', '✅'),
-                ('Reportes PDF', '—', '✅', '✅'),
-                ('Exportar CSV', '—', '✅', '✅'),
-                ('Ranking de productos', '—', '✅', '✅'),
-                ('Alertas stock crítico', '—', '✅', '✅'),
-                ('Mercado Pago', '—', '✅', '✅'),
-                ('Backups automáticos', '—', '✅', '✅'),
-                ('Permisos por rol', '—', '—', '✅'),
-                ('Membresía automática', '—', '—', '✅'),
-                ('Multi-caja / sucursal', '—', '—', '✅'),
+                ('Productos y stock', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Proveedores', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Categorías', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Ventas + Ticket', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Dashboard y gráficos', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Modo oscuro', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Historial de ventas', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Reportes PDF', '—', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Exportar CSV', '—', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Ranking de productos', '—', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Alertas stock crítico', '—', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Mercado Pago', '—', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Backups automáticos', '—', '<i class="bi bi-check-circle-fill text-success"></i>', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Permisos por rol', '—', '—', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Membresía automática', '—', '—', '<i class="bi bi-check-circle-fill text-success"></i>'),
+                ('Multi-caja / sucursal', '—', '—', '<i class="bi bi-check-circle-fill text-success"></i>'),
                 ('Soporte', 'Email', 'Prioritario', '24/7'),
             ] %}
             {% for label, kiosko, mediano, grande in rows %}
             <tr>
                 <td><strong>{{ label }}</strong></td>
-                <td class="text-center">{{ kiosko }}</td>
-                <td class="text-center">{{ mediano }}</td>
-                <td class="text-center">{{ grande }}</td>
+                <td class="text-center">{{ kiosko|safe }}</td>
+                <td class="text-center">{{ mediano|safe }}</td>
+                <td class="text-center">{{ grande|safe }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -120,8 +120,8 @@
 
 <div class="text-center my-4 p-4 bg-light rounded">
     <p class="mb-3">¿Consultas o necesitás un plan personalizado?</p>
-    <button class="btn btn-primary" onclick="sendPlanesEmail()">📧 Enviar planes por email</button>
-    <a href="{{ url_for('planes_pdf') }}" class="btn btn-secondary" target="_blank">📄 Descargar PDF</a>
+    <button class="btn btn-primary" onclick="sendPlanesEmail()"><i class="bi bi-envelope"></i> Enviar planes por email</button>
+    <a href="{{ url_for('planes_pdf') }}" class="btn btn-secondary" target="_blank"><i class="bi bi-file-text"></i> Descargar PDF</a>
 </div>
 
 <script>
@@ -135,13 +135,13 @@ function sendPlanesEmail() {
             if (data.error) {
                 alert('Error: ' + data.error);
             } else {
-                alert('✅ Planes enviados por email.');
+                alert('Planes enviados por email.');
             }
         })
         .catch(() => { alert('Error de conexión'); })
         .finally(() => {
             btn.disabled = false;
-            btn.textContent = '📧 Enviar planes por email';
+            btn.innerHTML = '<i class="bi bi-envelope"></i> Enviar planes por email';
         });
 }
 </script>

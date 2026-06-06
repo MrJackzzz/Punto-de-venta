@@ -3,64 +3,68 @@
 {% block content %}
 <h2 class="text-primary mb-4">Punto de Venta</h2>
 
-<div class="grid grid-2">
-    <div class="card shadow-sm">
-        <div class="card-header">Buscar Producto</div>
-        <div class="card-body">
-            <div class="search-box">
-                <input type="text" id="searchInput" class="form-control" placeholder="Escaneá o escribí código/nombre..." autofocus>
-            </div>
-            <div id="searchResults" class="overflow-auto" style="max-height:300px;"></div>
-
-            <div class="mt-3 pt-3 border-top">
-                <div class="row">
-                    <div class="mb-3 col-6">
-                        <label for="manualCode">O ingresá código manualmente</label>
-                        <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
-                    </div>
-                    <div class="mb-3 col-6">
-                        <label for="manualQty">Cantidad</label>
-                        <input type="number" id="manualQty" class="form-control" value="1" min="1">
-                    </div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header">Buscar Producto</div>
+            <div class="card-body">
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Escaneá o escribí código/nombre..." autofocus>
                 </div>
-                <button class="btn btn-primary w-100" onclick="addByCode()">Agregar al Carrito</button>
-                <p class="text-muted small mt-1">💡 Usá la Cantidad de arriba antes de agregar desde la búsqueda o el código manual</p>
+                <div id="searchResults" class="overflow-auto" style="max-height:300px;"></div>
+
+                <div class="mt-3 pt-3 border-top">
+                    <div class="row">
+                        <div class="mb-3 col-6">
+                            <label for="manualCode">O ingresá código manualmente</label>
+                            <input type="text" id="manualCode" class="form-control" placeholder="Código de barras">
+                        </div>
+                        <div class="mb-3 col-6">
+                            <label for="manualQty">Cantidad</label>
+                            <input type="number" id="manualQty" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addByCode()">Agregar al Carrito</button>
+                    <p class="text-muted small mt-1"><i class="bi bi-lightbulb"></i> Usá la Cantidad de arriba antes de agregar desde la búsqueda o el código manual</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header">Carrito</div>
-        <div class="card-body">
-            <div id="cartItems" class="overflow-auto" style="max-height:300px;">
-                <p class="text-muted text-center p-4">Carrito vacío</p>
-            </div>
-            <div class="cart-total text-end fw-bold fs-4" id="cartTotal">$0.00</div>
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-header">Carrito</div>
+            <div class="card-body">
+                <div id="cartItems" class="overflow-auto" style="max-height:300px;">
+                    <p class="text-muted text-center p-4">Carrito vacío</p>
+                </div>
+                <div class="cart-total text-end fw-bold fs-4" id="cartTotal">$0.00</div>
 
-            <div class="border-top pt-3 mt-3">
-                <div class="mb-3">
-                    <label for="paymentMethod">Método de Pago</label>
-                    <select id="paymentMethod" class="form-control" onchange="toggleCashFields()">
-                        <option value="cash">Efectivo</option>
-                        <option value="card">Tarjeta (POSNet)</option>
-                        <option value="transfer">Transferencia</option>
-                        <option value="mercadopago">Mercado Pago (QR)</option>
-                    </select>
-                </div>
-                <div id="cashFields">
+                <div class="border-top pt-3 mt-3">
                     <div class="mb-3">
-                        <label for="amountPaid">Monto recibido ($)</label>
-                        <input type="number" id="amountPaid" class="form-control" step="0.01" min="0" placeholder="0.00" oninput="calculateChange()">
+                        <label for="paymentMethod">Método de Pago</label>
+                        <select id="paymentMethod" class="form-control" onchange="toggleCashFields()">
+                            <option value="cash">Efectivo</option>
+                            <option value="card">Tarjeta (POSNet)</option>
+                            <option value="transfer">Transferencia</option>
+                            <option value="mercadopago">Mercado Pago (QR)</option>
+                        </select>
                     </div>
-                    <div id="changeDisplay" class="change-display"></div>
+                    <div id="cashFields">
+                        <div class="mb-3">
+                            <label for="amountPaid">Monto recibido ($)</label>
+                            <input type="number" id="amountPaid" class="form-control" step="0.01" min="0" placeholder="0.00" oninput="calculateChange()">
+                        </div>
+                        <div id="changeDisplay" class="change-display"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerEmail">Enviar ticket por email (opcional)</label>
+                        <input type="email" id="customerEmail" class="form-control" placeholder="cliente@email.com">
+                    </div>
+                    <button class="btn btn-success btn-lg" onclick="checkout()" id="checkoutBtn">
+                        Cobrar
+                    </button>
                 </div>
-                <div class="mb-3">
-                    <label for="customerEmail">Enviar ticket por email (opcional)</label>
-                    <input type="email" id="customerEmail" class="form-control" placeholder="cliente@email.com">
-                </div>
-                <button class="btn btn-success w-100 py-3 fs-5" onclick="checkout()" id="checkoutBtn">
-                    Cobrar
-                </button>
             </div>
         </div>
     </div>
@@ -70,16 +74,16 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <span class="modal-title">✅ Venta Exitosa</span>
+                <span class="modal-title"><i class="bi bi-cash-stack"></i> Venta Exitosa</span>
                 <button type="button" class="btn-close" onclick="closeTicketModal()"></button>
             </div>
             <div class="modal-body">
                 <div id="ticketContent" data-business-name="{{ business_name }}" class="p-3 mb-3 bg-light rounded" style="font-family:'Courier New',monospace;font-size:13px;"></div>
                 <div id="mpConfirmArea" class="d-none mb-1"></div>
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary flex-fill" onclick="printTicket()" style="min-width:120px;">🖨 Imprimir</button>
-                    <button class="btn btn-success flex-fill" onclick="shareWhatsApp()" style="min-width:120px;">📱 WhatsApp</button>
-                    <button class="btn btn-secondary flex-fill" onclick="toggleSellEmail()" style="min-width:120px;">✉️ Email</button>
+                    <button class="btn btn-primary flex-fill" onclick="printTicket()" style="min-width:120px;"><i class="bi bi-printer"></i> Imprimir</button>
+                    <button class="btn btn-success flex-fill" onclick="shareWhatsApp()" style="min-width:120px;"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+                    <button class="btn btn-secondary flex-fill" onclick="toggleSellEmail()" style="min-width:120px;"><i class="bi bi-envelope"></i> Email</button>
                     <button class="btn btn-secondary flex-fill" onclick="closeTicketModal()" style="min-width:80px;">Cerrar</button>
                 </div>
                 <div id="sellEmailArea" class="d-none mt-1">
@@ -201,7 +205,7 @@ function showTicket(data) {
     if (data.mp_init_point) {
         extraHtml = `
             <div class="mt-2 pt-2 text-center" style="border-top:1px dashed #999;">
-                <p class="small fw-semibold mb-1">💳 Pagá con Mercado Pago</p>
+                <p class="small fw-semibold mb-1"><i class="bi bi-credit-card"></i> Pagá con Mercado Pago</p>
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.mp_init_point)}" class="rounded" style="width:150px;height:150px;" alt="QR MP">
                 <p class="small text-muted mt-1" style="word-break:break-all;">${data.mp_init_point}</p>
             </div>
@@ -243,9 +247,9 @@ function showTicket(data) {
     if (data.mp_init_point) {
         document.getElementById('mpConfirmArea').innerHTML = `
             <button class="btn btn-sm btn-primary w-100 py-3 fw-semibold" onclick="confirmMpPayment(${data.sale_id})">
-                🔄 Verificar pago
+                <i class="bi bi-arrow-repeat"></i> Verificar pago
             </button>
-            <div class="small text-muted text-center mt-1">⏳ Esperando pago del cliente...</div>
+            <div class="small text-muted text-center mt-1"><i class="bi bi-hourglass-split"></i> Esperando pago del cliente...</div>
         `;
         document.getElementById('mpConfirmArea').classList.remove('d-none');
     } else {
@@ -299,7 +303,7 @@ function sendSellEmail() {
             msgEl.textContent = 'Error: ' + data.error;
             msgEl.style.color = 'var(--danger)';
         } else {
-            msgEl.textContent = '✅ Ticket enviado a ' + email;
+            msgEl.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Ticket enviado a ' + email;
             msgEl.style.color = 'var(--success)';
             document.getElementById('sellEmailInput').value = '';
         }
@@ -403,6 +407,9 @@ function checkout() {
         renderCart();
         document.getElementById('amountPaid').value = '';
         document.getElementById('customerEmail').value = '';
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+        document.getElementById('manualCode').value = '';
     })
     .catch(err => {
         alert('Error al procesar venta');
@@ -461,7 +468,7 @@ function startMpPolling(saleId) {
                     mpPollTimer = null;
                     playSuccessSound();
                     document.getElementById('ticketContent').innerHTML +=
-                        '<div class="mt-2 p-2 text-center fw-semibold" style="background:#d4edda;border-radius:6px;color:#155724;">✅ Pago confirmado vía Mercado Pago</div>';
+                        '<div class="mt-2 p-2 text-center fw-semibold" style="background:#d4edda;border-radius:6px;color:#155724;"><i class="bi bi-check-circle-fill text-success"></i> Pago confirmado vía Mercado Pago</div>';
                     if (status.mp_payment_id) {
                         document.getElementById('ticketContent').innerHTML +=
                             '<div class="small text-muted text-center">ID transacción: ' + status.mp_payment_id + '</div>';
@@ -480,7 +487,7 @@ function confirmMpPayment(saleId) {
                 if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
                 playSuccessSound();
                 document.getElementById('ticketContent').innerHTML +=
-                    '<div class="mt-2 p-2 text-center fw-semibold" style="background:#d4edda;border-radius:6px;color:#155724;">✅ Pago verificado manualmente</div>';
+                    '<div class="mt-2 p-2 text-center fw-semibold" style="background:#d4edda;border-radius:6px;color:#155724;"><i class="bi bi-check-circle-fill text-success"></i> Pago verificado manualmente</div>';
                 if (status.mp_payment_id) {
                     document.getElementById('ticketContent').innerHTML +=
                         '<div class="small text-muted text-center">ID transacción: ' + status.mp_payment_id + '</div>';

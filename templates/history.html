@@ -47,8 +47,8 @@
         </div>
         <div class="d-flex gap-2 flex-wrap mt-3">
             <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Limpiar filtros</button>
-            <a href="javascript:exportCSV()" class="btn btn-primary btn-sm">📥 CSV</a>
-            <a href="javascript:exportPDF()" class="btn btn-secondary btn-sm">📄 PDF</a>
+            <a href="javascript:exportCSV()" class="btn btn-primary btn-sm"><i class="bi bi-download"></i> CSV</a>
+            <a href="javascript:exportPDF()" class="btn btn-secondary btn-sm"><i class="bi bi-file-text"></i> PDF</a>
             <span class="small text-muted align-self-center" id="resultCount"></span>
         </div>
     </div>
@@ -83,9 +83,9 @@
             </div>
             <div class="modal-body" id="saleDetailBody"></div>
             <div class="modal-footer d-flex flex-wrap gap-2">
-                <button class="btn btn-primary flex-fill" onclick="printSaleTicket()" style="min-width:120px;">🖨 Imprimir</button>
-                <button class="btn btn-success flex-fill" onclick="shareSaleWhatsApp()" style="min-width:120px;">📱 WhatsApp</button>
-                <button class="btn btn-secondary flex-fill" onclick="toggleSaleEmail()" style="min-width:120px;">✉️ Email</button>
+                <button class="btn btn-primary flex-fill" onclick="printSaleTicket()" style="min-width:120px;"><i class="bi bi-printer"></i> Imprimir</button>
+                <button class="btn btn-success flex-fill" onclick="shareSaleWhatsApp()" style="min-width:120px;"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+                <button class="btn btn-secondary flex-fill" onclick="toggleSaleEmail()" style="min-width:120px;"><i class="bi bi-envelope"></i> Email</button>
                 <button class="btn btn-secondary flex-fill" onclick="closeModal('saleDetailModal')" style="min-width:80px;">Cerrar</button>
             </div>
             <div id="saleEmailArea" class="px-3 pb-3" style="display:none;">
@@ -146,7 +146,7 @@ function viewSale(saleId) {
             });
             html += `</tbody></table></div>`;
             document.getElementById('saleDetailBody').innerHTML = html;
-            document.getElementById('saleDetailTitle').textContent = '🧾 Venta #' + data.id;
+            document.getElementById('saleDetailTitle').innerHTML = '<i class="bi bi-receipt"></i> Venta #' + data.id;
             openModal('saleDetailModal');
         });
 }
@@ -155,7 +155,7 @@ function shareSaleWhatsApp() {
     if (!lastViewedSale) return;
     const bizName = '{{ business_name }}';
     const url = window.location.origin + '/ticket/' + lastViewedSale.id;
-    const msg = '*' + bizName + '* - Ticket #' + lastViewedSale.id + '\nTotal: ' + fmt(lastViewedSale.total) + '\n🔗 ' + url;
+    const msg = '*' + bizName + '* - Ticket #' + lastViewedSale.id + '\nTotal: ' + fmt(lastViewedSale.total) + '\n<i class="bi bi-link-45deg"></i> ' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -189,7 +189,7 @@ function sendSaleEmail() {
             msgEl.textContent = 'Error: ' + data.error;
             msgEl.style.color = 'var(--danger)';
         } else {
-            msgEl.textContent = '✅ Ticket enviado a ' + email;
+            msgEl.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Ticket enviado a ' + email;
             msgEl.style.color = 'var(--success)';
             document.getElementById('saleEmailInput').value = '';
         }
@@ -305,7 +305,7 @@ function viewLog(logId) {
                 html += `<div class="p-3 bg-light rounded-3">${data.description}</div>`;
             }
             document.getElementById('logDetailBody').innerHTML = html;
-            document.getElementById('logDetailTitle').textContent = '📋 ' + (actionNames[data.action] || data.action);
+            document.getElementById('logDetailTitle').innerHTML = '<i class="bi bi-journal-text"></i> ' + (actionNames[data.action] || data.action);
             openModal('logDetailModal');
         });
 }
