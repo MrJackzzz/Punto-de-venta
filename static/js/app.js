@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener('input', function(e) {
     const tag = e.target.tagName;
-    if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page')) {
+    if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page') && !e.target.closest('.login-form')) {
+        if (e.target.type === 'password') return;
         if (e.target.type === 'text' || e.target.type === 'search' || !e.target.type) {
             if (!e.target.classList.contains('no-upper')) {
                 const start = e.target.selectionStart;
