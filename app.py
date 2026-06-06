@@ -1476,6 +1476,26 @@ def clear_history():
     return redirect(url_for('history'))
 
 
+@app.route('/api/log/<int:log_id>/delete', methods=['POST'])
+@login_required
+def delete_log(log_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    log = db.session.get(MovementLog, log_id)
+    if not log:
+        return jsonify({'error': 'Movimiento no encontrado'}), 404
+    if log.action == 'sale':
+        import re
+        match = re.search(r'#(\d+)', log.description)
+        if match:
+            sale_id = int(match.group(1))
+            SaleItem.query.filter_by(sale_id=sale_id).delete()
+            Sale.query.filter_by(id=sale_id).delete()
+    db.session.delete(log)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
 @app.route('/api/history')
 @login_required
 def api_history():
