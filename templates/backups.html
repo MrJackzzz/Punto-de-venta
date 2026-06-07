@@ -73,7 +73,7 @@
             Configurá la app para que genere backups automáticos cada cierto tiempo.
             El proceso se ejecuta automáticamente al visitar esta página.
         </p>
-        <form method="POST" action="{{ url_for('settings') }}">
+        <form method="POST" action="{{ url_for('save_backup_config') }}">
             <div class="d-flex align-items-end gap-3">
                 <div class="mb-0 flex-grow-1" style="max-width:200px;">
                     <label for="backup_interval" class="form-label">Intervalo entre backups (horas)</label>
