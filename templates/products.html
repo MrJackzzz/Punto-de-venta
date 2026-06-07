@@ -59,7 +59,7 @@
                             {% if current_user.can_edit_products() %}
                             <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, '{{ p.unit_type }}', {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }})">Editar</button>
                             {% endif %}
-                            {% if current_user.role == 'admin' %}
+                            {% if current_user.can_manage_products() %}
                             <form method="POST" action="{{ url_for('product_delete', id=p.id) }}" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ p.name }}?')">Eliminar</button>
                             </form>

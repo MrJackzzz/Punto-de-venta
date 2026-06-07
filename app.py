@@ -368,8 +368,8 @@ def product_edit(id):
 @app.route('/products/delete/<int:id>', methods=['POST'])
 @login_required
 def product_delete(id):
-    if current_user.role != 'admin':
-        flash('Solo el Admin puede eliminar productos.', 'danger')
+    if not current_user.can_manage_products():
+        flash('No tienes permiso para eliminar productos.', 'danger')
         return redirect(url_for('products'))
     product = db.session.get(Product, id)
     if product:
@@ -1371,8 +1371,8 @@ def user_add():
 @app.route('/users/toggle/<int:id>', methods=['POST'])
 @login_required
 def user_toggle(id):
-    if current_user.role != 'admin':
-        flash('Solo Admin puede activar/desactivar usuarios.', 'danger')
+    if not current_user.can_manage_users():
+        flash('No tienes permiso para activar/desactivar usuarios.', 'danger')
         return redirect(url_for('users'))
     user = db.session.get(User, id)
     if user and user.id != current_user.id:
