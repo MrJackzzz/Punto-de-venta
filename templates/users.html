@@ -55,6 +55,11 @@
                             </button>
                         </form>
                         <button class="btn btn-sm btn-secondary" onclick="resetPass({{ u.id }})">Reset Pass</button>
+                        {% if u.role != 'admin' %}
+                        <form method="POST" action="{{ url_for('user_delete', id=u.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar a {{ u.username }} permanentemente? Sus movimientos serán reasignados a vos.')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i></button>
+                        </form>
+                        {% endif %}
                         {% endif %}
                     </td>
                 </tr>

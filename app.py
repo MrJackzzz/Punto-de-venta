@@ -1402,6 +1402,32 @@ def user_reset_password(id):
     return redirect(url_for('users'))
 
 
+@app.route('/users/delete/<int:id>', methods=['POST'])
+@login_required
+def user_delete(id):
+    if current_user.role != 'admin':
+        flash('Solo Admin puede eliminar usuarios.', 'danger')
+        return redirect(url_for('users'))
+    user = db.session.get(User, id)
+    if not user:
+        flash('Usuario no encontrado.', 'danger')
+        return redirect(url_for('users'))
+    if user.id == current_user.id:
+        flash('No podés eliminarte a vos mismo.', 'danger')
+        return redirect(url_for('users'))
+    if user.role == 'admin':
+        flash('No podés eliminar a otro admin.', 'danger')
+        return redirect(url_for('users'))
+    username = user.username
+    MovementLog.query.filter_by(user_id=id).update({MovementLog.user_id: current_user.id})
+    Sale.query.filter_by(user_id=id).update({Sale.user_id: current_user.id})
+    db.session.delete(user)
+    db.session.commit()
+    log_movement(current_user, 'user_delete', f'Usuario eliminado: {username}')
+    flash(f'Usuario "{username}" eliminado. Sus movimientos y ventas fueron reasignados a vos.', 'success')
+    return redirect(url_for('users'))
+
+
 @app.route('/admin/change-password', methods=['POST'])
 @login_required
 def admin_change_password():
