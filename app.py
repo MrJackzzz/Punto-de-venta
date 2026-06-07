@@ -2,7 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
 from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord
 from datetime import datetime, timezone, timedelta
-AR_TZ = timezone(timedelta(hours=-3))
+from zoneinfo import ZoneInfo
+AR_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
 
 
 def to_ar(dt):
@@ -2130,7 +2131,7 @@ def save_permissions():
     perm_keys = ['can_view_products', 'can_add_products', 'can_edit_products',
                  'can_manage_products',
                  'can_view_suppliers', 'can_add_suppliers', 'can_edit_suppliers', 'can_delete_suppliers',
-                 'can_manage_users',
+                 'can_manage_users', 'can_toggle_users', 'can_reset_user_password', 'can_delete_users',
                  'can_view_history', 'can_sell',
                  'can_view_categories', 'can_add_categories', 'can_edit_categories', 'can_delete_categories',
                  'can_view_charts',
@@ -2270,10 +2271,17 @@ def backups():
     for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
         fpath = os.path.join(BACKUP_DIR, f)
         if os.path.isfile(fpath) and f.startswith('backup_') and f.endswith('.zip'):
+            try:
+                ts_str = f.replace('backup_', '').replace('.zip', '').replace('_auto', '')
+                ts = datetime.strptime(ts_str, '%Y%m%d_%H%M%S')
+                ts = ts.replace(tzinfo=timezone.utc).astimezone(AR_TZ)
+                display_time = ts.strftime('%d/%m/%Y %H:%M')
+            except ValueError:
+                display_time = datetime.fromtimestamp(os.path.getmtime(fpath), tz=AR_TZ).strftime('%d/%m/%Y %H:%M')
             files.append({
                 'name': f,
                 'size': os.path.getsize(fpath),
-                'mtime': datetime.fromtimestamp(os.path.getmtime(fpath)).strftime('%d/%m/%Y %H:%M')
+                'mtime': display_time
             })
     return render_template('backups.html', backups=files, configs=configs)
 
