@@ -282,7 +282,7 @@ function applyFilters() {
                     return `<tr${extra}>
                         <td>${log.time}</td>
                         <td>${log.user}</td>
-                        <td><span class="badge bg-${log.role}">${log.role.toUpperCase()}</span></td>
+                        <td><span class="badge bg-${log.role === 'admin' ? 'danger' : log.role === 'supervisor' ? 'dark' : 'secondary'}">${log.role.toUpperCase()}</span></td>
                         <td>${log.action}</td>
                         <td>${log.description}</td>
                         ${isAdmin ? `<td><span class="d-inline-block" onclick="event.stopPropagation();deleteLog(${log.id})" title="Eliminar" style="cursor:pointer;color:#dc3545;"><i class="bi bi-x-circle"></i></span></td>` : ''}
