@@ -109,6 +109,15 @@ class User(UserMixin, db.Model):
     def can_view_trash(self):
         return self._role_perm('can_view_trash', self.role == 'admin')
 
+    def can_toggle_users(self):
+        return self._role_perm('can_toggle_users', self.role == 'admin')
+
+    def can_reset_user_password(self):
+        return self._role_perm('can_reset_user_password', self.role == 'admin')
+
+    def can_delete_users(self):
+        return self._role_perm('can_delete_users', self.role == 'admin')
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)

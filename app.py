@@ -1371,7 +1371,7 @@ def user_add():
 @app.route('/users/toggle/<int:id>', methods=['POST'])
 @login_required
 def user_toggle(id):
-    if not current_user.can_manage_users():
+    if not current_user.can_toggle_users():
         flash('No tienes permiso para activar/desactivar usuarios.', 'danger')
         return redirect(url_for('users'))
     user = db.session.get(User, id)
@@ -1387,8 +1387,8 @@ def user_toggle(id):
 @app.route('/users/reset-password/<int:id>', methods=['POST'])
 @login_required
 def user_reset_password(id):
-    if not current_user.can_manage_users():
-        flash('Permiso denegado.', 'danger')
+    if not current_user.can_reset_user_password():
+        flash('No tienes permiso para resetear contraseñas.', 'danger')
         return redirect(url_for('users'))
     user = db.session.get(User, id)
     if not user:
@@ -1405,8 +1405,8 @@ def user_reset_password(id):
 @app.route('/users/delete/<int:id>', methods=['POST'])
 @login_required
 def user_delete(id):
-    if current_user.role != 'admin':
-        flash('Solo Admin puede eliminar usuarios.', 'danger')
+    if not current_user.can_delete_users():
+        flash('No tienes permiso para eliminar usuarios.', 'danger')
         return redirect(url_for('users'))
     user = db.session.get(User, id)
     if not user:

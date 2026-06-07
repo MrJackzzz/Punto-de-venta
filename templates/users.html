@@ -48,14 +48,18 @@
                     </td>
                     <td>{{ to_ar(u.created_at).strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
                     <td class="text-nowrap">
-                        {% if current_user.role == 'admin' and u.id != current_user.id %}
+                        {% if u.id != current_user.id %}
+                        {% if current_user.can_toggle_users() %}
                         <form method="POST" action="{{ url_for('user_toggle', id=u.id) }}" class="d-inline">
                             <button type="submit" class="btn btn-sm {{ 'btn-danger' if u.active else 'btn-success' }}">
                                 {{ 'Desactivar' if u.active else 'Activar' }}
                             </button>
                         </form>
+                        {% endif %}
+                        {% if current_user.can_reset_user_password() %}
                         <button class="btn btn-sm btn-secondary" onclick="resetPass({{ u.id }})">Reset Pass</button>
-                        {% if u.role != 'admin' %}
+                        {% endif %}
+                        {% if current_user.can_delete_users() and u.role != 'admin' %}
                         <form method="POST" action="{{ url_for('user_delete', id=u.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar a {{ u.username }} permanentemente? Sus movimientos serán reasignados a vos.')">
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i></button>
                         </form>
