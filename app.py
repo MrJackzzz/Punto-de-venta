@@ -11,7 +11,7 @@ def to_ar(dt):
     return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func, or_
-import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading
+import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading, re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -2229,13 +2229,15 @@ def auto_backup_check():
             pass
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     db_url = app.config['SQLALCHEMY_DATABASE_URI']
+    zip_path = None
     try:
         if db_url.startswith('sqlite'):
             src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
             if os.path.exists(src):
                 dst = os.path.join(BACKUP_DIR, f'backup_{ts}.db')
                 shutil.copy2(src, dst)
-                with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                zip_path = dst + '.zip'
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                     zf.write(dst, 'sistema.db')
                 os.remove(dst)
         else:
@@ -2244,11 +2246,17 @@ def auto_backup_check():
                 dst = os.path.join(BACKUP_DIR, f'backup_auto_{ts}.sql')
                 with open(dst, 'w', encoding='utf-8') as f:
                     f.write(dump.stdout)
-                with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                zip_path = dst + '.zip'
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                     zf.write(dst, f'backup_auto_{ts}.sql')
                 os.remove(dst)
     except Exception:
         pass
+    if zip_path and get_config('drive_enabled', '') == 'on':
+        try:
+            upload_to_drive(zip_path, f'backup_auto_{ts}.zip')
+        except Exception:
+            pass
     trim_backups()
 @app.route('/backups')
 @login_required
@@ -2278,12 +2286,14 @@ def backup_create():
         return redirect(url_for('dashboard'))
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     db_url = app.config['SQLALCHEMY_DATABASE_URI']
+    zip_path = None
     if db_url.startswith('sqlite'):
         src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
         if os.path.exists(src):
             dst = os.path.join(BACKUP_DIR, f'backup_{ts}.db')
             shutil.copy2(src, dst)
-            with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+            zip_path = dst + '.zip'
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                 zf.write(dst, 'sistema.db')
             os.remove(dst)
             flash(f'Backup creado: backup_{ts}.zip', 'success')
@@ -2296,7 +2306,8 @@ def backup_create():
                 dst = os.path.join(BACKUP_DIR, f'backup_{ts}.sql')
                 with open(dst, 'w', encoding='utf-8') as f:
                     f.write(dump.stdout)
-                with zipfile.ZipFile(dst + '.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+                zip_path = dst + '.zip'
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                     zf.write(dst, f'backup_{ts}.sql')
                 os.remove(dst)
                 flash(f'Backup creado: backup_{ts}.zip', 'success')
@@ -2306,6 +2317,13 @@ def backup_create():
             flash('pg_dump no está instalado en el servidor.', 'danger')
         except Exception as e:
             flash(f'Error: {str(e)[:200]}', 'danger')
+    if zip_path and get_config('drive_enabled', '') == 'on':
+        try:
+            result = upload_to_drive(zip_path, f'backup_{ts}.zip')
+            if result:
+                flash(f'Respaldado en Drive: {result.get("name")}', 'success')
+        except Exception:
+            pass
     trim_backups()
     return redirect(url_for('backups'))
 
@@ -2356,6 +2374,219 @@ def backup_restore(name):
                 flash(f'Error al restaurar: {result.stderr[:200]}', 'danger')
     except Exception as e:
         flash(f'Error: {str(e)[:200]}', 'danger')
+    return redirect(url_for('backups'))
+
+
+@app.route('/backups/upload', methods=['POST'])
+@login_required
+def backup_upload():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    if 'backup_file' not in request.files:
+        flash('No se seleccionó ningún archivo.', 'danger')
+        return redirect(url_for('backups'))
+    f = request.files['backup_file']
+    if f.filename == '' or not f.filename.endswith('.zip'):
+        flash('Seleccioná un archivo .zip válido.', 'danger')
+        return redirect(url_for('backups'))
+    tmp = os.path.join(BACKUP_DIR, '_upload_temp.zip')
+    f.save(tmp)
+    db_url = app.config['SQLALCHEMY_DATABASE_URI']
+    try:
+        if db_url.startswith('sqlite'):
+            with zipfile.ZipFile(tmp, 'r') as zf:
+                names = zf.namelist()
+                db_file = next((n for n in names if n.endswith('.db')), None)
+                if not db_file:
+                    flash('El .zip no contiene un archivo .db', 'danger')
+                    os.remove(tmp)
+                    return redirect(url_for('backups'))
+                zf.extract(db_file, BACKUP_DIR)
+            src = os.path.join(BACKUP_DIR, db_file)
+            dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
+            shutil.copy2(src, dst)
+            os.remove(src)
+        else:
+            with zipfile.ZipFile(tmp, 'r') as zf:
+                names = zf.namelist()
+                sql_file = next((n for n in names if n.endswith('.sql')), None)
+                if not sql_file:
+                    flash('El .zip no contiene un archivo .sql', 'danger')
+                    os.remove(tmp)
+                    return redirect(url_for('backups'))
+                zf.extract(sql_file, BACKUP_DIR)
+            sql_path = os.path.join(BACKUP_DIR, sql_file)
+            with open(sql_path, 'r') as sf:
+                result = subprocess.run(['psql', db_url], stdin=sf, capture_output=True, text=True, timeout=60)
+            os.remove(sql_path)
+            if result.returncode != 0:
+                flash(f'Error: {result.stderr[:200]}', 'danger')
+                os.remove(tmp)
+                return redirect(url_for('backups'))
+        flash('Backup restaurado desde archivo. Recargá la página.', 'success')
+    except Exception as e:
+        flash(f'Error: {str(e)[:200]}', 'danger')
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+    return redirect(url_for('backups'))
+
+
+# ── Google Drive Backup ──
+
+def get_drive_service():
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+        svc_json = get_config('drive_service_account_json', '')
+        if not svc_json:
+            return None
+        creds = service_account.Credentials.from_service_account_info(
+            json.loads(svc_json),
+            scopes=['https://www.googleapis.com/auth/drive.file']
+        )
+        return build('drive', 'v3', credentials=creds, cache_discovery=False)
+    except Exception:
+        return None
+
+
+def upload_to_drive(filepath, filename):
+    try:
+        from googleapiclient.http import MediaFileUpload
+    except ImportError:
+        return None
+    try:
+        service = get_drive_service()
+        if not service:
+            return None
+        folder_id = get_config('drive_folder_id', '')
+        if not folder_id:
+            return None
+        media = MediaFileUpload(filepath, mimetype='application/zip', resumable=True)
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id],
+            'description': f'SmartPost backup created at {datetime.now().strftime("%Y-%m-%d %H:%M")}'
+        }
+        f = service.files().create(body=file_metadata, media_body=media, fields='id,name,createdTime').execute()
+        return f
+    except Exception:
+        return None
+
+
+@app.route('/settings/drive-config', methods=['POST'])
+@login_required
+def save_drive_config():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('settings'))
+    for key in ['drive_service_account_json', 'drive_folder_id', 'drive_enabled']:
+        val = request.form.get(key, '').strip()
+        cfg = Config.query.filter_by(key=key).first()
+        if cfg:
+            cfg.value = val
+        else:
+            db.session.add(Config(key=key, value=val))
+    db.session.commit()
+    flash('Configuración de Google Drive guardada.', 'success')
+    # Test connection
+    service = get_drive_service()
+    if service:
+        flash('Conexión con Drive exitosa.', 'success')
+    else:
+        flash('No se pudo conectar con Drive. Revisá el JSON de la cuenta de servicio.', 'warning')
+    return redirect(url_for('settings'))
+
+
+@app.route('/api/backups/drive')
+@login_required
+def api_drive_backups():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    folder_id = get_config('drive_folder_id', '')
+    if not folder_id:
+        return jsonify({'error': 'Drive no configurado', 'files': []})
+    service = get_drive_service()
+    if not service:
+        return jsonify({'error': 'Error de conexión', 'files': []})
+    try:
+        results = service.files().list(
+            q=f"'{folder_id}' in parents and trashed=false",
+            orderBy='createdTime desc',
+            pageSize=50,
+            fields='files(id,name,size,createdTime,description)'
+        ).execute()
+        files = results.get('files', [])
+        return jsonify({'files': [{
+            'id': f['id'],
+            'name': f['name'],
+            'size': int(f.get('size', 0)),
+            'created': f.get('createdTime', ''),
+        } for f in files]})
+    except Exception as e:
+        return jsonify({'error': str(e)[:200], 'files': []})
+
+
+@app.route('/backups/drive-restore/<file_id>', methods=['POST'])
+@login_required
+def drive_restore(file_id):
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('backups'))
+    service = get_drive_service()
+    if not service:
+        flash('Error de conexión con Drive.', 'danger')
+        return redirect(url_for('backups'))
+    try:
+        from googleapiclient.http import MediaIoBaseDownload
+    except ImportError:
+        flash('Faltan librerías de Google.', 'danger')
+        return redirect(url_for('backups'))
+    try:
+        request = service.files().get_media(fileId=file_id)
+        tmp = os.path.join(BACKUP_DIR, '_drive_restore.zip')
+        with open(tmp, 'wb') as f:
+            downloader = MediaIoBaseDownload(f, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+        db_url = app.config['SQLALCHEMY_DATABASE_URI']
+        if db_url.startswith('sqlite'):
+            with zipfile.ZipFile(tmp, 'r') as zf:
+                names = zf.namelist()
+                db_file = next((n for n in names if n.endswith('.db')), None)
+                if not db_file:
+                    flash('El .zip no contiene .db', 'danger')
+                    os.remove(tmp)
+                    return redirect(url_for('backups'))
+                zf.extract(db_file, BACKUP_DIR)
+            src = os.path.join(BACKUP_DIR, db_file)
+            dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'sistema.db')
+            shutil.copy2(src, dst)
+            os.remove(src)
+        else:
+            with zipfile.ZipFile(tmp, 'r') as zf:
+                names = zf.namelist()
+                sql_file = next((n for n in names if n.endswith('.sql')), None)
+                if not sql_file:
+                    flash('El .zip no contiene .sql', 'danger')
+                    os.remove(tmp)
+                    return redirect(url_for('backups'))
+                zf.extract(sql_file, BACKUP_DIR)
+            sql_path = os.path.join(BACKUP_DIR, sql_file)
+            with open(sql_path, 'r') as sf:
+                result = subprocess.run(['psql', db_url], stdin=sf, capture_output=True, text=True, timeout=60)
+            os.remove(sql_path)
+            if result.returncode != 0:
+                flash(f'Error: {result.stderr[:200]}', 'danger')
+                os.remove(tmp)
+                return redirect(url_for('backups'))
+        flash('Backup restaurado desde Drive. Recargá la página.', 'success')
+        os.remove(tmp)
+    except Exception as e:
+        flash(f'Error: {str(e)[:200]}', 'danger')
+        if os.path.exists(tmp): os.remove(tmp)
     return redirect(url_for('backups'))
 
 

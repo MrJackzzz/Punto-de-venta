@@ -237,6 +237,39 @@
     </div>
 </div>
 
+<!-- Google Drive -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary"><i class="bi bi-google"></i> Google Drive Backup</div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Configurá una <strong>cuenta de servicio</strong> de Google para subir backups automáticamente a Drive.
+            Creá un proyecto en <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>,
+            habilitá la Drive API, creá una cuenta de servicio y descargá el JSON. Luego compartí una carpeta de Drive con el email de la cuenta de servicio.
+        </p>
+        <form method="POST" action="{{ url_for('save_drive_config') }}">
+            <div class="mb-3">
+                <label for="drive_service_account_json" class="form-label">JSON de cuenta de servicio</label>
+                <textarea id="drive_service_account_json" name="drive_service_account_json" class="form-control font-monospace" rows="4" placeholder='{&#10;  "type": "service_account",&#10;  "project_id": "...",&#10;  ...&#10;}'>{{ configs.get('drive_service_account_json', '') }}</textarea>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="drive_folder_id" class="form-label">ID de carpeta de Drive</label>
+                    <input type="text" id="drive_folder_id" name="drive_folder_id" class="form-control" value="{{ configs.get('drive_folder_id', '') }}" placeholder="1ABCxyz...">
+                    <small class="text-muted">La ID está en la URL de la carpeta: <code>drive.google.com/drive/folders/&lt;ID&gt;</code></small>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check form-switch mb-2">
+                        <input type="hidden" name="drive_enabled" value="">
+                        <input type="checkbox" id="drive_enabled" name="drive_enabled" value="on" class="form-check-input" {{ 'checked' if configs.get('drive_enabled') == 'on' else '' }}>
+                        <label for="drive_enabled" class="form-check-label">Habilitar subida automática a Drive</label>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Configuración de Drive</button>
+        </form>
+    </div>
+</div>
+
 <!-- Confidencialidad -->
 <div class="card shadow-sm mb-4">
     <div class="card-header card-header-primary"><i class="bi bi-shield-lock"></i> Confidencialidad</div>
