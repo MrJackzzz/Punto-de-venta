@@ -184,6 +184,7 @@ class Sale(db.Model):
     amount_paid = db.Column(db.Float, nullable=False, default=0)
     change_amount = db.Column(db.Float, nullable=False, default=0)
     customer_email = db.Column(db.String(100), default='')
+    customer_name = db.Column(db.String(100), default='')
     mp_payment_id = db.Column(db.String(100), default='')
     mp_status = db.Column(db.String(20), default='')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

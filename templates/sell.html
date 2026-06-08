@@ -60,6 +60,10 @@
                         <label for="customerEmail">Enviar ticket por email (opcional)</label>
                         <input type="email" id="customerEmail" class="form-control" placeholder="cliente@email.com">
                     </div>
+                    <div class="mb-3">
+                        <label for="customerName">Nombre del cliente (opcional)</label>
+                        <input type="text" id="customerName" class="form-control" placeholder="Ej: Juan Pérez">
+                    </div>
                     <button class="btn btn-success btn-lg" onclick="checkout()" id="checkoutBtn">
                         Cobrar
                     </button>
@@ -250,6 +254,7 @@ function showTicket(data) {
         <div class="d-flex justify-content-between" style="font-size:12px;">
             <span>Vuelto:</span><span class="text-success fw-bold">${fmt(data.change)}</span>
         </div>` : ''}
+        ${data.customer_name ? `<div class="small">Cliente: ${data.customer_name}</div>` : ''}
         ${data.customer_email ? `<hr class="my-1" style="border-top:1px dashed #999;"><div class="small">Email: ${data.customer_email}</div>` : ''}
         ${extraHtml}
         <div id="mpStatusMsg" class="text-center mt-2 small"></div>
@@ -371,6 +376,7 @@ function checkout() {
     document.getElementById('checkoutBtn').textContent = 'Procesando...';
 
     const email = document.getElementById('customerEmail').value.trim();
+    const customerName = document.getElementById('customerName').value.trim();
 
     fetch('/sell/checkout', {
         method: 'POST',
@@ -383,7 +389,8 @@ function checkout() {
             })),
             payment_method: method,
             amount_paid: method === 'cash' ? paid : total,
-            customer_email: email
+            customer_email: email,
+            customer_name: customerName
         })
     })
     .then(r => r.json())
@@ -423,6 +430,7 @@ function checkout() {
         document.getElementById('amountPaid').value = '';
         document.getElementById('changeDisplay').textContent = '';
         document.getElementById('customerEmail').value = '';
+        document.getElementById('customerName').value = '';
         document.getElementById('searchInput').value = '';
         document.getElementById('searchResults').innerHTML = '';
         document.getElementById('manualCode').value = '';

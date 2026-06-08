@@ -876,6 +876,7 @@ def checkout():
     payment_method = data.get('payment_method', 'cash')
     amount_paid = float(data.get('amount_paid', 0))
     customer_email = data.get('customer_email', '').strip()
+    customer_name = data.get('customer_name', '').strip()
 
     total = 0
     sale_items = []
@@ -907,7 +908,8 @@ def checkout():
     sale = Sale(
         user_id=current_user.id, total=total,
         payment_method=payment_method, amount_paid=amount_paid,
-        change_amount=change, customer_email=customer_email
+        change_amount=change, customer_email=customer_email,
+        customer_name=customer_name
     )
     db.session.add(sale)
     db.session.flush()
@@ -943,7 +945,9 @@ def checkout():
         'change': change,
         'payment_method': payment_method,
         'items': items_json,
-        'user': current_user.get_full_name()
+        'user': current_user.get_full_name(),
+        'customer_name': customer_name,
+        'customer_email': customer_email
     })
 
 
@@ -1664,6 +1668,7 @@ def api_history():
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
     product_id = request.args.get('product_id', type=int)
+    customer_name = request.args.get('customer_name', '').strip()
 
     query = MovementLog.query
 
@@ -1708,6 +1713,18 @@ def api_history():
                     MovementLog.description.ilike(f'%{product.code}%') |
                     MovementLog.description.ilike(f'%{product.name}%')
                 )
+
+    if customer_name:
+        sale_ids_by_customer = [r[0] for r in db.session.query(Sale.id).filter(
+            Sale.customer_name.ilike(f'%{customer_name}%')
+        ).all()]
+        if sale_ids_by_customer:
+            query = query.filter(db.and_(
+                MovementLog.action == 'sale',
+                db.or_(*[MovementLog.description.contains(f'#{sid}') for sid in sale_ids_by_customer])
+            ))
+        else:
+            query = query.filter(False)
 
     logs = query.order_by(MovementLog.created_at.desc()).limit(500).all()
 
@@ -1758,7 +1775,11 @@ def api_history():
         }
         if log.action == 'sale' and '#' in log.description:
             try:
-                entry['sale_id'] = int(log.description.split('#')[1].split(' ')[0])
+                sid = int(log.description.split('#')[1].split(' ')[0])
+                entry['sale_id'] = sid
+                sale = db.session.get(Sale, sid)
+                if sale and sale.customer_name:
+                    entry['customer_name'] = sale.customer_name
             except (IndexError, ValueError):
                 pass
         log_list.append(entry)

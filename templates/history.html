@@ -53,6 +53,10 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="col-md-3">
+                <label for="filterCustomerName" class="form-label">Cliente</label>
+                <input type="text" id="filterCustomerName" class="form-control" placeholder="Nombre del cliente" onchange="applyFilters()">
+            </div>
         </div>
         <div class="d-flex gap-2 flex-wrap mt-3">
             <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Limpiar filtros</button>
@@ -256,11 +260,13 @@ function getFilters() {
     const from = document.getElementById('filterDateFrom').value;
     const to = document.getElementById('filterDateTo').value;
     const product = document.getElementById('filterProduct').value;
+    const customer = document.getElementById('filterCustomerName').value.trim();
     if (user) params.set('user_id', user);
     if (action) params.set('action', action);
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);
     if (product) params.set('product_id', product);
+    if (customer) params.set('customer_name', customer);
     return params;
 }
 
@@ -284,7 +290,7 @@ function applyFilters() {
                         <td>${log.user}</td>
                         <td><span class="badge bg-${log.role === 'admin' ? 'danger' : log.role === 'supervisor' ? 'dark' : 'secondary'}">${log.role.toUpperCase()}</span></td>
                         <td>${log.action}</td>
-                        <td>${log.description}</td>
+                        <td>${log.description}${log.customer_name ? `<br><span class="text-muted small"><i class="bi bi-person"></i> ${log.customer_name}</span>` : ''}</td>
                         ${isAdmin ? `<td><span class="d-inline-block" onclick="event.stopPropagation();deleteLog(${log.id})" title="Eliminar" style="cursor:pointer;color:#dc3545;"><i class="bi bi-x-circle"></i></span></td>` : ''}
                     </tr>`;
                 }).join('');
@@ -322,6 +328,7 @@ function clearFilters() {
     document.getElementById('filterDateFrom').value = '';
     document.getElementById('filterDateTo').value = '';
     document.getElementById('filterProduct').value = '';
+    document.getElementById('filterCustomerName').value = '';
     applyFilters();
 }
 
