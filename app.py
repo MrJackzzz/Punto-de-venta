@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
-from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord
+from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord, CashClose
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 AR_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
@@ -3031,9 +3031,15 @@ def init_app():
     with app.app_context():
         db.create_all()
         # Add new columns for existing databases (safe to run multiple times)
-        for col, col_type in [('mp_payment_id', 'VARCHAR(100)'), ('mp_status', 'VARCHAR(20)')]:
+        for col, col_type in [('mp_payment_id', 'VARCHAR(100)'), ('mp_status', 'VARCHAR(20)'), ('customer_name', 'VARCHAR(100)')]:
             try:
                 db.session.execute(db.text(f'ALTER TABLE sale ADD COLUMN {col} {col_type} DEFAULT \'\''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        for col, col_type in [('wholesale_qty', 'FLOAT DEFAULT 0'), ('wholesale_price', 'FLOAT DEFAULT 0')]:
+            try:
+                db.session.execute(db.text(f'ALTER TABLE product ADD COLUMN {col} {col_type}'))
                 db.session.commit()
             except Exception:
                 db.session.rollback()
