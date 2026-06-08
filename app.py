@@ -970,8 +970,9 @@ def checkout():
 @app.route('/sale/refund/<int:sale_id>', methods=['POST'])
 @login_required
 def refund_sale(sale_id):
-    if current_user.role != 'admin':
-        return jsonify({'error': 'Solo admin'}), 403
+    if not current_user.can_refund_sales():
+        flash('No tienes permiso para anular ventas.', 'danger')
+        return redirect(url_for('history'))
     sale = db.session.get(Sale, sale_id)
     if not sale:
         flash('Venta no encontrada.', 'danger')
@@ -2314,7 +2315,8 @@ def save_permissions():
                  'can_view_charts',
                  'can_take_orders', 'can_pay_membership',
                  'can_view_barcodes',
-                 'can_view_trash']
+                 'can_view_trash',
+                 'can_refund_sales']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
@@ -3198,7 +3200,7 @@ def init_app():
                          'can_view_history','can_sell',
                          'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
                          'can_view_charts','can_pay_membership','can_take_orders',
-                         'can_view_barcodes','can_view_trash']
+                         'can_view_barcodes','can_view_trash','can_refund_sales']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
             'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash') for k in all_perm_keys},

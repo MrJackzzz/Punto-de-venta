@@ -109,6 +109,9 @@ class User(UserMixin, db.Model):
     def can_view_trash(self):
         return self._role_perm('can_view_trash', self.role == 'admin')
 
+    def can_refund_sales(self):
+        return self._role_perm('can_refund_sales', self.role in ('admin', 'supervisor'))
+
     def can_toggle_users(self):
         return self._role_perm('can_toggle_users', self.role == 'admin')
 

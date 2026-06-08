@@ -81,7 +81,7 @@
                         <th>Rol</th>
                         <th>Acción</th>
                         <th>Descripción</th>
-                        {% if current_user.role == 'admin' %}<th></th>{% endif %}
+                        {% if current_user.role == 'admin' or current_user.can_refund_sales() %}<th></th>{% endif %}
                 </tr>
             </thead>
             <tbody id="logsBody">
@@ -104,6 +104,12 @@
                 <button class="btn btn-primary flex-fill" onclick="printSaleTicket()" style="min-width:120px;"><i class="bi bi-printer"></i> Imprimir</button>
                 <button class="btn btn-success flex-fill" onclick="shareSaleWhatsApp()" style="min-width:120px;"><i class="bi bi-whatsapp"></i> WhatsApp</button>
                 <button class="btn btn-secondary flex-fill" onclick="toggleSaleEmail()" style="min-width:120px;"><i class="bi bi-envelope"></i> Email</button>
+                {% if current_user.can_refund_sales() %}
+                <form method="POST" action="{{ url_for('refund_sale', sale_id=0) }}" id="refundSaleForm" class="d-inline flex-fill" onsubmit="return confirm('¿Anular esta venta? Se devolverá el stock.')">
+                    <input type="hidden" id="refundSaleId" name="sale_id" value="">
+                    <button type="submit" class="btn btn-outline-warning w-100" style="min-width:120px;"><i class="bi bi-arrow-counterclockwise"></i> Anular</button>
+                </form>
+                {% endif %}
                 <button class="btn btn-secondary flex-fill" onclick="closeModal('saleDetailModal')" style="min-width:80px;">Cerrar</button>
             </div>
             <div id="saleEmailArea" class="px-3 pb-3" style="display:none;">
@@ -201,6 +207,12 @@ function viewSale(saleId) {
             html += `</tbody></table></div>`;
             document.getElementById('saleDetailBody').innerHTML = html;
             document.getElementById('saleDetailTitle').innerHTML = '<i class="bi bi-receipt"></i> Venta #' + data.id;
+            {% if current_user.can_refund_sales() %}
+            const rfForm = document.getElementById('refundSaleForm');
+            if (rfForm) {
+                rfForm.action = '/sale/refund/' + data.id;
+            }
+            {% endif %}
             openModal('saleDetailModal');
         });
 }
@@ -280,21 +292,22 @@ function applyFilters() {
             const countEl = document.getElementById('resultCount');
 
             if (!data.logs.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin resultados</td></tr>';
+                tbody.innerHTML = '                <tr><td colspan="7" class="text-center text-muted">Sin resultados</td></tr>';
                 countEl.textContent = '0 movimientos';
             } else {
                 tbody.innerHTML = data.logs.map(log => {
                     let extra = ` onclick="viewLog(${log.id})" style="cursor:pointer;" title="Click para ver detalle"`;
                     const isAdmin = {{ 'true' if current_user.role == 'admin' else 'false' }};
+                    const canRefund = {{ 'true' if current_user.can_refund_sales() else 'false' }};
                     return `<tr${extra}>
                         <td>${log.time}</td>
                         <td>${log.user}</td>
                         <td><span class="badge bg-${log.role === 'admin' ? 'danger' : log.role === 'supervisor' ? 'dark' : 'secondary'}">${log.role.toUpperCase()}</span></td>
                         <td>${log.action}</td>
                         <td>${log.description}${log.customer_name ? `<br><span class="text-muted small"><i class="bi bi-person"></i> ${log.customer_name}</span>` : ''}</td>
-                        ${isAdmin ? `<td class="text-nowrap">
-                            <span class="d-inline-block" onclick="event.stopPropagation();deleteLog(${log.id})" title="Eliminar" style="cursor:pointer;color:#dc3545;"><i class="bi bi-x-circle"></i></span>
-                            ${log.sale_id && log.action_key === 'sale' ? `<form method="POST" action="/sale/refund/${log.sale_id}" class="d-inline" onsubmit="return confirm('¿Anular esta venta? Se devolverá el stock.')"><button type="submit" class="btn btn-sm btn-outline-warning py-0 px-1" title="Anular venta"><i class="bi bi-arrow-counterclockwise"></i></button></form>` : ''}
+                        ${isAdmin || canRefund ? `<td class="text-nowrap">
+                            ${isAdmin ? `<span class="d-inline-block" onclick="event.stopPropagation();deleteLog(${log.id})" title="Eliminar" style="cursor:pointer;color:#dc3545;"><i class="bi bi-x-circle"></i></span>` : ''}
+                            ${(isAdmin || canRefund) && log.sale_id && log.action_key === 'sale' ? `<form method="POST" action="/sale/refund/${log.sale_id}" class="d-inline" onsubmit="return confirm('¿Anular esta venta? Se devolverá el stock.')"><button type="submit" class="btn btn-sm btn-outline-warning py-0 px-1" title="Anular venta"><i class="bi bi-arrow-counterclockwise"></i></button></form>` : ''}
                         </td>` : ''}
                     </tr>`;
                 }).join('');
