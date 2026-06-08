@@ -57,7 +57,7 @@
                         <td>{{ p.supplier.name if p.supplier else '-' }}</td>
                         <td>
                             {% if current_user.can_edit_products() %}
-                            <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, '{{ p.unit_type }}', {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }})">Editar</button>
+                            <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, '{{ p.unit_type }}', {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }}, {{ p.wholesale_qty or 0 }}, {{ p.wholesale_price or 0 }})">Editar</button>
                             {% endif %}
                             {% if current_user.can_manage_products() %}
                             <form method="POST" action="{{ url_for('product_delete', id=p.id) }}" class="d-inline">
@@ -163,6 +163,20 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="wholesale_qty" class="form-label">Cant. para mayorista</label>
+                                <input type="number" id="wholesale_qty" name="wholesale_qty" class="form-control" step="1" min="0" value="0" placeholder="0 = sin mayorista">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="wholesale_price" class="form-label">Precio mayorista (por unidad)</label>
+                                <input type="number" id="wholesale_price" name="wholesale_price" class="form-control" step="0.01" min="0" value="0" placeholder="Precio especial">
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Descripción</label>
                         <textarea id="description" name="description" class="form-control" rows="2"></textarea>
@@ -189,7 +203,7 @@ function restoreOriginalOrder() {
     originalRows.forEach(r => tbody.appendChild(r));
 }
 
-function editProduct(id, code, name, cost, markup, currency, stock, unitType, supplierId, description, categoryId) {
+function editProduct(id, code, name, cost, markup, currency, stock, unitType, supplierId, description, categoryId, wholesaleQty, wholesalePrice) {
     document.getElementById('productModalTitle').textContent = 'Editar Producto';
     document.getElementById('productForm').action = '/products/edit/' + id;
     document.getElementById('code').value = code;
@@ -202,6 +216,8 @@ function editProduct(id, code, name, cost, markup, currency, stock, unitType, su
     document.getElementById('supplier_id').value = supplierId || '';
     document.getElementById('category_id').value = categoryId || '';
     document.getElementById('description').value = description;
+    document.getElementById('wholesale_qty').value = wholesaleQty || 0;
+    document.getElementById('wholesale_price').value = wholesalePrice || 0;
     openModal('productModal');
 }
 

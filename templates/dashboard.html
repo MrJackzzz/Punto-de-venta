@@ -4,28 +4,46 @@
 <h2 class="text-primary mb-4">Panel de Control</h2>
 
 <div class="row g-3">
-    <div class="col-md-3 col-12">
+    <div class="col-md-3 col-6">
+        <div class="stat-card success">
+            <div class="number">${{ "%.0f"|format(today_revenue) }}</div>
+            <div class="label">Vendido Hoy</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card">
+            <div class="number">{{ today_sales }}</div>
+            <div class="label">Ventas Hoy</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
         <div class="stat-card">
             <div class="number">{{ total_products }}</div>
             <div class="label">Productos</div>
         </div>
     </div>
-    <div class="col-md-3 col-12">
+    <div class="col-md-3 col-6">
         <div class="stat-card">
             <div class="number">{{ categories_count }}</div>
             <div class="label">Categorías</div>
         </div>
     </div>
-    <div class="col-md-3 col-12">
+    <div class="col-md-3 col-6">
         <div class="stat-card warning">
             <div class="number">{{ low_stock }}</div>
             <div class="label">Stock Bajo (&lt;{{ low_stock_threshold }})</div>
         </div>
     </div>
-    <div class="col-md-3 col-12">
-        <div class="stat-card success">
-            <div class="number">{{ today_sales }}</div>
-            <div class="label">Ventas Hoy</div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card danger">
+            <div class="number">{{ critical_stock }}</div>
+            <div class="label">Stock Crítico (0)</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card primary">
+            <div class="number">{{ pending_orders }}</div>
+            <div class="label">Pedidos Pendientes</div>
         </div>
     </div>
 </div>
@@ -183,14 +201,17 @@ function refreshStats() {
         .then(data => {
             const cards = document.querySelectorAll('.stat-card .number');
             const labels = document.querySelectorAll('.stat-card .label');
-            if (cards.length >= 4) {
-                cards[0].textContent = data.total_products;
-                cards[1].textContent = data.categories_count;
-                cards[2].textContent = data.low_stock;
-                cards[3].textContent = data.today_sales;
+            if (cards.length >= 7) {
+                cards[0].textContent = '$' + data.today_revenue;
+                cards[1].textContent = data.today_sales;
+                cards[2].textContent = data.total_products;
+                cards[3].textContent = data.categories_count;
+                cards[4].textContent = data.low_stock;
+                cards[5].textContent = data.critical_stock;
+                cards[6].textContent = data.pending_orders;
             }
-            if (labels.length >= 3) {
-                labels[2].textContent = 'Stock Bajo (<' + data.low_stock_threshold + ')';
+            if (labels.length >= 5) {
+                labels[4].textContent = 'Stock Bajo (<' + data.low_stock_threshold + ')';
             }
         });
 }

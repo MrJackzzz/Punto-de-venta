@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Cierre de Caja{% endblock %}
+{% block content %}
+<h2 class="text-primary mb-4"><i class="bi bi-cash-stack"></i> Cierre de Caja</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-success">${{ "%.2f"|format(cash_sales) }}</div>
+            <div class="text-muted small">Efectivo</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-primary">${{ "%.2f"|format(card_sales) }}</div>
+            <div class="text-muted small">Tarjeta</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-info">${{ "%.2f"|format(transfer_sales) }}</div>
+            <div class="text-muted small">Transferencia</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-warning">${{ "%.2f"|format(mp_sales) }}</div>
+            <div class="text-muted small">Mercado Pago</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-3 border-success">
+            <div class="fs-3 fw-bold">${{ "%.2f"|format(total_sales) }}</div>
+            <div class="text-muted small">Total Ventas ({{ today_sales_qty }} ventas)</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center p-3 border-danger">
+            <div class="fs-3 fw-bold text-danger">${{ "%.2f"|format(total_refunds) }}</div>
+            <div class="text-muted small">Anulaciones</div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">Cerrar Caja</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('cash_close_save') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="initial_amount" class="form-label">Monto inicial en caja</label>
+                    <input type="number" id="initial_amount" name="initial_amount" class="form-control" step="0.01" value="0">
+                </div>
+                <div class="col-md-6">
+                    <label for="declared_cash" class="form-label">Efectivo declarado (lo que hay en caja)</label>
+                    <input type="number" id="declared_cash" name="declared_cash" class="form-control" step="0.01" value="{{ cash_sales }}" required>
+                </div>
+                <div class="col-12">
+                    <label for="notes" class="form-label">Notas (opcional)</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="2" placeholder="Diferencias, observaciones..."></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Cierre de Caja</button>
+        </form>
+    </div>
+</div>
+
+{% if last_close %}
+<div class="card shadow-sm mt-4">
+    <div class="card-header">Último Cierre</div>
+    <div class="card-body small">
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Fecha:</strong> {{ last_close.closed_at.strftime('%d/%m/%Y %H:%M') }}<br>
+                <strong>Inicial:</strong> ${{ "%.2f"|format(last_close.initial_amount) }}<br>
+                <strong>Efectivo:</strong> ${{ "%.2f"|format(last_close.cash_sales) }}
+            </div>
+            <div class="col-md-6">
+                <strong>Esperado:</strong> ${{ "%.2f"|format(last_close.expected_cash) }}<br>
+                <strong>Declarado:</strong> ${{ "%.2f"|format(last_close.declared_cash) }}<br>
+                <strong>Diferencia:</strong> <span class="{{ 'text-success' if last_close.difference >= 0 else 'text-danger' }}">${{ "%.2f"|format(last_close.difference) }}</span>
+            </div>
+        </div>
+        {% if last_close.notes %}
+        <div class="mt-2"><strong>Notas:</strong> {{ last_close.notes }}</div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

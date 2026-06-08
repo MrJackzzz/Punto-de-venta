@@ -257,9 +257,17 @@ def dashboard():
     today_sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today
     ).count()
+    today_revenue = db.session.query(db.func.coalesce(db.func.sum(Sale.total), 0)).filter(
+        db.func.date(Sale.created_at) == today
+    ).scalar()
+    pending_orders = PendingOrder.query.filter_by(status='pending').count()
+    critical_stock = Product.query.filter(Product.stock < 1).count()
     cat_list = Category.query.order_by(Category.name).all()
     return render_template('dashboard.html', total_products=total_products,
                            low_stock=low_stock, today_sales=today_sales,
+                           today_revenue=today_revenue,
+                           pending_orders=pending_orders,
+                           critical_stock=critical_stock,
                            low_stock_threshold=threshold, categories_count=categories,
                            cat_list=cat_list)
 
@@ -294,6 +302,8 @@ def product_add():
     supplier_id = request.form.get('supplier_id')
     category_id = request.form.get('category_id')
     description = request.form.get('description', '')
+    wholesale_qty = float(request.form.get('wholesale_qty', 0))
+    wholesale_price = float(request.form.get('wholesale_price', 0))
 
     if Product.query.filter_by(code=code).first():
         flash('Ya existe un producto con ese código.', 'danger')
@@ -302,7 +312,8 @@ def product_add():
     product = Product(
         code=code, name=name, cost=cost,
         markup_percentage=markup, currency=currency,
-        stock=stock, unit_type=unit_type, description=description
+        stock=stock, unit_type=unit_type, description=description,
+        wholesale_qty=wholesale_qty, wholesale_price=wholesale_price
     )
     if supplier_id:
         product.supplier_id = int(supplier_id)
@@ -342,6 +353,8 @@ def product_edit(id):
     product.stock = float(request.form.get('stock', 0))
     product.unit_type = request.form.get('unit_type', 'unit')
     product.description = request.form.get('description', '')
+    product.wholesale_qty = float(request.form.get('wholesale_qty', 0))
+    product.wholesale_price = float(request.form.get('wholesale_price', 0))
     sid = request.form.get('supplier_id')
     product.supplier_id = int(sid) if sid else None
     cid = request.form.get('category_id')
@@ -889,7 +902,10 @@ def checkout():
         if not product or product.stock < item['quantity']:
             return jsonify({'error': f'Stock insuficiente para {product.name if product else "producto"}'}), 400
         qty = float(item['quantity'])
-        unit_price = product.price
+        if product.wholesale_qty and product.wholesale_price and qty >= product.wholesale_qty:
+            unit_price = product.wholesale_price
+        else:
+            unit_price = product.price
         subtotal = round(unit_price * qty, 2)
         total += subtotal
         sale_items.append({
@@ -949,6 +965,137 @@ def checkout():
         'customer_name': customer_name,
         'customer_email': customer_email
     })
+
+
+@app.route('/sale/refund/<int:sale_id>', methods=['POST'])
+@login_required
+def refund_sale(sale_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    sale = db.session.get(Sale, sale_id)
+    if not sale:
+        flash('Venta no encontrada.', 'danger')
+        return redirect(url_for('history'))
+    if sale.refunded:
+        flash('Esta venta ya fue anulada.', 'warning')
+        return redirect(url_for('history'))
+    for item in sale.items:
+        product = item.product
+        if product:
+            product.stock += item.quantity
+    sale.refunded = True
+    sale.refunded_at = datetime.now(timezone.utc)
+    sale.refunded_by = current_user.id
+    db.session.commit()
+    log_movement(current_user, 'refund', f'Venta #{sale.id} anulada - Total: ${sale.total}')
+    flash(f'Venta #{sale.id} anulada y stock devuelto.', 'success')
+    return redirect(url_for('history'))
+
+
+@app.route('/cash-close')
+@login_required
+def cash_close_page():
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    today = datetime.now(timezone.utc).date()
+    sales = Sale.query.filter(
+        db.func.date(Sale.created_at) == today,
+        Sale.refunded == False
+    ).all()
+    cash_sales = sum(s.total for s in sales if s.payment_method == 'cash')
+    card_sales = sum(s.total for s in sales if s.payment_method == 'card')
+    transfer_sales = sum(s.total for s in sales if s.payment_method == 'transfer')
+    mp_sales = sum(s.total for s in sales if s.payment_method == 'mercadopago')
+    total_sales = cash_sales + card_sales + transfer_sales + mp_sales
+    refunds_today = Sale.query.filter(
+        db.func.date(Sale.refunded_at) == today,
+        Sale.refunded == True
+    ).all()
+    total_refunds = sum(abs(s.total) for s in refunds_today)
+    today_sales_qty = len(sales)
+    last_close = CashClose.query.order_by(CashClose.closed_at.desc()).first()
+    return render_template('cash_close.html', cash_sales=cash_sales, card_sales=card_sales,
+                           transfer_sales=transfer_sales, mp_sales=mp_sales,
+                           total_sales=total_sales, total_refunds=total_refunds,
+                           today_sales_qty=today_sales_qty, last_close=last_close)
+
+
+@app.route('/cash-close/save', methods=['POST'])
+@login_required
+def cash_close_save():
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    today = datetime.now(timezone.utc).date()
+    sales = Sale.query.filter(
+        db.func.date(Sale.created_at) == today,
+        Sale.refunded == False
+    ).all()
+    cash_sales = sum(s.total for s in sales if s.payment_method == 'cash')
+    card_sales = sum(s.total for s in sales if s.payment_method == 'card')
+    transfer_sales = sum(s.total for s in sales if s.payment_method == 'transfer')
+    mp_sales = sum(s.total for s in sales if s.payment_method == 'mercadopago')
+    total_sales = cash_sales + card_sales + transfer_sales + mp_sales
+    refunds_today = Sale.query.filter(
+        db.func.date(Sale.refunded_at) == today,
+        Sale.refunded == True
+    ).all()
+    total_refunds = sum(abs(s.total) for s in refunds_today)
+    initial_amount = float(request.form.get('initial_amount', 0))
+    declared_cash = float(request.form.get('declared_cash', 0))
+    expected_cash = initial_amount + cash_sales - total_refunds
+    cc = CashClose(
+        user_id=current_user.id, opened_at=datetime.now(timezone.utc),
+        initial_amount=initial_amount, cash_sales=cash_sales,
+        card_sales=card_sales, transfer_sales=transfer_sales,
+        mp_sales=mp_sales, total_sales=total_sales,
+        total_refunds=total_refunds, expected_cash=expected_cash,
+        declared_cash=declared_cash, difference=declared_cash - expected_cash,
+        notes=request.form.get('notes', '')
+    )
+    db.session.add(cc)
+    db.session.commit()
+    log_movement(current_user, 'cash_close', f'Cierre de caja: efectivo ${declared_cash}')
+    flash('Cierre de caja guardado.', 'success')
+    return redirect(url_for('cash_close_page'))
+
+
+@app.route('/history/export-excel')
+@login_required
+def history_export_excel():
+    if not current_user.can_view_history():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
+    query = MovementLog.query
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(MovementLog.created_at >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            query = query.filter(MovementLog.created_at <= dt_to)
+        except ValueError:
+            pass
+    logs = query.order_by(MovementLog.created_at.desc()).limit(500).all()
+    output = io.StringIO()
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    writer.writerow(['Fecha', 'Usuario', 'Rol', 'Accion', 'Descripcion'])
+    for log in logs:
+        writer.writerow([
+            to_ar(log.created_at).strftime('%d/%m/%Y %H:%M'),
+            log.user.get_full_name(), log.user.role,
+            log.action, log.description
+        ])
+    mem = io.BytesIO(output.getvalue().encode('utf-8-sig'))
+    return send_file(mem, mimetype='text/csv', as_attachment=True,
+                     download_name=f'historial_{date_from or "todo"}_{date_to or "todo"}.csv')
 
 
 @app.route('/api/create-mp-payment', methods=['POST'])
@@ -1216,7 +1363,8 @@ def ticket(id):
         flash('Venta no encontrada.', 'danger')
         return redirect(url_for('sell'))
     items = SaleItem.query.filter_by(sale_id=sale.id).all()
-    return render_template('ticket.html', sale=sale, items=items)
+    thermal = request.args.get('thermal') == '1'
+    return render_template('ticket.html', sale=sale, items=items, thermal=thermal)
 
 
 @app.route('/ticket/<int:id>/pdf')
@@ -1847,15 +1995,23 @@ def api_stats():
     total_products = Product.query.count()
     categories_count = Category.query.count()
     low_stock = Product.query.filter(Product.stock < threshold).count()
+    critical_stock = Product.query.filter(Product.stock < 1).count()
+    pending_orders = PendingOrder.query.filter_by(status='pending').count()
     today = datetime.now(timezone.utc).date()
     today_sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today
     ).count()
+    today_revenue = db.session.query(db.func.coalesce(db.func.sum(Sale.total), 0)).filter(
+        db.func.date(Sale.created_at) == today
+    ).scalar()
     return jsonify({
         'total_products': total_products,
         'categories_count': categories_count,
         'low_stock': low_stock,
+        'critical_stock': critical_stock,
+        'pending_orders': pending_orders,
         'today_sales': today_sales,
+        'today_revenue': today_revenue,
         'low_stock_threshold': threshold
     })
 

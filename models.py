@@ -154,6 +154,8 @@ class Product(db.Model):
     stock = db.Column(db.Float, nullable=False, default=0)
     unit_type = db.Column(db.String(20), nullable=False, default='unit')
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    wholesale_qty = db.Column(db.Float, default=0)
+    wholesale_price = db.Column(db.Float, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
@@ -188,8 +190,12 @@ class Sale(db.Model):
     mp_payment_id = db.Column(db.String(100), default='')
     mp_status = db.Column(db.String(20), default='')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    refunded = db.Column(db.Boolean, default=False)
+    refunded_at = db.Column(db.DateTime, nullable=True)
+    refunded_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
-    user = db.relationship('User', backref='sales')
+    user = db.relationship('User', foreign_keys=[user_id], backref='sales')
+    refunded_by_user = db.relationship('User', foreign_keys=[refunded_by])
     items = db.relationship('SaleItem', backref='sale', lazy='dynamic')
 
 
@@ -245,3 +251,23 @@ class DeletedRecord(db.Model):
     restored_at = db.Column(db.DateTime)
 
     deleter = db.relationship('User', backref='deleted_records')
+
+
+class CashClose(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    opened_at = db.Column(db.DateTime, nullable=False)
+    closed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    initial_amount = db.Column(db.Float, default=0)
+    cash_sales = db.Column(db.Float, default=0)
+    card_sales = db.Column(db.Float, default=0)
+    transfer_sales = db.Column(db.Float, default=0)
+    mp_sales = db.Column(db.Float, default=0)
+    total_sales = db.Column(db.Float, default=0)
+    total_refunds = db.Column(db.Float, default=0)
+    expected_cash = db.Column(db.Float, default=0)
+    declared_cash = db.Column(db.Float, default=0)
+    difference = db.Column(db.Float, default=0)
+    notes = db.Column(db.Text, default='')
+
+    closer = db.relationship('User', foreign_keys=[user_id], backref='cash_closes')

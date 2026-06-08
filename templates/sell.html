@@ -286,7 +286,7 @@ function shareWhatsApp() {
 
 function printTicket() {
     if (!lastSaleData) return;
-    const win = window.open('/ticket/' + lastSaleData.sale_id, '_blank');
+    const win = window.open('/ticket/' + lastSaleData.sale_id + '?thermal=1', '_blank');
     if (win) {
         win.onload = function() { setTimeout(function() { win.print(); }, 300); };
     }

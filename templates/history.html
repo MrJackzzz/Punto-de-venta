@@ -61,6 +61,7 @@
         <div class="d-flex gap-2 flex-wrap mt-3">
             <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Limpiar filtros</button>
             <a href="javascript:exportCSV()" class="btn btn-primary btn-sm"><i class="bi bi-download"></i> CSV</a>
+            <a href="javascript:exportExcel()" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
             <a href="javascript:exportPDF()" class="btn btn-secondary btn-sm"><i class="bi bi-file-text"></i> PDF</a>
             <span class="small text-muted align-self-center" id="resultCount"></span>
             {% if current_user.role == 'admin' %}
@@ -291,7 +292,10 @@ function applyFilters() {
                         <td><span class="badge bg-${log.role === 'admin' ? 'danger' : log.role === 'supervisor' ? 'dark' : 'secondary'}">${log.role.toUpperCase()}</span></td>
                         <td>${log.action}</td>
                         <td>${log.description}${log.customer_name ? `<br><span class="text-muted small"><i class="bi bi-person"></i> ${log.customer_name}</span>` : ''}</td>
-                        ${isAdmin ? `<td><span class="d-inline-block" onclick="event.stopPropagation();deleteLog(${log.id})" title="Eliminar" style="cursor:pointer;color:#dc3545;"><i class="bi bi-x-circle"></i></span></td>` : ''}
+                        ${isAdmin ? `<td class="text-nowrap">
+                            <span class="d-inline-block" onclick="event.stopPropagation();deleteLog(${log.id})" title="Eliminar" style="cursor:pointer;color:#dc3545;"><i class="bi bi-x-circle"></i></span>
+                            ${log.sale_id && log.action_key === 'sale' ? `<form method="POST" action="/sale/refund/${log.sale_id}" class="d-inline" onsubmit="return confirm('¿Anular esta venta? Se devolverá el stock.')"><button type="submit" class="btn btn-sm btn-outline-warning py-0 px-1" title="Anular venta"><i class="bi bi-arrow-counterclockwise"></i></button></form>` : ''}
+                        </td>` : ''}
                     </tr>`;
                 }).join('');
                 countEl.textContent = data.summary.total_logs + ' movimientos';
@@ -373,6 +377,10 @@ function viewLog(logId) {
 
 function exportCSV() {
     window.location.href = '/history/export?' + getFilters().toString();
+}
+
+function exportExcel() {
+    window.location.href = '/history/export-excel?' + getFilters().toString();
 }
 
 function exportPDF() {

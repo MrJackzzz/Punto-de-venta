@@ -59,6 +59,7 @@
             {% endif %}
             <a href="{{ url_for('admin_systems') }}" class="sidebar-link"><span class="si"><i class="bi bi-grid-3x3-gap-fill"></i></span><span class="st">Sistemas</span></a>
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
+            <a href="{{ url_for('cash_close_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-cash-stack"></i></span><span class="st">Cierre Caja</span></a>
             {% endif %}
             {% if current_user.can_manage_users() %}
             <a href="{{ url_for('users') }}" class="sidebar-link"><span class="si"><i class="bi bi-people"></i></span><span class="st">Usuarios</span></a>
@@ -102,6 +103,7 @@
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
+                <a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>
                 <a href="{{ url_for('admin_systems') }}">Sistemas</a>
                 {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}
                 <a href="{{ url_for('planes') }}">Planes</a>
