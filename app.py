@@ -3033,17 +3033,35 @@ def init_app():
         # Add new columns for existing databases (safe to run multiple times)
         for col, col_type in [('mp_payment_id', 'VARCHAR(100)'), ('mp_status', 'VARCHAR(20)'), ('customer_name', 'VARCHAR(100)')]:
             try:
-                db.session.execute(db.text(f'ALTER TABLE sale ADD COLUMN {col} {col_type} DEFAULT \'\''))
+                db.session.execute(db.text(f'ALTER TABLE sale ADD COLUMN {col} {col_type}'))
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-        for col, col_type in [('wholesale_qty', 'FLOAT DEFAULT 0'), ('wholesale_price', 'FLOAT DEFAULT 0')]:
+        for col in ['wholesale_qty', 'wholesale_price']:
             try:
-                db.session.execute(db.text(f'ALTER TABLE product ADD COLUMN {col} {col_type}'))
+                db.session.execute(db.text(f'ALTER TABLE product ADD COLUMN {col} FLOAT DEFAULT 0'))
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-        for col, col_type in [('first_name', 'VARCHAR(100) DEFAULT \'\''), ('last_name', 'VARCHAR(100) DEFAULT \'\'')]:
+        for col in ['refunded']:
+            try:
+                db.session.execute(db.text('ALTER TABLE sale ADD COLUMN refunded BOOLEAN DEFAULT FALSE'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        for col in ['refunded_at']:
+            try:
+                db.session.execute(db.text('ALTER TABLE sale ADD COLUMN refunded_at TIMESTAMP'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        for col in ['refunded_by']:
+            try:
+                db.session.execute(db.text('ALTER TABLE sale ADD COLUMN refunded_by INTEGER'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        for col, col_type in [('first_name', 'VARCHAR(100)'), ('last_name', 'VARCHAR(100)')]:
             try:
                 db.session.execute(db.text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
                 db.session.commit()
@@ -3059,6 +3077,56 @@ def init_app():
             db.session.commit()
         except Exception:
             db.session.rollback()
+        # Ensure CashClose table exists
+        try:
+            db.session.execute(db.text('SELECT 1 FROM cash_close LIMIT 1'))
+        except Exception:
+            try:
+                db.session.execute(db.text('''
+                    CREATE TABLE cash_close (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL REFERENCES "user"(id),
+                        opened_at TIMESTAMP NOT NULL,
+                        closed_at TIMESTAMP,
+                        initial_amount FLOAT DEFAULT 0,
+                        cash_sales FLOAT DEFAULT 0,
+                        card_sales FLOAT DEFAULT 0,
+                        transfer_sales FLOAT DEFAULT 0,
+                        mp_sales FLOAT DEFAULT 0,
+                        total_sales FLOAT DEFAULT 0,
+                        total_refunds FLOAT DEFAULT 0,
+                        expected_cash FLOAT DEFAULT 0,
+                        declared_cash FLOAT DEFAULT 0,
+                        difference FLOAT DEFAULT 0,
+                        notes TEXT DEFAULT ''
+                    )
+                '''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                try:
+                    db.session.execute(db.text('''
+                        CREATE TABLE cash_close (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER NOT NULL,
+                            opened_at TIMESTAMP NOT NULL,
+                            closed_at TIMESTAMP,
+                            initial_amount FLOAT DEFAULT 0,
+                            cash_sales FLOAT DEFAULT 0,
+                            card_sales FLOAT DEFAULT 0,
+                            transfer_sales FLOAT DEFAULT 0,
+                            mp_sales FLOAT DEFAULT 0,
+                            total_sales FLOAT DEFAULT 0,
+                            total_refunds FLOAT DEFAULT 0,
+                            expected_cash FLOAT DEFAULT 0,
+                            declared_cash FLOAT DEFAULT 0,
+                            difference FLOAT DEFAULT 0,
+                            notes TEXT DEFAULT ''
+                        )
+                    '''))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
         try:
             db.session.execute(db.text('SELECT 1 FROM pending_order LIMIT 1'))
         except Exception:
@@ -3126,12 +3194,14 @@ def init_app():
 
         all_perm_keys = ['can_view_products','can_add_products','can_edit_products','can_manage_products',
                          'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
-                         'can_manage_users','can_view_history','can_sell',
+                         'can_manage_users','can_toggle_users','can_reset_user_password','can_delete_users',
+                         'can_view_history','can_sell',
                          'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
-                         'can_view_charts','can_pay_membership','can_take_orders']
+                         'can_view_charts','can_pay_membership','can_take_orders',
+                         'can_view_barcodes','can_view_trash']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
-            'supervisor': {k: True for k in all_perm_keys},
+            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash') for k in all_perm_keys},
             'user': {k: k in ('can_view_products','can_add_products','can_sell','can_view_charts',
                               'can_view_suppliers','can_view_categories','can_pay_membership') for k in all_perm_keys}
         }
