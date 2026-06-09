@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Ventas Pendientes{% endblock %}
+{% block content %}
+<h2 class="text-warning mb-4"><i class="bi bi-hourglass-split"></i> Ventas Pendientes de Pago</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Vendedor</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sales %}
+                    <tr>
+                        <td>{{ s.id }}</td>
+                        <td>{{ to_ar(s.created_at).strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ s.customer_name or '—' }}</td>
+                        <td>{{ s.user.get_full_name() }}</td>
+                        <td>{{ s.total|fmt }}</td>
+                        <td class="text-nowrap">
+                            <a href="/ticket/{{ s.id }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Ver ticket"><i class="bi bi-receipt"></i></a>
+                            {% if current_user.can_confirm_payment() %}
+                            <form method="POST" action="{{ url_for('confirm_payment', sale_id=s.id) }}" class="d-inline" onsubmit="return confirm('¿Confirmar pago de Venta #{{ s.id }} por {{ s.total|fmt }}?')">
+                                <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado"><i class="bi bi-check-lg"></i> Cobrar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay ventas pendientes de pago</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

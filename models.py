@@ -127,6 +127,12 @@ class User(UserMixin, db.Model):
     def can_void_cash_close(self):
         return self._role_perm('can_void_cash_close', self.role == 'admin')
 
+    def can_view_pending_sales(self):
+        return self._role_perm('can_view_pending_sales', self.role in ('admin', 'supervisor'))
+
+    def can_confirm_payment(self):
+        return self._role_perm('can_confirm_payment', self.role in ('admin', 'supervisor'))
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -202,6 +208,7 @@ class Sale(db.Model):
     refunded = db.Column(db.Boolean, default=False)
     refunded_at = db.Column(db.DateTime, nullable=True)
     refunded_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    payment_status = db.Column(db.String(20), default='paid')
 
     user = db.relationship('User', foreign_keys=[user_id], backref='sales')
     refunded_by_user = db.relationship('User', foreign_keys=[refunded_by])

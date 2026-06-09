@@ -101,7 +101,8 @@ _perm_methods = ['can_view_products','can_add_products','can_edit_products','can
                  'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
                  'can_manage_users','can_view_history','can_sell',
                  'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
-                 'can_view_charts','can_close_cash','can_void_cash_close']
+                 'can_view_charts','can_close_cash','can_void_cash_close',
+                 'can_view_pending_sales','can_confirm_payment']
 for _m in _perm_methods:
     if not hasattr(AnonymousUserMixin, _m):
         setattr(AnonymousUserMixin, _m, lambda self: False)
@@ -902,6 +903,9 @@ def checkout():
     amount_paid = float(data.get('amount_paid', 0))
     customer_email = data.get('customer_email', '').strip()
     customer_name = data.get('customer_name', '').strip()
+    pending_payment = data.get('pending_payment', False)
+    if pending_payment:
+        payment_method = 'pending'
 
     total = 0
     sale_items = []
@@ -937,7 +941,8 @@ def checkout():
         user_id=current_user.id, total=total,
         payment_method=payment_method, amount_paid=amount_paid,
         change_amount=change, customer_email=customer_email,
-        customer_name=customer_name
+        customer_name=customer_name,
+        payment_status='pending' if pending_payment else 'paid'
     )
     db.session.add(sale)
     db.session.flush()
@@ -1003,6 +1008,33 @@ def refund_sale(sale_id):
     log_movement(current_user, 'refund', f'Venta #{sale.id} anulada - Total: ${sale.total}')
     flash(f'Venta #{sale.id} anulada y stock devuelto.', 'success')
     return redirect(url_for('history'))
+
+
+@app.route('/pending-sales')
+@login_required
+def pending_sales():
+    if not current_user.can_view_pending_sales():
+        flash('No tienes permiso.', 'danger')
+        return redirect(url_for('dashboard'))
+    sales = Sale.query.filter_by(payment_status='pending', refunded=False).order_by(Sale.created_at.desc()).all()
+    return render_template('pending_sales.html', sales=sales)
+
+
+@app.route('/sale/confirm-payment/<int:sale_id>', methods=['POST'])
+@login_required
+def confirm_payment(sale_id):
+    if not current_user.can_confirm_payment():
+        flash('No tienes permiso.', 'danger')
+        return redirect(url_for('pending_sales'))
+    sale = db.session.get(Sale, sale_id)
+    if not sale:
+        flash('Venta no encontrada.', 'danger')
+        return redirect(url_for('pending_sales'))
+    sale.payment_status = 'paid'
+    db.session.commit()
+    log_movement(current_user, 'payment_confirm', f'Pago confirmado Venta #{sale.id}')
+    flash(f'Venta #{sale.id} marcada como pagada.', 'success')
+    return redirect(url_for('pending_sales'))
 
 
 @app.route('/cash-close')
@@ -2354,7 +2386,9 @@ def save_permissions():
                  'can_view_trash',
                  'can_refund_sales',
                  'can_close_cash',
-                 'can_void_cash_close']
+                 'can_void_cash_close',
+                 'can_view_pending_sales',
+                 'can_confirm_payment']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
@@ -3101,6 +3135,11 @@ def init_app():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        try:
+            db.session.execute(db.text("ALTER TABLE sale ADD COLUMN payment_status VARCHAR(20) DEFAULT 'paid'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         for col, col_type in [('first_name', 'VARCHAR(100)'), ('last_name', 'VARCHAR(100)')]:
             try:
                 db.session.execute(db.text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
@@ -3247,10 +3286,11 @@ def init_app():
                          'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
                          'can_view_charts','can_pay_membership','can_take_orders',
                          'can_view_barcodes','can_view_trash','can_refund_sales',
-                         'can_close_cash','can_void_cash_close']
+                         'can_close_cash','can_void_cash_close',
+                         'can_view_pending_sales','can_confirm_payment']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
-            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash','can_void_cash_close') for k in all_perm_keys},
+            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash','can_void_cash_close','can_confirm_payment') for k in all_perm_keys},
             'user': {k: k in ('can_view_products','can_add_products','can_sell','can_view_charts',
                               'can_view_suppliers','can_view_categories','can_pay_membership') for k in all_perm_keys}
         }

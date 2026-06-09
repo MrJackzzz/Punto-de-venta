@@ -69,6 +69,12 @@
                         <label for="customerName">Nombre del cliente (opcional)</label>
                         <input type="text" id="customerName" class="form-control" placeholder="Ej: Juan Pérez">
                     </div>
+                    <div class="form-check form-switch mb-3">
+                        <input type="hidden" name="pending_payment" value="false">
+                        <input type="checkbox" id="pendingPayment" class="form-check-input" onchange="this.previousElementSibling.value = this.checked ? 'true' : 'false'">
+                        <label for="pendingPayment" class="form-check-label text-warning"><i class="bi bi-hourglass-split"></i> Pendiente de pago</label>
+                        <small class="text-muted d-block mt-1">Si activás esto, la venta se registra sin cobro y queda pendiente hasta que el cliente pague.</small>
+                    </div>
                     <button class="btn btn-success btn-lg" onclick="checkout()" id="checkoutBtn">
                         Cobrar
                     </button>
@@ -381,11 +387,16 @@ function checkout() {
         return;
     }
 
-    document.getElementById('checkoutBtn').disabled = true;
-    document.getElementById('checkoutBtn').textContent = 'Procesando...';
-
     const email = document.getElementById('customerEmail').value.trim();
     const customerName = document.getElementById('customerName').value.trim();
+    const pendingPayment = document.getElementById('pendingPayment') ? document.getElementById('pendingPayment').checked : false;
+
+    if (pendingPayment && cart.length > 0) {
+        // Skip cash validation for pending sales
+    } else if (method === 'cash' && paid < total) {
+        alert('El monto recibido es menor al total');
+        return;
+    }
 
     fetch('/sell/checkout', {
         method: 'POST',
@@ -399,7 +410,8 @@ function checkout() {
             payment_method: method,
             amount_paid: method === 'cash' ? paid : total,
             customer_email: email,
-            customer_name: customerName
+            customer_name: customerName,
+            pending_payment: pendingPayment
         })
     })
     .then(r => r.json())
