@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="text-primary">Productos</h2>
-    <button class="btn btn-primary" onclick="openModal('productModal')">+ Nuevo Producto</button>
+    <button class="btn btn-primary" onclick="openAddProductModal()">+ Nuevo Producto</button>
 </div>
 
 <div class="card shadow-sm">
@@ -56,13 +56,17 @@
                         <td>{{ {'unit': 'Unidad', 'kg': 'KG', 'g': 'Gr', 'liter': 'Litro', 'ml': 'ML', 'm': 'Metro', 'cm': 'CM', 'dozen': 'Docena', 'pack': 'Pack'}.get(p.unit_type, p.unit_type) }}</td>
                         <td>{{ p.supplier.name if p.supplier else '-' }}</td>
                         <td>
-                            {% if current_user.can_edit_products() %}
-                            <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, '{{ p.unit_type }}', {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }}, {{ p.wholesale_qty or 0 }}, {{ p.wholesale_price or 0 }})">Editar</button>
-                            {% endif %}
-                            {% if current_user.can_manage_products() %}
-                            <form method="POST" action="{{ url_for('product_delete', id=p.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ p.name }}?')">Eliminar</button>
-                            </form>
+                            {% if current_user.can_edit_products() or current_user.can_manage_products() %}
+                            <div class="d-flex gap-1">
+                                {% if current_user.can_edit_products() %}
+                                <button class="btn btn-sm btn-warning" onclick="editProduct({{ p.id }}, '{{ p.code }}', '{{ p.name }}', {{ p.cost }}, {{ p.markup_percentage }}, '{{ p.currency }}', {{ p.stock }}, '{{ p.unit_type }}', {{ p.supplier_id or 'null' }}, '{{ p.description|e }}', {{ p.category_id or 'null' }}, {{ p.wholesale_qty or 0 }}, {{ p.wholesale_price or 0 }})" title="Editar"><i class="bi bi-pencil"></i></button>
+                                {% endif %}
+                                {% if current_user.can_manage_products() %}
+                                <form method="POST" action="{{ url_for('product_delete', id=p.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ p.name }}?')" title="Eliminar"><i class="bi bi-trash3"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
@@ -87,7 +91,7 @@
                     <div class="mb-3">
                         <label for="code" class="form-label">Código (Código de barras / SKU)</label>
                         <div class="input-group">
-                            <input type="text" id="code" name="code" class="form-control" required>
+                            <input type="text" id="code" name="code" class="form-control" required autofocus>
                             <button class="btn btn-outline-secondary" type="button" onclick="startScanner()" title="Escanear código"><i class="bi bi-camera"></i></button>
                         </div>
                         <div id="scannerContainer" style="display:none;" class="mt-2"></div>
@@ -203,6 +207,11 @@ function restoreOriginalOrder() {
     originalRows.forEach(r => tbody.appendChild(r));
 }
 
+function openAddProductModal() {
+    openModal('productModal');
+    document.getElementById('code').focus();
+}
+
 function editProduct(id, code, name, cost, markup, currency, stock, unitType, supplierId, description, categoryId, wholesaleQty, wholesalePrice) {
     document.getElementById('productModalTitle').textContent = 'Editar Producto';
     document.getElementById('productForm').action = '/products/edit/' + id;
@@ -219,6 +228,7 @@ function editProduct(id, code, name, cost, markup, currency, stock, unitType, su
     document.getElementById('wholesale_qty').value = wholesaleQty || 0;
     document.getElementById('wholesale_price').value = wholesalePrice || 0;
     openModal('productModal');
+    document.getElementById('code').focus();
 }
 
 function filterProducts() {

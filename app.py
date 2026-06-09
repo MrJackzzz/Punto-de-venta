@@ -245,6 +245,10 @@ def get_low_stock_threshold():
     c = Config.query.filter_by(key='low_stock_threshold').first()
     return int(c.value) if c and c.value else 10
 
+def get_critical_stock_threshold():
+    c = Config.query.filter_by(key='critical_stock_threshold').first()
+    return int(c.value) if c and c.value else 5
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -253,7 +257,7 @@ def dashboard():
     total_products = Product.query.count()
     categories = Category.query.count()
     low_stock = Product.query.filter(Product.stock < threshold).count()
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(AR_TZ).date()
     today_sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today
     ).count()
@@ -261,7 +265,7 @@ def dashboard():
         db.func.date(Sale.created_at) == today
     ).scalar()
     pending_orders = PendingOrder.query.filter_by(status='pending').count()
-    critical_stock = Product.query.filter(Product.stock < 1).count()
+    critical_stock = Product.query.filter(Product.stock < get_critical_stock_threshold()).count()
     cat_list = Category.query.order_by(Category.name).all()
     return render_template('dashboard.html', total_products=total_products,
                            low_stock=low_stock, today_sales=today_sales,
@@ -459,7 +463,7 @@ def category_edit(id):
 @login_required
 def chart_sales_week():
     dias_es = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(AR_TZ).date()
     days = []
     amounts = []
     for i in range(6, -1, -1):
@@ -999,7 +1003,7 @@ def cash_close_page():
     if current_user.role != 'admin':
         flash('Solo admin.', 'danger')
         return redirect(url_for('dashboard'))
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(AR_TZ).date()
     sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today,
         Sale.refunded == False
@@ -1016,10 +1020,12 @@ def cash_close_page():
     total_refunds = sum(abs(s.total) for s in refunds_today)
     today_sales_qty = len(sales)
     last_close = CashClose.query.order_by(CashClose.closed_at.desc()).first()
+    all_closes = CashClose.query.order_by(CashClose.closed_at.desc()).all()
     return render_template('cash_close.html', cash_sales=cash_sales, card_sales=card_sales,
                            transfer_sales=transfer_sales, mp_sales=mp_sales,
                            total_sales=total_sales, total_refunds=total_refunds,
-                           today_sales_qty=today_sales_qty, last_close=last_close)
+                           today_sales_qty=today_sales_qty, last_close=last_close,
+                           all_closes=all_closes)
 
 
 @app.route('/cash-close/save', methods=['POST'])
@@ -1028,7 +1034,7 @@ def cash_close_save():
     if current_user.role != 'admin':
         flash('Solo admin.', 'danger')
         return redirect(url_for('dashboard'))
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(AR_TZ).date()
     sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today,
         Sale.refunded == False
@@ -1059,6 +1065,25 @@ def cash_close_save():
     db.session.commit()
     log_movement(current_user, 'cash_close', f'Cierre de caja: efectivo ${declared_cash}')
     flash('Cierre de caja guardado.', 'success')
+    return redirect(url_for('cash_close_page'))
+
+
+@app.route('/cash-close/void/<int:id>', methods=['POST'])
+@login_required
+def cash_close_void(id):
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('cash_close_page'))
+    cc = db.session.get(CashClose, id)
+    if not cc:
+        flash('Cierre no encontrado.', 'danger')
+        return redirect(url_for('cash_close_page'))
+    cc.voided = True
+    cc.voided_at = datetime.now(timezone.utc)
+    cc.voided_by = current_user.id
+    db.session.commit()
+    log_movement(current_user, 'cash_close_void', f'Cierre de caja #{cc.id} anulado')
+    flash('Cierre de caja anulado.', 'success')
     return redirect(url_for('cash_close_page'))
 
 
@@ -1996,9 +2021,9 @@ def api_stats():
     total_products = Product.query.count()
     categories_count = Category.query.count()
     low_stock = Product.query.filter(Product.stock < threshold).count()
-    critical_stock = Product.query.filter(Product.stock < 1).count()
+    critical_stock = Product.query.filter(Product.stock < get_critical_stock_threshold()).count()
     pending_orders = PendingOrder.query.filter_by(status='pending').count()
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(AR_TZ).date()
     today_sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today
     ).count()
@@ -3168,6 +3193,13 @@ def init_app():
                     db.session.commit()
                 except Exception:
                     db.session.rollback()
+        # Migrate cash_close voided columns
+        for col in ['voided', 'voided_at', 'voided_by']:
+            try:
+                db.session.execute(db.text(f'ALTER TABLE cash_close ADD COLUMN {col} {"BOOLEAN DEFAULT FALSE" if col == "voided" else "TIMESTAMP" if col == "voided_at" else "INTEGER"}'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin', active=True)
             admin.set_password('admin123')

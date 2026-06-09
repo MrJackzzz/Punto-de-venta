@@ -6,43 +6,44 @@
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card shadow-sm text-center p-3">
-            <div class="fs-3 fw-bold text-success">${{ "%.2f"|format(cash_sales) }}</div>
+            <div class="fs-3 fw-bold text-success">{{ cash_sales|fmt }}</div>
             <div class="text-muted small">Efectivo</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card shadow-sm text-center p-3">
-            <div class="fs-3 fw-bold text-primary">${{ "%.2f"|format(card_sales) }}</div>
+            <div class="fs-3 fw-bold text-primary">{{ card_sales|fmt }}</div>
             <div class="text-muted small">Tarjeta</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card shadow-sm text-center p-3">
-            <div class="fs-3 fw-bold text-info">${{ "%.2f"|format(transfer_sales) }}</div>
+            <div class="fs-3 fw-bold text-info">{{ transfer_sales|fmt }}</div>
             <div class="text-muted small">Transferencia</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card shadow-sm text-center p-3">
-            <div class="fs-3 fw-bold text-warning">${{ "%.2f"|format(mp_sales) }}</div>
+            <div class="fs-3 fw-bold text-warning">{{ mp_sales|fmt }}</div>
             <div class="text-muted small">Mercado Pago</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card shadow-sm text-center p-3 border-success">
-            <div class="fs-3 fw-bold">${{ "%.2f"|format(total_sales) }}</div>
+            <div class="fs-3 fw-bold">{{ total_sales|fmt }}</div>
             <div class="text-muted small">Total Ventas ({{ today_sales_qty }} ventas)</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card shadow-sm text-center p-3 border-danger">
-            <div class="fs-3 fw-bold text-danger">${{ "%.2f"|format(total_refunds) }}</div>
+            <div class="fs-3 fw-bold text-danger">{{ total_refunds|fmt }}</div>
             <div class="text-muted small">Anulaciones</div>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
+{% if current_user.role == 'admin' or current_user.can_refund_sales() %}
+<div class="card shadow-sm mb-4">
     <div class="card-header">Cerrar Caja</div>
     <div class="card-body">
         <form method="POST" action="{{ url_for('cash_close_save') }}">
@@ -64,27 +65,77 @@
         </form>
     </div>
 </div>
+{% endif %}
 
 {% if last_close %}
-<div class="card shadow-sm mt-4">
+<div class="card shadow-sm mb-4">
     <div class="card-header">Último Cierre</div>
     <div class="card-body small">
         <div class="row">
             <div class="col-md-6">
-                <strong>Fecha:</strong> {{ last_close.closed_at.strftime('%d/%m/%Y %H:%M') }}<br>
-                <strong>Inicial:</strong> ${{ "%.2f"|format(last_close.initial_amount) }}<br>
-                <strong>Efectivo:</strong> ${{ "%.2f"|format(last_close.cash_sales) }}
+                <strong>Fecha:</strong> {{ to_ar(last_close.closed_at).strftime('%d/%m/%Y %H:%M') if last_close.closed_at else '-' }}<br>
+                <strong>Cajero:</strong> {{ last_close.closer.get_full_name() }}<br>
+                <strong>Inicial:</strong> {{ last_close.initial_amount|fmt }}
             </div>
             <div class="col-md-6">
-                <strong>Esperado:</strong> ${{ "%.2f"|format(last_close.expected_cash) }}<br>
-                <strong>Declarado:</strong> ${{ "%.2f"|format(last_close.declared_cash) }}<br>
-                <strong>Diferencia:</strong> <span class="{{ 'text-success' if last_close.difference >= 0 else 'text-danger' }}">${{ "%.2f"|format(last_close.difference) }}</span>
+                <strong>Efectivo:</strong> {{ last_close.cash_sales|fmt }}<br>
+                <strong>Esperado:</strong> {{ last_close.expected_cash|fmt }}<br>
+                <strong>Declarado:</strong> {{ last_close.declared_cash|fmt }}<br>
+                <strong>Diferencia:</strong> <span class="{{ 'text-success' if last_close.difference >= 0 else 'text-danger' }}">{{ last_close.difference|fmt }}</span>
             </div>
         </div>
         {% if last_close.notes %}
         <div class="mt-2"><strong>Notas:</strong> {{ last_close.notes }}</div>
         {% endif %}
+        {% if last_close.voided %}
+        <div class="mt-2 text-danger"><i class="bi bi-x-circle"></i> <strong>Anulado</strong> por {{ last_close.voider.get_full_name() if last_close.voider else 'N/A' }} el {{ to_ar(last_close.voided_at).strftime('%d/%m/%Y %H:%M') if last_close.voided_at else '-' }}</div>
+        {% endif %}
     </div>
 </div>
 {% endif %}
+
+<!-- Historial de cierres -->
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history"></i> Historial de Cierres</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cajero</th>
+                        <th>Total</th>
+                        <th>Declarado</th>
+                        <th>Diferencia</th>
+                        <th>Estado</th>
+                        {% if current_user.role == 'admin' %}<th></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in all_closes %}
+                    <tr class="{{ 'text-muted' if c.voided else '' }}">
+                        <td>{{ to_ar(c.closed_at).strftime('%d/%m/%Y %H:%M') if c.closed_at else '-' }}</td>
+                        <td>{{ c.closer.get_full_name() }}</td>
+                        <td>{{ c.total_sales|fmt }}</td>
+                        <td>{{ c.declared_cash|fmt }}</td>
+                        <td class="{{ 'text-success' if c.difference >= 0 else 'text-danger' }}">{{ c.difference|fmt }}</td>
+                        <td>{% if c.voided %}<span class="badge bg-danger">Anulado</span>{% else %}<span class="badge bg-success">Vigente</span>{% endif %}</td>
+                        {% if current_user.role == 'admin' and not c.voided %}
+                        <td>
+                            <form method="POST" action="{{ url_for('cash_close_void', id=c.id) }}" class="d-inline" onsubmit="return confirm('¿Anular este cierre?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Anular cierre"><i class="bi bi-x-circle"></i></button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center text-muted py-3">Sin cierres registrados</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -8,7 +8,7 @@
         {% if max_users and max_users != '0' %}
         <span class="small text-muted me-2">Límite: {{ max_users }} usuarios (sin contar admin)</span>
         {% endif %}
-        <button class="btn btn-primary" onclick="openModal('userModal')">+ Nuevo Usuario</button>
+        <button class="btn btn-primary" onclick="openAddUserModal()">+ Nuevo Usuario</button>
     </div>
 </div>
 
@@ -86,7 +86,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="username" class="form-label">Nombre de usuario</label>
-                        <input type="text" id="username" name="username" class="form-control" required>
+                        <input type="text" id="username" name="username" class="form-control" required autofocus>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
@@ -122,6 +122,11 @@
 </div>
 
 <script>
+function openAddUserModal() {
+    openModal('userModal');
+    document.getElementById('username').focus();
+}
+
 function resetPass(id) {
     const pass = prompt('Nueva contraseña (dejar vacío para 123456):');
     if (pass !== null) {

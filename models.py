@@ -272,5 +272,9 @@ class CashClose(db.Model):
     declared_cash = db.Column(db.Float, default=0)
     difference = db.Column(db.Float, default=0)
     notes = db.Column(db.Text, default='')
+    voided = db.Column(db.Boolean, default=False)
+    voided_at = db.Column(db.DateTime, nullable=True)
+    voided_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     closer = db.relationship('User', foreign_keys=[user_id], backref='cash_closes')
+    voider = db.relationship('User', foreign_keys=[voided_by], backref='voided_closes')

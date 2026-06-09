@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="text-primary">Proveedores</h2>
     {% if current_user.can_add_suppliers() %}
-    <button class="btn btn-primary" onclick="openModal('supplierModal')">+ Nuevo Proveedor</button>
+    <button class="btn btn-primary" onclick="openAddSupplierModal()">+ Nuevo Proveedor</button>
     {% endif %}
 </div>
 
@@ -34,13 +34,17 @@
                         <td>{{ s.email or '-' }}</td>
                         <td>{{ s.address or '-' }}</td>
                         <td>
-                            {% if current_user.can_edit_suppliers() %}
-                            <button class="btn btn-sm btn-warning" onclick="editSupplier({{ s.id }}, '{{ s.name|e }}', '{{ s.contact|e }}', '{{ s.phone|e }}', '{{ s.email|e }}', '{{ s.address|e }}')">Editar</button>
-                            {% endif %}
-                            {% if current_user.can_delete_suppliers() %}
-                            <form method="POST" action="{{ url_for('supplier_delete', id=s.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ s.name }}?')">Eliminar</button>
-                            </form>
+                            {% if current_user.can_edit_suppliers() or current_user.can_delete_suppliers() %}
+                            <div class="d-flex gap-1">
+                                {% if current_user.can_edit_suppliers() %}
+                                <button class="btn btn-sm btn-warning" onclick="editSupplier({{ s.id }}, '{{ s.name|e }}', '{{ s.contact|e }}', '{{ s.phone|e }}', '{{ s.email|e }}', '{{ s.address|e }}')" title="Editar"><i class="bi bi-pencil"></i></button>
+                                {% endif %}
+                                {% if current_user.can_delete_suppliers() %}
+                                <form method="POST" action="{{ url_for('supplier_delete', id=s.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ s.name|e }}?')" title="Eliminar"><i class="bi bi-trash3"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
@@ -75,7 +79,7 @@ function filterSuppliers() {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="s_name" class="form-label">Nombre</label>
-                        <input type="text" id="s_name" name="name" class="form-control" required>
+                        <input type="text" id="s_name" name="name" class="form-control" required autofocus>
                     </div>
                     <div class="mb-3">
                         <label for="s_contact" class="form-label">Contacto</label>
@@ -106,6 +110,11 @@ function filterSuppliers() {
 </div>
 
 <script>
+function openAddSupplierModal() {
+    openModal('supplierModal');
+    document.getElementById('s_name').focus();
+}
+
 function editSupplier(id, name, contact, phone, email, address) {
     document.getElementById('supplierModalTitle').textContent = 'Editar Proveedor';
     document.getElementById('supplierForm').action = '/suppliers/edit/' + id;
@@ -115,6 +124,7 @@ function editSupplier(id, name, contact, phone, email, address) {
     document.getElementById('s_email').value = email;
     document.getElementById('s_address').value = address;
     openModal('supplierModal');
+    document.getElementById('s_name').focus();
 }
 </script>
 {% endblock %}
