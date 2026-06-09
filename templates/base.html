@@ -53,6 +53,7 @@
             {% endif %}
             {% if current_user.role == 'admin' or current_user.can_manage_users() %}
             <hr class="sidebar-divider">
+            <a href="{{ url_for('manual') }}" class="sidebar-link"><span class="si"><i class="bi bi-question-circle"></i></span><span class="st">Manual</span></a>
             {% if current_user.role == 'admin' %}
             <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si"><i class="bi bi-gear"></i></span><span class="st">Config</span></a>
             <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Planes</span></a>
@@ -96,6 +97,7 @@
             </div>
             <nav id="mobileNav" class="mobile-nav">
                 <a href="{{ url_for('dashboard') }}">Inicio</a>
+                <a href="{{ url_for('manual') }}">Manual</a>
                 {% if current_user.can_view_products() %}<a href="{{ url_for('products') }}">Productos</a>{% endif %}
                 <a href="{{ url_for('sell') }}">Vender</a>
                 {% if current_user.can_take_orders() %}<a href="{{ url_for('orders') }}">Pedidos</a>{% endif %}

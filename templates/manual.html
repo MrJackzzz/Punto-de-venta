@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Manual de uso{% endblock %}
+{% block content %}
+<h2 class="text-primary mb-4"><i class="bi bi-question-circle"></i> Manual de uso</h2>
+
+<div class="accordion" id="manualAccordion">
+
+  <!-- Dashboard -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mDash"><i class="bi bi-speedometer2 me-2"></i> Dashboard (Inicio)</button></h2>
+    <div id="mDash" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Al iniciar sesión ves el panel principal con 7 tarjetas que resumen el estado del negocio:</p>
+        <ul>
+          <li><strong>Productos</strong> — total de productos registrados.</li>
+          <li><strong>Categorías</strong> — cuántas categorías tenés creadas.</li>
+          <li><strong>Stock bajo</strong> — productos con stock por debajo del umbral configurado.</li>
+          <li><strong>Stock crítico</strong> — productos al límite (umbral crítico).</li>
+          <li><strong>Ventas hoy</strong> — cantidad de ventas del día.</li>
+          <li><strong>Ingresos hoy</strong> — dinero facturado hoy.</li>
+          <li><strong>Pedidos pendientes</strong> — pedidos de clientes sin completar.</li>
+        </ul>
+        <p>También hay un <strong>gráfico de barras</strong> con ventas de los últimos 7 días. El panel se actualiza solo cada 5 segundos. A la derecha ves el clima actual de tu zona horaria.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vender -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mSell"><i class="bi bi-cart3 me-2"></i> Vender (cobrar)</button></h2>
+    <div id="mSell" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <ol>
+          <li><strong>Escanear o buscar:</strong> pasá el código de barras por el scanner o escribí el código/nombre en el campo de búsqueda. Aparecen los productos debajo, hacé click para agregarlos.</li>
+          <li><strong>Cantidad:</strong> antes de escanear, podés cambiar el número en el campo "Cantidad" (default 1). Cada escaneo agrega esa cantidad. Al agregar un producto, la cantidad vuelve a 1 automáticamente.</li>
+          <li><strong>Precio mayorista:</strong> si el producto tiene precio mayorista configurado, se aplica automáticamente al superar la cantidad mínima.</li>
+          <li><strong>Cliente:</strong> opcional, podés escribir el nombre del cliente para que aparezca en el ticket e historial.</li>
+          <li><strong>Pendiente de pago:</strong> si activás esta opción, la venta se registra pero no resta el dinero del cierre de caja. Aparece en "Pendientes" para cobrar después.</li>
+          <li><strong>Método de pago:</strong> seleccioná Efectivo, Tarjeta, Transferencia o Mercado Pago.</li>
+          <li><strong>Finalizar:</strong> click en "Cobrar". Se descarga el ticket automáticamente. Si hay vuelto, se calcula solo.</li>
+        </ol>
+        <p class="mb-0 text-muted small">Podés enviar el ticket por email si configuraste SMTP en Config.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Productos -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mProducts"><i class="bi bi-box-seam me-2"></i> Productos</button></h2>
+    <div id="mProducts" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Gestión completa del catálogo de productos.</p>
+        <ol>
+          <li><strong>Agregar:</strong> click en "+ Nuevo Producto". Completá código, nombre, costo, margen de ganancia, precio de venta, stock, tipo de unidad (unidad o kilo), categoría y proveedor.</li>
+          <li><strong>Precio mayorista:</strong> en el mismo formulario, configurá cantidad mínima y precio especial. Se aplica automáticamente al vender.</li>
+          <li><strong>Editar:</strong> click en el icono <i class="bi bi-pencil"></i> lápiz. Todos los campos se pueden modificar.</li>
+          <li><strong>Eliminar:</strong> click en el icono <i class="bi bi-trash3"></i> papelera. El producto va a la Papelera y se puede restaurar.</li>
+          <li><strong>Buscar/filtrar:</strong> usá el campo de búsqueda o el filtro por categoría y orden.</li>
+        </ol>
+        <p class="mb-0 text-muted small">El código de barras es único. No podés tener dos productos con el mismo código.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proveedores -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mSuppliers"><i class="bi bi-building me-2"></i> Proveedores</button></h2>
+    <div id="mSuppliers" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <ol>
+          <li><strong>Agregar:</strong> click en "+ Nuevo Proveedor". Completá nombre (obligatorio), contacto, teléfono, email y dirección.</li>
+          <li><strong>Editar:</strong> click en <i class="bi bi-pencil"></i> para modificar cualquier campo.</li>
+          <li><strong>Eliminar:</strong> click en <i class="bi bi-trash3"></i>. Se puede restaurar desde la Papelera.</li>
+          <li><strong>Buscar:</strong> escribí en el campo de búsqueda para filtrar por nombre, teléfono, email o contacto.</li>
+        </ol>
+        <p class="mb-0 text-muted small">Los proveedores se vinculan a productos y a Órdenes de Compra.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categorías -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mCats"><i class="bi bi-tags me-2"></i> Categorías</button></h2>
+    <div id="mCats" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <ol>
+          <li><strong>Agregar:</strong> click en "+ Nueva Categoría", escribí el nombre y guardá.</li>
+          <li><strong>Editar:</strong> click en <i class="bi bi-pencil"></i> para renombrar.</li>
+          <li><strong>Eliminar:</strong> click en <i class="bi bi-trash3"></i>. Los productos de esa categoría pasan a "Sin categoría".</li>
+        </ol>
+        <p class="mb-0 text-muted small">Las categorías se usan para organizar productos y filtrar en el listado.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Órdenes de Compra -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mPO"><i class="bi bi-truck me-2"></i> Órdenes de Compra</button></h2>
+    <div id="mPO" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Gestión de compras a proveedores (recepción de mercadería tipo Carrefour).</p>
+        <ol>
+          <li><strong>Crear OC:</strong>
+            <ul>
+              <li>Seleccioná el proveedor (opcional).</li>
+              <li>Escanéá o buscá productos para agregar a la orden.</li>
+              <li>Ajustá la cantidad y el precio de costo si es necesario.</li>
+              <li>Click en "Crear OC".</li>
+            </ul>
+          </li>
+          <li><strong>Estado Pendiente:</strong> la orden aparece con badge amarillo. Podés ver el detalle o cancelarla.</li>
+          <li><strong>Recibir:</strong> cuando llega la mercadería, click en "Recibir".
+            <ul>
+              <li>Se abre un modal con la lista de productos pedidos.</li>
+              <li>Escanéá cada producto uno por uno (como Carrefour en recepción).</li>
+              <li>Cada escaneo suma +1 al stock de ese producto.</li>
+              <li>La fila se pone verde cuando está completa.</li>
+              <li>Cuando todo está recibido, click "Finalizar Recepción".</li>
+            </ul>
+          </li>
+          <li><strong>OC Recibida:</strong> badge verde, no se puede modificar.</li>
+        </ol>
+        <p class="mb-0 text-muted small">Cada escaneo registra un movimiento en el historial del sistema.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pedidos -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mOrders"><i class="bi bi-journal-text me-2"></i> Pedidos (clientes)</button></h2>
+    <div id="mOrders" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Registrá pedidos de clientes que no se cobran en el momento (ej: un cliente pide algo para retirar después).</p>
+        <ol>
+          <li><strong>Crear:</strong> desde la página de Pedidos, agregá productos, nombre del cliente, notas y total estimado.</li>
+          <li><strong>Completar:</strong> cuando el cliente viene a retirar, click en "Completar" y se genera una venta automáticamente restando stock.</li>
+          <li><strong>Cancelar:</strong> si el cliente cancela, podés cancelar el pedido.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ventas Pendientes -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mPending"><i class="bi bi-hourglass-split me-2"></i> Ventas Pendientes de Pago</button></h2>
+    <div id="mPending" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Cuando activás "Pendiente de pago" al vender, la venta queda registrada con <strong>status pending</strong> y no suma al cierre de caja.</p>
+        <ol>
+          <li>Las ventas pendientes aparecen en la pestaña "Pendientes" del sidebar.</li>
+          <li>Ves el total, cliente, fecha y productos.</li>
+          <li>Cuando el cliente paga, click en <strong>"Cobrar"</strong>. Se marca como pagada y pasa a formar parte del cierre de caja.</li>
+          <li>Tiene su propio permiso: <code>can_view_pending_sales</code> y <code>can_confirm_payment</code>.</li>
+        </ol>
+        <p class="mb-0 text-muted small">El stock se resta en el momento de la venta, no al cobrar. Si anulás la venta, el stock se devuelve.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mHistory"><i class="bi bi-journal-text me-2"></i> Historial / Ganancias / Ranking</button></h2>
+    <div id="mHistory" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <ul>
+          <li><strong>Historial:</strong> todas las ventas realizadas. Podés filtrar por fecha, cliente o método de pago. Cada venta tiene un botón "Ver" que muestra detalle y opción de <strong>Anular venta</strong> (devuelve stock). Podés exportar a Excel con el botón "Exportar".</li>
+          <li><strong>Ganancias:</strong> tabla con ganancia neta por producto (precio de venta - costo). Filtrable por fecha.</li>
+          <li><strong>Ranking:</strong> productos más vendidos, ordenados por cantidad.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Papelera -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mTrash"><i class="bi bi-trash3 me-2"></i> Papelera</button></h2>
+    <div id="mTrash" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Los elementos eliminados (productos, proveedores, etc.) van a la papelera en lugar de borrarse definitivamente.</p>
+        <ol>
+          <li><strong>Restaurar:</strong> click en "Restaurar" para recuperar el elemento con todos sus datos originales.</li>
+          <li><strong>Eliminar definitivamente:</strong> si querés borrarlo para siempre, hay un botón aparte.</li>
+        </ol>
+        <p class="mb-0 text-muted small">Al eliminar un usuario, sus ventas se reasignan al administrador para no perder datos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cierre de Caja -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mCash"><i class="bi bi-cash-stack me-2"></i> Cierre de Caja</button></h2>
+    <div id="mCash" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <ol>
+          <li><strong>Abrir caja:</strong> al empezar el día, registrá el monto inicial en efectivo.</li>
+          <li><strong>Cerrar caja:</strong> al final del día, el sistema te muestra:
+            <ul>
+              <li>Ventas del día separadas por método de pago (efectivo, tarjeta, transferencia, MP).</li>
+              <li>Total de devoluciones.</li>
+              <li>Efectivo esperado (inicial + ventas efectivo - devoluciones).</li>
+              <li>Declarás el efectivo real que tenés y el sistema calcula la diferencia.</li>
+            </ul>
+          </li>
+          <li><strong>Historial de cierres:</strong> todos los cierres anteriores, con detalle de cada uno.</li>
+          <li><strong>Anular cierre:</strong> solo admin, si hubo un error.</li>
+        </ol>
+        <p class="mb-0 text-muted small">Permiso <code>can_close_cash</code> para ver/cerrar y <code>can_void_cash_close</code> para anular.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usuarios -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mUsers"><i class="bi bi-people me-2"></i> Usuarios y Roles</button></h2>
+    <div id="mUsers" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Hay 3 roles predefinidos:</p>
+        <ul>
+          <li><strong>Admin</strong> — acceso total a todo.</li>
+          <li><strong>Supervisor</strong> — puede vender, ver historial, administrar productos/proveedores/categorías, cierre de caja, backups, órdenes de compra. No puede ver códigos de barras, papelera, ni gestionar usuarios avanzados (eliminar, resetear contraseña).</li>
+          <li><strong>User</strong> — solo puede vender y ver productos/proveedores. No ve historial, ganancias, ni configuración.</li>
+        </ul>
+        <p>Los permisos son <strong>granulares</strong> y se configuran desde Config > Permisos. Podés activar o desactivar cada permiso individualmente por rol.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backups -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mBackups"><i class="bi bi-database me-2"></i> Backups</button></h2>
+    <div id="mBackups" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <ol>
+          <li><strong>Backup manual:</strong> click en "Crear Backup Ahora". Se descarga un archivo .zip con toda la base de datos.</li>
+          <li><strong>Restaurar:</strong> subí un archivo .zip de backup. <strong>Cuidado:</strong> reemplaza TODOS los datos actuales.</li>
+          <li><strong>Backup automático:</strong> configurá días de la semana (Lun, Mar, Mié...) y horario. El sistema genera un backup automático cuando alguien visita el Dashboard o la página de Backups en el horario configurado.</li>
+          <li><strong>Google Drive:</strong> si configuraste una cuenta de servicio, los backups automáticos también se suben a Drive.</li>
+          <li><strong>Descargar:</strong> desde la tabla de backups disponibles, click en "Descargar" para bajar el archivo a tu PC.</li>
+        </ol>
+        <p class="mb-0 text-muted small">Accesible para admin y supervisor (permiso <code>can_view_backups</code>).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Códigos de Barras -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mBarcodes"><i class="bi bi-upc-scan me-2"></i> Códigos de Barras y QR</button></h2>
+    <div id="mBarcodes" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Generá códigos de barras (EAN-13) y códigos QR para cada producto.</p>
+        <ol>
+          <li>Seleccioná los productos que querés imprimir.</li>
+          <li>Elegí el tamaño de la etiqueta (chica, mediana, grande).</li>
+          <li>Descargá el PDF listo para imprimir en hojas autoadhesivas.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config -->
+  <div class="accordion-item">
+    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mConfig"><i class="bi bi-gear me-2"></i> Configuración</button></h2>
+    <div id="mConfig" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+      <div class="accordion-body">
+        <p>Solo visible para administradores. Las opciones disponibles son:</p>
+        <ul>
+          <li><strong>Nombre del negocio, logo, local</strong> — datos que se muestran en el sistema.</li>
+          <li><strong>Zona horaria</strong> — cambiá la zona horaria del sistema (default Argentina).</li>
+          <li><strong>Umbrales de stock</strong> — configurá cuándo un producto se marca como stock bajo o crítico.</li>
+          <li><strong>SMTP Email</strong> — configurá Gmail para enviar tickets por correo.</li>
+          <li><strong>Google Drive</strong> — configurá backup automático a Drive.</li>
+          <li><strong>Multi-sucursal</strong> — habilitá acceso desde múltiples dispositivos.</li>
+          <li><strong>Permisos</strong> — activá o desactivá cada permiso por rol.</li>
+          <li><strong>Resetear sistema</strong> — borra todos los datos (ventas, productos, etc.) pero conserva usuarios y configuración.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.accordion-button:not(.collapsed) { background: var(--primary, #3d5a80); color: #fff; }
+.accordion-button:focus { box-shadow: none; }
+.accordion-body ol > li { margin-bottom: 0.5rem; }
+.accordion-body ul > li { margin-bottom: 0.25rem; }
+</style>
+{% endblock %}

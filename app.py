@@ -2321,6 +2321,15 @@ def api_cancel_order(order_id):
     return {'success': True}
 
 
+# ─── Manual de uso ───────────────────
+
+
+@app.route('/manual')
+@login_required
+def manual():
+    return render_template('manual.html')
+
+
 # ─── Purchase Orders (Recepción / Orden de Compra) ───────────────────
 
 
