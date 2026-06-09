@@ -5,6 +5,14 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 AR_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
 
+def set_timezone(tz_name=None):
+    global AR_TZ
+    name = tz_name or 'America/Argentina/Buenos_Aires'
+    try:
+        AR_TZ = ZoneInfo(name)
+    except Exception:
+        AR_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
+
 
 def to_ar(dt):
     if dt.tzinfo is None:
@@ -93,7 +101,7 @@ _perm_methods = ['can_view_products','can_add_products','can_edit_products','can
                  'can_view_suppliers','can_add_suppliers','can_edit_suppliers','can_delete_suppliers',
                  'can_manage_users','can_view_history','can_sell',
                  'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
-                 'can_view_charts']
+                 'can_view_charts','can_close_cash','can_void_cash_close']
 for _m in _perm_methods:
     if not hasattr(AnonymousUserMixin, _m):
         setattr(AnonymousUserMixin, _m, lambda self: False)
@@ -1000,8 +1008,8 @@ def refund_sale(sale_id):
 @app.route('/cash-close')
 @login_required
 def cash_close_page():
-    if current_user.role != 'admin':
-        flash('Solo admin.', 'danger')
+    if not current_user.can_close_cash():
+        flash('No tienes permiso para ver cierre de caja.', 'danger')
         return redirect(url_for('dashboard'))
     today = datetime.now(AR_TZ).date()
     sales = Sale.query.filter(
@@ -1031,8 +1039,8 @@ def cash_close_page():
 @app.route('/cash-close/save', methods=['POST'])
 @login_required
 def cash_close_save():
-    if current_user.role != 'admin':
-        flash('Solo admin.', 'danger')
+    if not current_user.can_close_cash():
+        flash('No tienes permiso.', 'danger')
         return redirect(url_for('dashboard'))
     today = datetime.now(AR_TZ).date()
     sales = Sale.query.filter(
@@ -1071,8 +1079,8 @@ def cash_close_save():
 @app.route('/cash-close/void/<int:id>', methods=['POST'])
 @login_required
 def cash_close_void(id):
-    if current_user.role != 'admin':
-        flash('Solo admin.', 'danger')
+    if not current_user.can_void_cash_close():
+        flash('No tienes permiso para anular cierres.', 'danger')
         return redirect(url_for('cash_close_page'))
     cc = db.session.get(CashClose, id)
     if not cc:
@@ -2292,6 +2300,9 @@ def settings():
             else:
                 db.session.add(Config(key=key, value=val))
         db.session.commit()
+        # Apply timezone change immediately
+        if 'timezone' in request.form:
+            set_timezone(request.form.get('timezone'))
         flash('Configuración guardada.', 'success')
         return redirect(url_for('settings'))
 
@@ -3218,6 +3229,7 @@ def init_app():
             'membership_expiry': '',
             'membership_payment_info': 'Alias: nesxocontrol.mp\nCBU: 0000000000000000000000',
             'multi_branch_enabled': 'false',
+            'timezone': 'America/Argentina/Buenos_Aires',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
@@ -3232,10 +3244,11 @@ def init_app():
                          'can_view_history','can_sell',
                          'can_view_categories','can_add_categories','can_edit_categories','can_delete_categories',
                          'can_view_charts','can_pay_membership','can_take_orders',
-                         'can_view_barcodes','can_view_trash','can_refund_sales']
+                         'can_view_barcodes','can_view_trash','can_refund_sales',
+                         'can_close_cash','can_void_cash_close']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
-            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash') for k in all_perm_keys},
+            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash','can_void_cash_close') for k in all_perm_keys},
             'user': {k: k in ('can_view_products','can_add_products','can_sell','can_view_charts',
                               'can_view_suppliers','can_view_categories','can_pay_membership') for k in all_perm_keys}
         }
@@ -3260,6 +3273,10 @@ def init_app():
             else:
                 db.session.add(Config(key=key, value=json.dumps(perms, ensure_ascii=False)))
         db.session.commit()
+        # Load timezone from config
+        tz_cfg = Config.query.filter_by(key='timezone').first()
+        if tz_cfg and tz_cfg.value:
+            set_timezone(tz_cfg.value)
 
 
 init_app()

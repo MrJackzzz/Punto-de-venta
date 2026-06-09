@@ -59,6 +59,8 @@
             {% endif %}
             <a href="{{ url_for('admin_systems') }}" class="sidebar-link"><span class="si"><i class="bi bi-grid-3x3-gap-fill"></i></span><span class="st">Sistemas</span></a>
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
+            {% endif %}
+            {% if current_user.can_close_cash() %}
             <a href="{{ url_for('cash_close_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-cash-stack"></i></span><span class="st">Cierre Caja</span></a>
             {% endif %}
             {% if current_user.can_manage_users() %}
@@ -69,7 +71,7 @@
         <div class="sidebar-footer">
             <button id="darkToggle" class="sidebar-dark-btn" onclick="toggleDark()" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
             <span class="sidebar-user">{{ current_user.get_full_name() }}</span>
-            <span class="sidebar-role">{{ current_user.role }}</span>
+            <span class="sidebar-role"><span class="badge bg-{{ 'danger' if current_user.role == 'admin' else 'dark' if current_user.role == 'supervisor' else 'secondary' }}">{{ current_user.role.upper() }}</span></span>
             <a href="{{ url_for('logout') }}" class="sidebar-logout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
         </div>
     </aside>
@@ -103,7 +105,7 @@
                 {% endif %}
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('backups') }}">Backups</a>
-                <a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>
+                {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>{% endif %}
                 <a href="{{ url_for('admin_systems') }}">Sistemas</a>
                 {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}
                 <a href="{{ url_for('planes') }}">Planes</a>

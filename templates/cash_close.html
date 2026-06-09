@@ -42,7 +42,7 @@
     </div>
 </div>
 
-{% if current_user.role == 'admin' or current_user.can_refund_sales() %}
+{% if current_user.can_close_cash() %}
 <div class="card shadow-sm mb-4">
     <div class="card-header">Cerrar Caja</div>
     <div class="card-body">
@@ -110,7 +110,7 @@
                         <th>Declarado</th>
                         <th>Diferencia</th>
                         <th>Estado</th>
-                        {% if current_user.role == 'admin' %}<th></th>{% endif %}
+                        {% if current_user.can_void_cash_close() %}<th></th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -122,7 +122,7 @@
                         <td>{{ c.declared_cash|fmt }}</td>
                         <td class="{{ 'text-success' if c.difference >= 0 else 'text-danger' }}">{{ c.difference|fmt }}</td>
                         <td>{% if c.voided %}<span class="badge bg-danger">Anulado</span>{% else %}<span class="badge bg-success">Vigente</span>{% endif %}</td>
-                        {% if current_user.role == 'admin' and not c.voided %}
+                        {% if current_user.can_void_cash_close() and not c.voided %}
                         <td>
                             <form method="POST" action="{{ url_for('cash_close_void', id=c.id) }}" class="d-inline" onsubmit="return confirm('¿Anular este cierre?')">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Anular cierre"><i class="bi bi-x-circle"></i></button>
@@ -131,7 +131,7 @@
                         {% endif %}
                     </tr>
                     {% else %}
-                    <tr><td colspan="7" class="text-center text-muted py-3">Sin cierres registrados</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-3">Sin cierres registrados</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

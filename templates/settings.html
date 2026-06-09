@@ -219,6 +219,24 @@
     </div>
 </div>
 
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary">Zona Horaria</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="timezone" class="form-label">Zona horaria del sistema</label>
+                <select id="timezone" name="timezone" class="form-select">
+                    {% for tz in ['America/Argentina/Buenos_Aires','America/Argentina/Cordoba','America/Argentina/Mendoza','America/Argentina/Salta','America/Argentina/Jujuy','America/Argentina/La_Rioja','America/Argentina/Rio_Gallegos','America/Argentina/San_Juan','America/Argentina/San_Luis','America/Argentina/Tucuman','America/Argentina/Ushuaia','America/Santiago','America/Montevideo','America/Sao_Paulo','America/Asuncion','America/Lima','America/Bogota','America/Mexico_City','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Europe/Madrid','Europe/London','UTC'] %}
+                    <option value="{{ tz }}" {{ 'selected' if configs.get('timezone','America/Argentina/Buenos_Aires') == tz else '' }}>{{ tz }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted d-block mt-1">Configurá la zona horaria del sistema. Cambia la hora en que se muestran ventas, cierres y backups.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+</div>
+
 <!-- Historial Admin -->
 <div class="card shadow-sm mb-4">
     <div class="card-header card-header-primary">Historial</div>
@@ -347,11 +365,15 @@
                                 ('can_view_trash','Ver papelera de eliminados'),
                                 ('can_refund_sales','Anular ventas / devolver stock'),
                             ]),
+                            ('<i class="bi bi-cash-stack"></i> Caja', [
+                                ('can_close_cash','Cierre de caja (ver y cerrar)'),
+                                ('can_void_cash_close','Anular cierres de caja'),
+                            ]),
                         ] %}
                         {% set default_perms = {
-                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':true,'can_reset_user_password':true,'can_delete_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':true,'can_view_trash':true,'can_refund_sales':true},
-                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':true},
-                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':false}
+                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':true,'can_reset_user_password':true,'can_delete_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':true,'can_view_trash':true,'can_refund_sales':true,'can_close_cash':true,'can_void_cash_close':true},
+                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':true,'can_close_cash':true,'can_void_cash_close':false},
+                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':false,'can_close_cash':false,'can_void_cash_close':false}
                         } %}
                         {% for group_name, perms in perm_groups %}
                         <tr class="table-light fw-semibold">
