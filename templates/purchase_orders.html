@@ -158,7 +158,8 @@
 
 <script>
 let poItems = [];
-const products = {{ products|tojson|safe }};
+const products = {{ products_data|safe }};
+const ordersData = {{ orders_data|safe }};
 
 function searchProductPO() {
     const q = document.getElementById('poSearchInput').value.trim().toLowerCase();
@@ -208,8 +209,7 @@ function renderPOItems() {
 }
 
 function viewPODetail(id) {
-    const orders = {{ orders|tojson|safe }};
-    const o = orders.find(x => x.id === id);
+    const o = ordersData.find(x => x.id === id);
     if (!o) return;
     document.getElementById('poDetailId').textContent = id;
     const items = typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json;
@@ -227,8 +227,7 @@ let currentReceivePO = null;
 let receiveItems = [];
 
 function receivePO(id) {
-    const orders = {{ orders|tojson|safe }};
-    const o = orders.find(x => x.id === id);
+    const o = ordersData.find(x => x.id === id);
     if (!o) return;
     currentReceivePO = id;
     document.getElementById('poReceiveId').textContent = id;

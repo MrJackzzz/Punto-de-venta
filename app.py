@@ -40,6 +40,7 @@ app.jinja_env.filters['fmt_stock'] = fmt_stock
 
 import json as _json
 def fromjson(val):
+    if not val: return []
     try: return _json.loads(val)
     except: return []
 app.jinja_env.filters['fromjson'] = fromjson
@@ -2343,7 +2344,18 @@ def purchase_orders():
     orders = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).all()
     suppliers = Supplier.query.order_by(Supplier.name).all()
     products = Product.query.order_by(Product.name).all()
-    return render_template('purchase_orders.html', orders=orders, suppliers=suppliers, products=products, configs=configs)
+    products_data = [{'id': p.id, 'code': p.code, 'name': p.name, 'cost': p.cost, 'unit_type': p.unit_type} for p in products]
+    orders_data = []
+    for o in orders:
+        orders_data.append({
+            'id': o.id,
+            'supplier_name': o.supplier.name if o.supplier else None,
+            'items_json': o.items_json,
+            'total': o.total,
+            'status': o.status,
+            'created_at': o.created_at.isoformat() if o.created_at else None,
+        })
+    return render_template('purchase_orders.html', orders=orders, orders_data=json.dumps(orders_data, ensure_ascii=False), products=products, products_data=json.dumps(products_data, ensure_ascii=False), suppliers=suppliers, configs=configs)
 
 
 @app.route('/purchase-orders/create', methods=['POST'])
