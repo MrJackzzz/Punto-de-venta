@@ -2349,6 +2349,32 @@ def settings():
     return render_template('settings.html', configs=configs, role_perms=role_perms)
 
 
+@app.route('/admin/reset-system', methods=['POST'])
+@login_required
+def admin_reset_system():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('settings'))
+    import shutil
+    try:
+        SaleItem.query.delete()
+        Sale.query.delete()
+        MovementLog.query.delete()
+        PendingOrder.query.delete()
+        CashClose.query.delete()
+        DeletedRecord.query.delete()
+        Product.query.delete()
+        Supplier.query.delete()
+        Category.query.delete()
+        db.session.commit()
+        log_movement(current_user, 'system_reset', 'Sistema limpiado: todos los datos eliminados excepto usuarios')
+        flash('Sistema limpiado exitosamente. Todos los datos fueron eliminados excepto usuarios y configuración.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al limpiar: {str(e)}', 'danger')
+    return redirect(url_for('settings'))
+
+
 @app.route('/settings/backup-config', methods=['POST'])
 @login_required
 def save_backup_config():
