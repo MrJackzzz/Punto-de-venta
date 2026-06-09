@@ -64,6 +64,9 @@
             {% if current_user.can_view_backups() %}
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
             {% endif %}
+            {% if current_user.can_manage_purchases() %}
+            <a href="{{ url_for('purchase_orders') }}" class="sidebar-link"><span class="si"><i class="bi bi-truck"></i></span><span class="st">Órdenes Compra</span></a>
+            {% endif %}
             {% if current_user.can_close_cash() %}
             <a href="{{ url_for('cash_close_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-cash-stack"></i></span><span class="st">Cierre Caja</span></a>
             {% endif %}
@@ -112,6 +115,9 @@
                 {% endif %}
                 {% if current_user.can_view_backups() %}
                 <a href="{{ url_for('backups') }}">Backups</a>
+                {% endif %}
+                {% if current_user.can_manage_purchases() %}
+                <a href="{{ url_for('purchase_orders') }}">Órdenes Compra</a>
                 {% endif %}
                 {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>{% endif %}
                 <a href="{{ url_for('admin_systems') }}">Sistemas</a>

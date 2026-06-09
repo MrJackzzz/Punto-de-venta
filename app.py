@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
-from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord, CashClose
+from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord, CashClose, PurchaseOrder
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 AR_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
@@ -36,6 +36,13 @@ def fmt_stock(value, unit_type='unit'):
         return str(int(value))
     return str(value)
 app.jinja_env.filters['fmt_stock'] = fmt_stock
+
+
+import json as _json
+def fromjson(val):
+    try: return _json.loads(val)
+    except: return []
+app.jinja_env.filters['fromjson'] = fromjson
 
 
 def fmt(amount):
@@ -2314,6 +2321,140 @@ def api_cancel_order(order_id):
     return {'success': True}
 
 
+# ─── Purchase Orders (Recepción / Orden de Compra) ───────────────────
+
+
+@app.route('/purchase-orders')
+@login_required
+def purchase_orders():
+    if not current_user.can_manage_purchases():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('dashboard'))
+    configs = {c.key: c.value for c in Config.query.all()}
+    orders = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).all()
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    products = Product.query.order_by(Product.name).all()
+    return render_template('purchase_orders.html', orders=orders, suppliers=suppliers, products=products, configs=configs)
+
+
+@app.route('/purchase-orders/create', methods=['POST'])
+@login_required
+def purchase_order_create():
+    if not current_user.can_manage_purchases():
+        return {'error': 'Permiso denegado'}, 403
+    supplier_id = request.form.get('supplier_id', type=int)
+    notes = request.form.get('notes', '').strip()
+    items_json = request.form.get('items_json', '[]')
+    items = json.loads(items_json)
+    if not items:
+        flash('Agregá al menos un producto.', 'warning')
+        return redirect(url_for('purchase_orders'))
+    total = sum(item.get('subtotal', 0) for item in items)
+    po = PurchaseOrder(
+        user_id=current_user.id,
+        supplier_id=supplier_id,
+        items_json=json.dumps(items, ensure_ascii=False),
+        notes=notes,
+        total=total,
+        status='pending'
+    )
+    db.session.add(po)
+    db.session.commit()
+    log_movement(current_user, 'purchase_create', f'OC #{po.id} creada por ${total:.2f}')
+    flash(f'Orden de Compra #{po.id} creada.', 'success')
+    return redirect(url_for('purchase_orders'))
+
+
+@app.route('/purchase-orders/<int:po_id>/receive', methods=['POST'])
+@login_required
+def purchase_order_receive(po_id):
+    if not current_user.can_manage_purchases():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('purchase_orders'))
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po or po.status != 'pending':
+        flash('OC no encontrada o ya recibida.', 'warning')
+        return redirect(url_for('purchase_orders'))
+    items = json.loads(po.items_json)
+    for item in items:
+        received = float(item.get('received_qty', item.get('quantity', 0)))
+        product = db.session.get(Product, item['product_id'])
+        if product:
+            product.stock += received
+            item['received_qty'] = received
+    po.items_json = json.dumps(items, ensure_ascii=False)
+    po.status = 'received'
+    po.completed_at = datetime.now(AR_TZ)
+    db.session.commit()
+    log_movement(current_user, 'purchase_receive', f'OC #{po.id} recibida, {len(items)} productos actualizados')
+    flash(f'OC #{po.id} recibida. Stock actualizado.', 'success')
+    return redirect(url_for('purchase_orders'))
+
+
+@app.route('/purchase-orders/<int:po_id>/cancel', methods=['POST'])
+@login_required
+def purchase_order_cancel(po_id):
+    if not current_user.can_manage_purchases():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('purchase_orders'))
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po or po.status != 'pending':
+        flash('OC no encontrada o ya procesada.', 'warning')
+        return redirect(url_for('purchase_orders'))
+    po.status = 'cancelled'
+    po.completed_at = datetime.now(AR_TZ)
+    db.session.commit()
+    log_movement(current_user, 'purchase_cancel', f'OC #{po.id} cancelada')
+    flash(f'OC #{po.id} cancelada.', 'warning')
+    return redirect(url_for('purchase_orders'))
+
+
+@app.route('/api/purchase-orders/<int:po_id>/receive-scan', methods=['POST'])
+@login_required
+def purchase_order_receive_scan(po_id):
+    if not current_user.can_manage_purchases():
+        return {'error': 'Permiso denegado'}, 403
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po or po.status != 'pending':
+        return {'error': 'OC no encontrada'}, 404
+    data = request.get_json() or {}
+    code = data.get('code', '').strip()
+    qty = float(data.get('quantity', 1))
+    product = Product.query.filter_by(code=code).first()
+    if not product:
+        return {'error': 'Producto no encontrado'}, 404
+    items = json.loads(po.items_json)
+    found = False
+    for item in items:
+        if item['product_id'] == product.id:
+            received = item.get('received_qty', 0)
+            item['received_qty'] = received + qty
+            found = True
+            break
+    if not found:
+        return {'error': 'El producto no está en esta OC'}, 400
+    po.items_json = json.dumps(items, ensure_ascii=False)
+    product.stock += qty
+    db.session.commit()
+    log_movement(current_user, 'purchase_receive_item', f'OC #{po.id}: +{qty} x {product.name}')
+    return {'success': True, 'product': product.name, 'received': float(item['received_qty']), 'ordered': float(item['quantity'])}
+
+
+@app.route('/api/purchase-orders/<int:po_id>/finish', methods=['POST'])
+@login_required
+def purchase_order_finish(po_id):
+    if not current_user.can_manage_purchases():
+        return {'error': 'Permiso denegado'}, 403
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po or po.status != 'pending':
+        return {'error': 'OC no encontrada'}, 404
+    po.status = 'received'
+    po.completed_at = datetime.now(AR_TZ)
+    db.session.commit()
+    log_movement(current_user, 'purchase_receive', f'OC #{po.id} finalizada por escaneo')
+    return {'success': True}
+
+
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -2422,8 +2563,9 @@ def save_permissions():
                  'can_close_cash',
                  'can_void_cash_close',
                  'can_view_pending_sales',
-                  'can_confirm_payment',
-                  'can_view_backups']
+                   'can_confirm_payment',
+                   'can_view_backups',
+                   'can_manage_purchases']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:

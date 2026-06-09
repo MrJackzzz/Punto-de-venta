@@ -136,6 +136,9 @@ class User(UserMixin, db.Model):
     def can_view_backups(self):
         return self._role_perm('can_view_backups', self.role in ('admin', 'supervisor'))
 
+    def can_manage_purchases(self):
+        return self._role_perm('can_manage_purchases', self.role in ('admin', 'supervisor'))
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -294,3 +297,18 @@ class CashClose(db.Model):
 
     closer = db.relationship('User', foreign_keys=[user_id], backref='cash_closes')
     voider = db.relationship('User', foreign_keys=[voided_by], backref='voided_closes')
+
+
+class PurchaseOrder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    items_json = db.Column(db.Text, nullable=False, default='[]')
+    notes = db.Column(db.Text, default='')
+    total = db.Column(db.Float, nullable=False, default=0)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship('User', backref='purchase_orders')
+    supplier = db.relationship('Supplier', backref='purchase_orders')
