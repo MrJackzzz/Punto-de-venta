@@ -21,13 +21,13 @@
                     <td><strong>{{ c.name }}</strong></td>
                     <td>{{ c.products|length }}</td>
                     <td>
-                        <div class="d-flex gap-1 flex-wrap">
+                        <div class="d-flex gap-1">
                         {% if current_user.can_edit_categories() %}
-                        <button class="btn btn-warning btn-sm" onclick="editCat({{ c.id }}, '{{ c.name|e }}')">Editar</button>
+                        <button class="btn btn-sm btn-warning" onclick="editCat({{ c.id }}, '{{ c.name|e }}')" title="Editar"><i class="bi bi-pencil"></i></button>
                         {% endif %}
                         {% if current_user.can_delete_categories() %}
                         <form method="POST" action="{{ url_for('category_delete', id=c.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar {{ c.name }}? Los productos pasar&aacute;n a &quot;Sin categor&iacute;a&quot;.')">Eliminar</button>
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar {{ c.name }}? Los productos pasar&aacute;n a &quot;Sin categor&iacute;a&quot;.')" title="Eliminar"><i class="bi bi-trash3"></i></button>
                         </form>
                         {% endif %}
                         </div>
@@ -69,7 +69,6 @@
 function openAddCatModal() {
     var modal = new bootstrap.Modal('#catModal');
     modal.show();
-    document.getElementById('catName').focus();
 }
 
 function editCat(id, name) {
@@ -78,7 +77,6 @@ function editCat(id, name) {
     document.getElementById('catForm').action = '/categories/edit/' + id;
     document.getElementById('catName').value = name;
     modal.show();
-    document.getElementById('catName').focus();
 }
 
 document.getElementById('catModal').addEventListener('hidden.bs.modal', function() {

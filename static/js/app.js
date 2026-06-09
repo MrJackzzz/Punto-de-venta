@@ -39,6 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+document.addEventListener('shown.bs.modal', function(e) {
+    const first = e.target.querySelector('[autofocus]');
+    if (first) setTimeout(function() { first.focus(); }, 50);
+});
+
 document.addEventListener('input', function(e) {
     const tag = e.target.tagName;
     if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page') && !e.target.closest('.login-form')) {

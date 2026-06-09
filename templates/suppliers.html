@@ -112,7 +112,6 @@ function filterSuppliers() {
 <script>
 function openAddSupplierModal() {
     openModal('supplierModal');
-    document.getElementById('s_name').focus();
 }
 
 function editSupplier(id, name, contact, phone, email, address) {
@@ -124,7 +123,6 @@ function editSupplier(id, name, contact, phone, email, address) {
     document.getElementById('s_email').value = email;
     document.getElementById('s_address').value = address;
     openModal('supplierModal');
-    document.getElementById('s_name').focus();
 }
 </script>
 {% endblock %}

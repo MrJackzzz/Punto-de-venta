@@ -209,7 +209,6 @@ function restoreOriginalOrder() {
 
 function openAddProductModal() {
     openModal('productModal');
-    document.getElementById('code').focus();
 }
 
 function editProduct(id, code, name, cost, markup, currency, stock, unitType, supplierId, description, categoryId, wholesaleQty, wholesalePrice) {
@@ -228,7 +227,6 @@ function editProduct(id, code, name, cost, markup, currency, stock, unitType, su
     document.getElementById('wholesale_qty').value = wholesaleQty || 0;
     document.getElementById('wholesale_price').value = wholesalePrice || 0;
     openModal('productModal');
-    document.getElementById('code').focus();
 }
 
 function filterProducts() {
