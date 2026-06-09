@@ -121,6 +121,12 @@ class User(UserMixin, db.Model):
     def can_delete_users(self):
         return self._role_perm('can_delete_users', self.role == 'admin')
 
+    def can_close_cash(self):
+        return self._role_perm('can_close_cash', self.role in ('admin', 'supervisor'))
+
+    def can_void_cash_close(self):
+        return self._role_perm('can_void_cash_close', self.role == 'admin')
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -2352,7 +2352,9 @@ def save_permissions():
                  'can_take_orders', 'can_pay_membership',
                  'can_view_barcodes',
                  'can_view_trash',
-                 'can_refund_sales']
+                 'can_refund_sales',
+                 'can_close_cash',
+                 'can_void_cash_close']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
