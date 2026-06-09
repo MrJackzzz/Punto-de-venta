@@ -179,25 +179,10 @@
 
 <!-- Backups -->
 <div class="card shadow-sm mb-4">
-    <div class="card-header card-header-primary">Backups Automáticos</div>
+    <div class="card-header card-header-primary"><i class="bi bi-database"></i> Backups</div>
     <div class="card-body">
-        <form method="POST" action="{{ url_for('save_backup_config') }}">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="backup_interval" class="form-label">Intervalo entre backups (horas)</label>
-                    <input type="number" id="backup_interval" name="backup_interval" class="form-control"
-                           value="{{ configs.get('backup_interval', '0') }}" min="0" step="1">
-                    <small class="text-muted">Poner 0 para desactivar backups automáticos</small>
-                </div>
-                <div class="col-md-6">
-                    <label for="backup_max_count" class="form-label">Máximo de backups a conservar</label>
-                    <input type="number" id="backup_max_count" name="backup_max_count" class="form-control"
-                           value="{{ configs.get('backup_max_count', '20') }}" min="0" step="1">
-                    <small class="text-muted">Poner 0 para conservar todos. Cuando se supera este número, se borran los más viejos.</small>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Guardar Configuración de Backups</button>
-        </form>
+        <p class="text-muted small mb-3">Configurá backups automáticos por días y horario, creá backups manuales, o restaurá datos desde la página de Backups.</p>
+        <a href="{{ url_for('backups') }}" class="btn btn-primary"><i class="bi bi-database"></i> Ir a Backups</a>
     </div>
 </div>
 
@@ -373,11 +358,14 @@
                                 ('can_view_pending_sales','Ver ventas pendientes de pago'),
                                 ('can_confirm_payment','Cobrar venta pendiente'),
                             ]),
+                            ('<i class="bi bi-database"></i> Backups', [
+                                ('can_view_backups','Ver / crear / restaurar backups'),
+                            ]),
                         ] %}
                         {% set default_perms = {
-                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':true,'can_reset_user_password':true,'can_delete_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':true,'can_view_trash':true,'can_refund_sales':true,'can_close_cash':true,'can_void_cash_close':true,'can_view_pending_sales':true,'can_confirm_payment':true},
-                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':true,'can_close_cash':true,'can_void_cash_close':false,'can_view_pending_sales':true,'can_confirm_payment':false},
-                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':false,'can_close_cash':false,'can_void_cash_close':false,'can_view_pending_sales':false,'can_confirm_payment':false}
+                            'admin': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':true,'can_reset_user_password':true,'can_delete_users':true,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':true,'can_view_trash':true,'can_refund_sales':true,'can_close_cash':true,'can_void_cash_close':true,'can_view_pending_sales':true,'can_confirm_payment':true,'can_view_backups':true},
+                            'supervisor': {'can_view_products':true,'can_add_products':true,'can_edit_products':true,'can_manage_products':true,'can_view_suppliers':true,'can_add_suppliers':true,'can_edit_suppliers':true,'can_delete_suppliers':true,'can_view_categories':true,'can_add_categories':true,'can_edit_categories':true,'can_delete_categories':true,'can_manage_users':true,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':true,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':true,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':true,'can_close_cash':true,'can_void_cash_close':false,'can_view_pending_sales':true,'can_confirm_payment':false,'can_view_backups':true},
+                            'user': {'can_view_products':true,'can_add_products':true,'can_edit_products':false,'can_manage_products':false,'can_view_suppliers':true,'can_add_suppliers':false,'can_edit_suppliers':false,'can_delete_suppliers':false,'can_view_categories':true,'can_add_categories':false,'can_edit_categories':false,'can_delete_categories':false,'can_manage_users':false,'can_toggle_users':false,'can_reset_user_password':false,'can_delete_users':false,'can_view_history':false,'can_sell':true,'can_view_charts':true,'can_pay_membership':true,'can_take_orders':false,'can_view_barcodes':false,'can_view_trash':false,'can_refund_sales':false,'can_close_cash':false,'can_void_cash_close':false,'can_view_pending_sales':false,'can_confirm_payment':false,'can_view_backups':false}
                         } %}
                         {% for group_name, perms in perm_groups %}
                         <tr class="table-light fw-semibold">

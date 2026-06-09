@@ -89,19 +89,41 @@
     <div class="card-header"><i class="bi bi-alarm"></i> Backup Automático</div>
     <div class="card-body">
         <p class="text-muted small mb-3">
-            Configurá la app para que genere backups automáticos cada cierto tiempo.
-            El proceso se ejecuta automáticamente al visitar esta página.
+            Configurá los días y horario para backups automáticos. El proceso se ejecuta al visitar el Panel o la página de Backups.
         </p>
         <form method="POST" action="{{ url_for('save_backup_config') }}">
-            <div class="d-flex align-items-end gap-3">
-                <div class="mb-0 flex-grow-1" style="max-width:200px;">
-                    <label for="backup_interval" class="form-label">Intervalo entre backups (horas)</label>
-                    <input type="number" id="backup_interval" name="backup_interval" class="form-control" value="{{ configs.get('backup_interval', '0') }}" min="0">
-                    <div class="form-text">0 = desactivado</div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Días de la semana</label>
+                    <div>
+                        {% set days_sel = configs.get('backup_days', '') %}
+                        {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                        {% set labels = {'Mon':'Lun','Tue':'Mar','Wed':'Mié','Thu':'Jue','Fri':'Vie','Sat':'Sáb','Sun':'Dom'} %}
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" name="backup_days" value="{{ d }}" class="form-check-input" id="bd_{{ d }}" {{ 'checked' if d in days_sel.split(',') else '' }}>
+                            <label class="form-check-label small" for="bd_{{ d }}">{{ labels[d] }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Guardar</button>
+                <div class="col-md-3">
+                    <label for="backup_time" class="form-label">Horario</label>
+                    <input type="time" id="backup_time" name="backup_time" class="form-control" value="{{ configs.get('backup_time', '10:00') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="backup_interval" class="form-label">O por intervalo (horas)</label>
+                    <input type="number" id="backup_interval" name="backup_interval" class="form-control" value="{{ configs.get('backup_interval', '0') }}" min="0">
+                    <div class="form-text">0 = solo días/horario</div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </div>
             </div>
         </form>
+        {% set last_backup = configs.get('last_backup_date', '') %}
+        {% if last_backup %}
+        <p class="text-success small mb-0"><i class="bi bi-check-circle"></i> Último backup automático: <strong>{{ last_backup }}</strong></p>
+        {% endif %}
     </div>
 </div>
 

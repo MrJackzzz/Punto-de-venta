@@ -262,6 +262,7 @@ def get_critical_stock_threshold():
 @login_required
 def dashboard():
     check_critical_stock()
+    auto_backup_check()
     threshold = get_low_stock_threshold()
     total_products = Product.query.count()
     categories = Category.query.count()
@@ -2378,20 +2379,27 @@ def admin_reset_system():
 @app.route('/settings/backup-config', methods=['POST'])
 @login_required
 def save_backup_config():
-    if current_user.role != 'admin':
-        flash('Solo Admin.', 'danger')
+    if not current_user.can_view_backups():
+        flash('Permiso denegado.', 'danger')
         return redirect(url_for('settings'))
-    for key in ['backup_interval', 'backup_max_count']:
+    keys_handled = ['backup_interval', 'backup_max_count', 'backup_time']
+    for key in keys_handled:
         val = request.form.get(key, '').strip()
         config = Config.query.filter_by(key=key).first()
         if config:
             config.value = val
         else:
             db.session.add(Config(key=key, value=val))
+    days = ','.join(request.form.getlist('backup_days'))
+    config = Config.query.filter_by(key='backup_days').first()
+    if config:
+        config.value = days
+    else:
+        db.session.add(Config(key='backup_days', value=days))
     db.session.commit()
     flash('Configuración de backups guardada.', 'success')
     trim_backups()
-    return redirect(url_for('settings'))
+    return redirect(url_for('backups'))
 
 
 @app.route('/settings/permissions', methods=['POST'])
@@ -2414,7 +2422,8 @@ def save_permissions():
                  'can_close_cash',
                  'can_void_cash_close',
                  'can_view_pending_sales',
-                 'can_confirm_payment']
+                  'can_confirm_payment',
+                  'can_view_backups']
     for role in ['admin', 'supervisor', 'user']:
         perms = {}
         for pk in perm_keys:
@@ -2492,19 +2501,40 @@ def trim_backups():
 
 
 def auto_backup_check():
+    backup_days_str = get_config('backup_days', '')
+    backup_time_str = get_config('backup_time', '')
     interval = int(get_config('backup_interval', '0'))
-    if interval <= 0:
-        return
-    files = sorted([f for f in os.listdir(BACKUP_DIR) if f.startswith('backup_') and f.endswith('.zip')], reverse=True)
-    if files:
-        last = files[0]
-        ts_str = last.replace('backup_', '').replace('.zip', '')
+    now = datetime.now(AR_TZ)
+    today_dow = now.strftime('%a')
+    if backup_days_str and backup_time_str and ':' in backup_time_str:
+        days_list = [d.strip() for d in backup_days_str.split(',') if d.strip()]
+        if days_list and today_dow not in days_list:
+            return
         try:
-            last_time = datetime.strptime(ts_str, '%Y%m%d_%H%M%S')
-            if (datetime.now() - last_time).total_seconds() < interval * 3600:
+            h, m = backup_time_str.split(':')
+            sched_min = int(h) * 60 + int(m)
+            now_min = now.hour * 60 + now.minute
+            if now_min < sched_min:
                 return
         except ValueError:
             pass
+        last_date = get_config('last_backup_date', '')
+        today_str = now.strftime('%Y-%m-%d')
+        if last_date == today_str:
+            return
+    elif interval > 0:
+        files = sorted([f for f in os.listdir(BACKUP_DIR) if f.startswith('backup_') and f.endswith('.zip')], reverse=True)
+        if files:
+            last = files[0]
+            ts_str = last.replace('backup_', '').replace('.zip', '')
+            try:
+                last_time = datetime.strptime(ts_str, '%Y%m%d_%H%M%S')
+                if (datetime.now() - last_time).total_seconds() < interval * 3600:
+                    return
+            except ValueError:
+                pass
+    else:
+        return
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     db_url = app.config['SQLALCHEMY_DATABASE_URI']
     zip_path = None
@@ -2530,17 +2560,24 @@ def auto_backup_check():
                 os.remove(dst)
     except Exception:
         pass
-    if zip_path and get_config('drive_enabled', '') == 'on':
-        try:
-            upload_to_drive(zip_path, f'backup_auto_{ts}.zip')
-        except Exception:
-            pass
+    if zip_path:
+        cfg_last = Config.query.filter_by(key='last_backup_date').first()
+        if cfg_last:
+            cfg_last.value = datetime.now(AR_TZ).strftime('%Y-%m-%d')
+        else:
+            db.session.add(Config(key='last_backup_date', value=datetime.now(AR_TZ).strftime('%Y-%m-%d')))
+        db.session.commit()
+        if get_config('drive_enabled', '') == 'on':
+            try:
+                upload_to_drive(zip_path, f'backup_auto_{ts}.zip')
+            except Exception:
+                pass
     trim_backups()
 @app.route('/backups')
 @login_required
 def backups():
-    if current_user.role != 'admin':
-        flash('Solo Admin.', 'danger')
+    if not current_user.can_view_backups():
+        flash('Permiso denegado.', 'danger')
         return redirect(url_for('dashboard'))
     auto_backup_check()
     configs = {c.key: c.value for c in Config.query.all()}

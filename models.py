@@ -133,6 +133,9 @@ class User(UserMixin, db.Model):
     def can_confirm_payment(self):
         return self._role_perm('can_confirm_payment', self.role in ('admin', 'supervisor'))
 
+    def can_view_backups(self):
+        return self._role_perm('can_view_backups', self.role in ('admin', 'supervisor'))
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
