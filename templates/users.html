@@ -14,6 +14,7 @@
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
+        <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="thead-primary">
                 <tr>
@@ -72,51 +73,6 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>
-</div>
-
-<div id="userModal" class="modal fade" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nuevo Usuario</h5>
-                <button type="button" class="btn-close" onclick="closeModal('userModal')" aria-label="Cerrar"></button>
-            </div>
-            <form method="POST" action="{{ url_for('user_add') }}">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Nombre de usuario</label>
-                        <input type="text" id="username" name="username" class="form-control" required autofocus>
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label for="first_name" class="form-label">Nombre</label>
-                            <input type="text" id="first_name" name="first_name" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="last_name" class="form-label">Apellido</label>
-                            <input type="text" id="last_name" name="last_name" class="form-control">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Contrase&ntilde;a</label>
-                        <input type="password" id="password" name="password" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Rol</label>
-                        <select id="role" name="role" class="form-select">
-                            <option value="user">Usuario</option>
-                            <option value="supervisor">Supervisor</option>
-                            {% if current_user.role == 'admin' %}
-                            <option value="admin">Admin</option>
-                            {% endif %}
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary w-100">Crear Usuario</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
