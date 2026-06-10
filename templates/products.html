@@ -100,17 +100,37 @@
                         <label for="name" class="form-label">Nombre del Producto</label>
                         <input type="text" id="name" name="name" class="form-control" required>
                     </div>
+                    <div class="mb-2">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <input type="radio" class="btn-check" name="price_mode" id="modePercent" value="percent" checked onchange="togglePriceMode()">
+                            <label class="btn btn-outline-primary" for="modePercent">Calcular por %</label>
+                            <input type="radio" class="btn-check" name="price_mode" id="modeDirect" value="direct" onchange="togglePriceMode()">
+                            <label class="btn btn-outline-primary" for="modeDirect">Precio directo</label>
+                        </div>
+                    </div>
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="cost" class="form-label">Costo</label>
-                                <input type="number" id="cost" name="cost" class="form-control" step="0.01" required>
+                                <input type="number" id="cost" name="cost" class="form-control" step="0.01" required oninput="onCostChange()">
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4" id="percentCol">
                             <div class="mb-3">
                                 <label for="markup_percentage" class="form-label">% Ganancia</label>
-                                <input type="number" id="markup_percentage" name="markup_percentage" class="form-control" step="0.01" required>
+                                <input type="number" id="markup_percentage" name="markup_percentage" class="form-control" step="0.01" required oninput="calcPrice()">
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="salePriceCol" style="display:none;">
+                            <div class="mb-3">
+                                <label for="sale_price" class="form-label">Precio venta</label>
+                                <input type="number" id="sale_price" name="sale_price" class="form-control" step="0.01" oninput="calcPercent()">
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-center">
+                            <div class="p-2 bg-light rounded w-100 text-center" id="pricePreview" style="border:1px solid #dee2e5;">
+                                <small class="text-muted d-block">Precio de venta</small>
+                                <strong id="priceDisplay" style="font-size:1.2rem;color:#3d5a80;">$0.00</strong>
                             </div>
                         </div>
                     </div>
@@ -197,6 +217,38 @@
 <script>
 let originalRows = [];
 
+function togglePriceMode() {
+    const mode = document.querySelector('input[name="price_mode"]:checked').value;
+    document.getElementById('percentCol').style.display = mode === 'percent' ? '' : 'none';
+    document.getElementById('salePriceCol').style.display = mode === 'direct' ? '' : 'none';
+    if (mode === 'percent') calcPrice();
+    else calcPercent();
+}
+
+function calcPrice() {
+    const cost = parseFloat(document.getElementById('cost').value) || 0;
+    const markup = parseFloat(document.getElementById('markup_percentage').value) || 0;
+    const sale = cost * (1 + markup / 100);
+    document.getElementById('priceDisplay').textContent = '$' + sale.toFixed(2).replace('.', ',');
+    document.getElementById('sale_price').value = sale.toFixed(2);
+}
+
+function onCostChange() {
+    const mode = document.querySelector('input[name="price_mode"]:checked').value;
+    if (mode === 'percent') calcPrice();
+    else calcPercent();
+}
+
+function calcPercent() {
+    const cost = parseFloat(document.getElementById('cost').value) || 0;
+    const sale = parseFloat(document.getElementById('sale_price').value) || 0;
+    if (cost > 0) {
+        const markup = ((sale - cost) / cost) * 100;
+        document.getElementById('markup_percentage').value = markup.toFixed(2);
+    }
+    document.getElementById('priceDisplay').textContent = '$' + sale.toFixed(2).replace('.', ',');
+}
+
 function saveOriginalOrder() {
     const tbody = document.getElementById('productsBody');
     originalRows = Array.from(tbody.querySelectorAll('tr'));
@@ -226,6 +278,8 @@ function editProduct(id, code, name, cost, markup, currency, stock, unitType, su
     document.getElementById('description').value = description;
     document.getElementById('wholesale_qty').value = wholesaleQty || 0;
     document.getElementById('wholesale_price').value = wholesalePrice || 0;
+    document.querySelector('input[name="price_mode"][value="percent"]').checked = true;
+    togglePriceMode();
     openModal('productModal');
 }
 
