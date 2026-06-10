@@ -42,6 +42,26 @@
                 </form>
                 </div>
             </div>
+            <div class="col-md-auto text-center">
+                <label class="form-label d-block">Favicon (pestaña navegador)</label>
+                {% set fav = configs.get('favicon_data', '') %}
+                {% if fav %}
+                <img src="{{ fav }}" class="mb-2 border rounded" style="width:32px;height:32px;object-fit:contain;">
+                <form method="POST" action="{{ url_for('delete_favicon') }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm">Eliminar favicon</button>
+                </form>
+                {% else %}
+                <div class="d-inline-flex align-items-center justify-content-center mb-2 border border-2 rounded" style="width:32px;height:32px;border-style:dashed !important;">
+                    <span class="text-muted small" style="font-size:10px;">Sin</span>
+                </div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('upload_favicon') }}" enctype="multipart/form-data">
+                    <input type="file" name="favicon" accept="image/*" class="form-control form-control-sm w-auto d-inline-block" required>
+                    <button type="submit" class="btn btn-primary btn-sm mt-1">Subir favicon</button>
+                </form>
+                <small class="text-muted d-block">Recomendado: PNG 64x64 o 128x128. Visible en la pestaña del navegador.</small>
+            </div>
+            </div>
             <div class="mb-3">
                 <label for="po_email_from" class="form-label">Email remitente para Órdenes de Compra</label>
                 <input type="email" id="po_email_from" name="po_email_from" class="form-control"

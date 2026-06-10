@@ -99,11 +99,13 @@ def inject_globals():
         logo_src = url_for('static', filename=logo)
     else:
         logo_src = ''
+    fav = get_config('favicon_data', '')
     return {
         'business_name': get_config('business_name', 'NexoControl'),
         'local_name': get_config('local_name', ''),
         'logo_url': get_config('logo_filename', ''),
         'logo_src': logo_src,
+        'favicon_data': fav if fav and fav.startswith('data:') else '',
         'now': lambda: datetime.now(AR_TZ),
         'membership_warning': getattr(g, 'membership_warning', ''),
         'configs': {c.key: c.value for c in Config.query.all()},
@@ -2863,6 +2865,48 @@ def delete_logo():
         cfg.value = ''
         db.session.commit()
     flash('Logo eliminado.', 'success')
+    return redirect(url_for('settings'))
+
+
+@app.route('/upload-favicon', methods=['POST'])
+@login_required
+def upload_favicon():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('settings'))
+    if 'favicon' not in request.files:
+        flash('No se seleccionó archivo.', 'danger')
+        return redirect(url_for('settings'))
+    file = request.files['favicon']
+    if file.filename == '' or not allowed_file(file.filename):
+        flash('Formato no válido. Usá PNG, JPG o GIF.', 'danger')
+        return redirect(url_for('settings'))
+    import base64
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
+    b64 = base64.b64encode(file.read()).decode('ascii')
+    data_url = f'data:{mime};base64,{b64}'
+    cfg = Config.query.filter_by(key='favicon_data').first()
+    if cfg:
+        cfg.value = data_url
+    else:
+        db.session.add(Config(key='favicon_data', value=data_url))
+    db.session.commit()
+    flash('Favicon actualizado.', 'success')
+    return redirect(url_for('settings'))
+
+
+@app.route('/delete-favicon', methods=['POST'])
+@login_required
+def delete_favicon():
+    if current_user.role != 'admin':
+        flash('Solo Admin.', 'danger')
+        return redirect(url_for('settings'))
+    cfg = Config.query.filter_by(key='favicon_data').first()
+    if cfg and cfg.value:
+        cfg.value = ''
+        db.session.commit()
+    flash('Favicon eliminado.', 'success')
     return redirect(url_for('settings'))
 
 
