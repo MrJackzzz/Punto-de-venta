@@ -137,12 +137,43 @@
                            value="{{ configs.get('smtp_password', '') }}" placeholder="••••••••">
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header card-header-primary" style="background:#ee6c4d;">Configuración SMTP — Órdenes de Compra</div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Configuración de email independiente para enviar Órdenes de Compra a proveedores.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="po_smtp_host" class="form-label">Servidor SMTP</label>
+                    <input type="text" id="po_smtp_host" name="po_smtp_host" class="form-control"
+                           value="{{ configs.get('po_smtp_host', '') }}" placeholder="smtp.gmail.com">
+                </div>
+                <div class="col-md-6">
+                    <label for="po_smtp_port" class="form-label">Puerto</label>
+                    <input type="number" id="po_smtp_port" name="po_smtp_port" class="form-control"
+                           value="{{ configs.get('po_smtp_port', '587') }}" placeholder="587">
+                </div>
+                <div class="col-md-6">
+                    <label for="po_smtp_user" class="form-label">Usuario / Email</label>
+                    <input type="text" id="po_smtp_user" name="po_smtp_user" class="form-control"
+                           value="{{ configs.get('po_smtp_user', '') }}" placeholder="compras@tunegocio.com">
+                </div>
+                <div class="col-md-6">
+                    <label for="po_smtp_password" class="form-label">Contraseña</label>
+                    <input type="password" id="po_smtp_password" name="po_smtp_password" class="form-control"
+                           value="{{ configs.get('po_smtp_password', '') }}" placeholder="••••••••">
+                </div>
+            </div>
             <hr class="my-3">
             <div class="mb-3">
-                <label for="po_email_from" class="form-label">Email remitente para Órdenes de Compra</label>
+                <label for="po_email_from" class="form-label">Email remitente (opcional)</label>
                 <input type="email" id="po_email_from" name="po_email_from" class="form-control"
                        value="{{ configs.get('po_email_from', '') }}" placeholder="compras@tunegocio.com">
-                <small class="text-muted">Cuando envies una OC por email desde "Órdenes de Compra", el proveedor verá este email como remitente. Si lo dejás vacío, se usa el mismo "Usuario / Email" de SMTP de arriba.</small>
+                <small class="text-muted">Si lo dejás vacío, se usa el "Usuario / Email" de arriba.</small>
             </div>
         </div>
     </div>

@@ -217,6 +217,33 @@ def can_send_email():
     return bool(get_config('smtp_host', '') and get_config('smtp_user', '') and get_config('smtp_password', ''))
 
 
+def can_send_po_email():
+    return bool(get_config('po_smtp_host', '') and get_config('po_smtp_user', '') and get_config('po_smtp_password', ''))
+
+
+def send_po_email(to, subject, html_body):
+    try:
+        smtp_host = get_config('po_smtp_host', '')
+        smtp_port = int(get_config('po_smtp_port', '587'))
+        smtp_user = get_config('po_smtp_user', '')
+        smtp_password = get_config('po_smtp_password', '')
+        smtp_from = get_config('po_email_from', '') or smtp_user
+        if not smtp_host or not smtp_user:
+            return False
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = smtp_from
+        msg['To'] = to
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+        return True
+    except Exception:
+        return False
+
+
 def send_email(to, subject, html_body):
     try:
         smtp_host = get_config('smtp_host', '')
@@ -2632,12 +2659,11 @@ def purchase_order_email(po_id):
     if not to or '@' not in to:
         flash('Email inválido.', 'danger')
         return redirect(url_for('purchase_orders'))
-    if not can_send_email():
-        flash('SMTP no configurado. Andá a Config > SMTP.', 'danger')
+    if not can_send_po_email():
+        flash('SMTP de OC no configurado. Andá a Config > SMTP > OC.', 'danger')
         return redirect(url_for('purchase_orders'))
     items = json.loads(po.items_json)
     biz = get_config('business_name', 'Mi Negocio')
-    po_from = get_config('po_email_from', '') or get_config('smtp_user', '')
     rows = ''
     for item in items:
         p = db.session.get(Product, item['product_id'])
@@ -2656,7 +2682,7 @@ def purchase_order_email(po_id):
 </table>
 <h3 style="text-align:right;">Total: ${po.total:.2f}</h3>'''
     try:
-        send_email(to, f'🧾 OC #{po.id} - {biz}', html)
+        send_po_email(to, f'🧾 OC #{po.id} - {biz}', html)
         flash(f'OC #{po.id} enviada a {to}', 'success')
     except Exception as e:
         flash(f'Error al enviar: {str(e)}', 'danger')
@@ -3824,6 +3850,10 @@ def init_app():
             'weather_lat': '-34.6037',
             'weather_lon': '-58.3816',
             'po_email_from': '',
+            'po_smtp_host': '',
+            'po_smtp_port': '587',
+            'po_smtp_user': '',
+            'po_smtp_password': '',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
