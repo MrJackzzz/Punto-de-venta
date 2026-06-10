@@ -91,10 +91,19 @@ def get_instance_id():
 
 @app.context_processor
 def inject_globals():
+    logo = get_config('logo_filename', '')
+    from flask import url_for
+    if logo and logo.startswith('data:'):
+        logo_src = logo
+    elif logo:
+        logo_src = url_for('static', filename=logo)
+    else:
+        logo_src = ''
     return {
         'business_name': get_config('business_name', 'NexoControl'),
         'local_name': get_config('local_name', ''),
         'logo_url': get_config('logo_filename', ''),
+        'logo_src': logo_src,
         'now': lambda: datetime.now(AR_TZ),
         'membership_warning': getattr(g, 'membership_warning', ''),
         'configs': {c.key: c.value for c in Config.query.all()},
@@ -2828,15 +2837,16 @@ def upload_logo():
     if file.filename == '' or not allowed_file(file.filename):
         flash('Formato no válido. Usá PNG, JPG o GIF.', 'danger')
         return redirect(url_for('settings'))
-    filename = 'logo.' + file.filename.rsplit('.', 1)[1].lower()
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
+    import base64
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
+    b64 = base64.b64encode(file.read()).decode('ascii')
+    data_url = f'data:{mime};base64,{b64}'
     cfg = Config.query.filter_by(key='logo_filename').first()
-    val = 'uploads/' + filename
     if cfg:
-        cfg.value = val
+        cfg.value = data_url
     else:
-        db.session.add(Config(key='logo_filename', value=val))
+        db.session.add(Config(key='logo_filename', value=data_url))
     db.session.commit()
     flash('Logo actualizado.', 'success')
     return redirect(url_for('settings'))
@@ -2850,9 +2860,6 @@ def delete_logo():
         return redirect(url_for('settings'))
     cfg = Config.query.filter_by(key='logo_filename').first()
     if cfg and cfg.value:
-        fpath = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(cfg.value))
-        if os.path.exists(fpath):
-            os.remove(fpath)
         cfg.value = ''
         db.session.commit()
     flash('Logo eliminado.', 'success')
@@ -3731,6 +3738,19 @@ def init_app():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        # Migrate file-based logo to base64 data URL
+        import base64 as _b64
+        logo_cfg = Config.query.filter_by(key='logo_filename').first()
+        if logo_cfg and logo_cfg.value and not logo_cfg.value.startswith('data:'):
+            old_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(logo_cfg.value))
+            if os.path.exists(old_path):
+                with open(old_path, 'rb') as _f:
+                    _data = _b64.b64encode(_f.read()).decode('ascii')
+                _ext = logo_cfg.value.rsplit('.', 1)[1].lower() if '.' in logo_cfg.value else 'png'
+                _mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(_ext, 'image/png')
+                logo_cfg.value = f'data:{_mime};base64,{_data}'
+                db.session.commit()
+
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin', active=True)
             admin.set_password('admin123')

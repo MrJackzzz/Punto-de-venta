@@ -28,8 +28,8 @@
         <div class="card shadow-sm mx-auto" style="max-width:600px;">
             <div class="card-body">
                 <div class="text-center mb-3">
-                    {% if logo_url %}
-                    <img src="{{ url_for('static', filename=logo_url) }}" height="32" class="mb-1">
+                    {% if logo_src %}
+                    <img src="{{ logo_src }}" height="32" class="mb-1">
                     {% endif %}
                     <h1 class="fs-5 fw-bold mb-0">{{ business_name }}</h1>
                     {% if local_name %}

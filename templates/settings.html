@@ -26,8 +26,8 @@
             </div>
             <div class="col-md-auto text-center">
                 <label class="form-label d-block">Logo del local</label>
-                {% if logo_url %}
-                <img src="{{ url_for('static', filename=logo_url) }}" class="img-fluid mb-2 border rounded" style="max-width:120px;max-height:80px;">
+                {% if logo_src %}
+                <img src="{{ logo_src }}" class="img-fluid mb-2 border rounded" style="max-width:120px;max-height:80px;">
                 <form method="POST" action="{{ url_for('delete_logo') }}" class="d-inline">
                     <button type="submit" class="btn btn-danger btn-sm">Eliminar logo</button>
                 </form>

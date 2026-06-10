@@ -5,8 +5,8 @@
     <div class="card shadow w-100 login-form" style="max-width: 420px;">
         <div class="card-body p-4">
             <div class="text-center mb-4">
-                {% if logo_url %}
-                <img src="{{ url_for('static', filename=logo_url) }}" class="mb-2" style="height:48px;">
+                {% if logo_src %}
+                <img src="{{ logo_src }}" class="mb-3" style="max-height:120px;max-width:100%;">
                 {% endif %}
                 <h4 class="mb-0">{{ business_name }}</h4>
             </div>
