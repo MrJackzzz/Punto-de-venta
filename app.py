@@ -2679,6 +2679,7 @@ td {{ padding: 8px 10px; border-bottom: 1px solid #ddd; }}
 <div class="footer">Documento generado por {biz} — {to_ar(datetime.now(AR_TZ)).strftime("%d/%m/%Y %H:%M")}</div>
 </body></html>'''
     return html
+@app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     if current_user.role != 'admin':
