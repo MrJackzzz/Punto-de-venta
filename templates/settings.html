@@ -40,10 +40,16 @@
                     <input type="file" name="logo" accept="image/*" class="form-control form-control-sm w-auto d-inline-block" required>
                     <button type="submit" class="btn btn-primary btn-sm mt-1">Subir logo</button>
                 </form>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="po_email_from" class="form-label">Email remitente para Órdenes de Compra</label>
+                <input type="email" id="po_email_from" name="po_email_from" class="form-control"
+                       value="{{ configs.get('po_email_from', '') }}" placeholder="compras@tunegocio.com">
+                <small class="text-muted">Si se deja vacío, se usa el mismo email de SMTP. Los proveedores reciben acá las OC.</small>
             </div>
         </div>
     </div>
-</div>
 
 <!-- Parámetros de Stock + Email + SMTP (misma forma) -->
 <form method="POST">

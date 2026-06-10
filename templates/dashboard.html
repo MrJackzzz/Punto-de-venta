@@ -86,15 +86,33 @@
             <div class="card-header">Acceso Rápido</div>
             <div class="card-body">
                 <div class="d-flex flex-wrap gap-2">
-                    {% if current_user.can_view_products() %}
-                    <a href="{{ url_for('products') }}" class="btn btn-primary">Ingresar Mercadería</a>
-                    {% endif %}
                     <a href="{{ url_for('sell') }}" class="btn btn-success">Ir a Vender</a>
-                    {% if current_user.can_manage_suppliers() %}
-                    <a href="{{ url_for('suppliers') }}" class="btn btn-secondary">Proveedores</a>
+                    {% if current_user.can_view_products() or current_user.can_add_products() %}
+                    <a href="{{ url_for('products') }}" class="btn btn-outline-primary">Productos</a>
+                    {% endif %}
+                    {% if current_user.can_view_suppliers() or current_user.can_manage_suppliers() %}
+                    <a href="{{ url_for('suppliers') }}" class="btn btn-outline-secondary">Proveedores</a>
+                    {% endif %}
+                    {% if current_user.can_view_categories() %}
+                    <a href="{{ url_for('categories') }}" class="btn btn-outline-secondary">Categorías</a>
                     {% endif %}
                     {% if current_user.can_view_history() %}
-                    <a href="{{ url_for('history') }}" class="btn btn-secondary">Ver Historial</a>
+                    <a href="{{ url_for('history') }}" class="btn btn-outline-secondary">Historial</a>
+                    {% endif %}
+                    {% if current_user.can_view_pending_sales() %}
+                    <a href="{{ url_for('pending_sales') }}" class="btn btn-outline-warning">Pendientes</a>
+                    {% endif %}
+                    {% if current_user.can_manage_purchases() %}
+                    <a href="{{ url_for('purchase_orders') }}" class="btn btn-outline-info">Órdenes Compra</a>
+                    {% endif %}
+                    {% if current_user.can_take_orders() %}
+                    <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">Pedidos</a>
+                    {% endif %}
+                    {% if current_user.can_close_cash() %}
+                    <a href="{{ url_for('cash_close_page') }}" class="btn btn-outline-secondary">Cierre Caja</a>
+                    {% endif %}
+                    {% if current_user.can_view_backups() %}
+                    <a href="{{ url_for('backups') }}" class="btn btn-outline-secondary">Backups</a>
                     {% endif %}
                 </div>
             </div>
@@ -108,21 +126,21 @@
                     <span class="badge badge-{{ current_user.role }}">{{ current_user.role|upper }}</span>
                 </p>
                 <ul class="mt-2 ps-3 text-muted" style="line-height:1.8;">
-                    {% if current_user.role == 'admin' %}
-                    <li>Control total del sistema</li>
-                    <li>Configuración de negocio</li>
-                    <li>Gestión de usuarios y permisos</li>
-                    <li>CRUD completo de productos, proveedores, categorías</li>
-                    <li>Acceso a historial completo</li>
-                    {% elif current_user.role == 'supervisor' %}
-                    <li>Gestión de productos y proveedores</li>
-                    <li>Gestión de usuarios (crear/editar)</li>
-                    <li>Acceso a historial de movimientos</li>
-                    {% else %}
-                    <li>Ingreso de mercadería</li>
-                    <li>Cobro de productos (código / escaneo)</li>
-                    <li>Cálculo de vuelto</li>
-                    {% endif %}
+                    {% if current_user.can_sell() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Vender (cobrar)</li>{% endif %}
+                    {% if current_user.can_view_products() or current_user.can_add_products() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gestionar productos</li>{% endif %}
+                    {% if current_user.can_view_suppliers() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Ver proveedores</li>{% endif %}
+                    {% if current_user.can_manage_suppliers() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gestionar proveedores</li>{% endif %}
+                    {% if current_user.can_view_categories() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Ver categorías</li>{% endif %}
+                    {% if current_user.can_view_history() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Historial / Ganancias</li>{% endif %}
+                    {% if current_user.can_close_cash() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Cierre de caja</li>{% endif %}
+                    {% if current_user.can_manage_purchases() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Órdenes de compra</li>{% endif %}
+                    {% if current_user.can_view_backups() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Backups</li>{% endif %}
+                    {% if current_user.can_view_pending_sales() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Ventas pendientes</li>{% endif %}
+                    {% if current_user.can_take_orders() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Pedidos de clientes</li>{% endif %}
+                    {% if current_user.can_manage_users() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gestionar usuarios</li>{% endif %}
+                    {% if current_user.can_view_trash() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Papelera</li>{% endif %}
+                    {% if current_user.can_view_charts() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gráficos y reportes</li>{% endif %}
+                    {% if current_user.role == 'admin' %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Configuración del sistema</li>{% endif %}
                 </ul>
             </div>
         </div>

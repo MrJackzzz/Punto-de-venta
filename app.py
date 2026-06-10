@@ -2431,6 +2431,7 @@ def purchase_orders():
     suppliers = Supplier.query.order_by(Supplier.name).all()
     products = Product.query.order_by(Product.name).all()
     products_data = [{'id': p.id, 'code': p.code, 'name': p.name, 'cost': p.cost, 'unit_type': p.unit_type} for p in products]
+    suppliers_data = [{'id': s.id, 'name': s.name, 'email': s.email} for s in suppliers]
     orders_data = []
     for o in orders:
         orders_data.append({
@@ -2441,7 +2442,7 @@ def purchase_orders():
             'status': o.status,
             'created_at': o.created_at.isoformat() if o.created_at else None,
         })
-    return render_template('purchase_orders.html', orders=orders, orders_data=json.dumps(orders_data, ensure_ascii=False), products=products, products_data=json.dumps(products_data, ensure_ascii=False), suppliers=suppliers, configs=configs)
+    return render_template('purchase_orders.html', orders=orders, orders_data=json.dumps(orders_data, ensure_ascii=False), products=products, products_data=json.dumps(products_data, ensure_ascii=False), suppliers=suppliers, suppliers_data=json.dumps(suppliers_data, ensure_ascii=False), configs=configs)
 
 
 @app.route('/purchase-orders/create', methods=['POST'])
@@ -2562,7 +2563,122 @@ def purchase_order_finish(po_id):
     return {'success': True}
 
 
-@app.route('/settings', methods=['GET', 'POST'])
+@app.route('/purchase-orders/<int:po_id>/share-whatsapp')
+@login_required
+def purchase_order_whatsapp(po_id):
+    if not current_user.can_manage_purchases():
+        return {'error': 'Permiso denegado'}, 403
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po:
+        return {'error': 'OC no encontrada'}, 404
+    items = json.loads(po.items_json)
+    biz = get_config('business_name', 'Mi Negocio')
+    lines = [f'🧾 *ORDEN DE COMPRA #{po.id}* - {biz}']
+    lines.append(f'📅 {to_ar(po.created_at).strftime("%d/%m/%Y %H:%M")}')
+    if po.supplier:
+        lines.append(f'🏢 Proveedor: {po.supplier.name}')
+    lines.append('')
+    for i, item in enumerate(items, 1):
+        p = db.session.get(Product, item['product_id'])
+        name = item.get('name', p.name if p else '?')
+        qty = item.get('quantity', 0)
+        u = p.unit_type if p else 'unit'
+        unit_label = '' if u == 'unit' else f' {u}'
+        lines.append(f'{i}. {name} x{qty}{unit_label}')
+    lines.append(f'\n💰 Total: ${po.total:.2f}')
+    msg = '\n'.join(lines)
+    from urllib.parse import quote
+    url = f'https://wa.me/?text={quote(msg)}'
+    return redirect(url)
+
+
+@app.route('/purchase-orders/<int:po_id>/email', methods=['POST'])
+@login_required
+def purchase_order_email(po_id):
+    if not current_user.can_manage_purchases():
+        flash('Permiso denegado.', 'danger')
+        return redirect(url_for('purchase_orders'))
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po:
+        flash('OC no encontrada.', 'danger')
+        return redirect(url_for('purchase_orders'))
+    to = request.form.get('to', '').strip()
+    if not to or '@' not in to:
+        flash('Email inválido.', 'danger')
+        return redirect(url_for('purchase_orders'))
+    if not can_send_email():
+        flash('SMTP no configurado. Andá a Config > SMTP.', 'danger')
+        return redirect(url_for('purchase_orders'))
+    items = json.loads(po.items_json)
+    biz = get_config('business_name', 'Mi Negocio')
+    po_from = get_config('po_email_from', '') or get_config('smtp_user', '')
+    rows = ''
+    for item in items:
+        p = db.session.get(Product, item['product_id'])
+        name = item.get('name', p.name if p else '?')
+        qty = item.get('quantity', 0)
+        u = p.unit_type if p else 'unit'
+        unit_label = '' if u == 'unit' else f' {u}'
+        subtotal = item.get('subtotal', item.get('quantity', 0) * item.get('cost', 0))
+        rows += f'<tr><td>{name}</td><td>{qty}{unit_label}</td><td>${item.get("cost",0):.2f}</td><td>${subtotal:.2f}</td></tr>'
+    html = f'''<h2 style="color:#3d5a80;">🧾 OC #{po.id}</h2>
+<p><strong>{biz}</strong> — {to_ar(po.created_at).strftime("%d/%m/%Y %H:%M")}</p>
+<p>Proveedor: <strong>{po.supplier.name if po.supplier else "—"}</strong></p>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+<tr style="background:#3d5a80;color:#fff;"><th>Producto</th><th>Cant.</th><th>Costo U.</th><th>Subtotal</th></tr>
+{rows}
+</table>
+<h3 style="text-align:right;">Total: ${po.total:.2f}</h3>'''
+    try:
+        send_email(to, f'🧾 OC #{po.id} - {biz}', html)
+        flash(f'OC #{po.id} enviada a {to}', 'success')
+    except Exception as e:
+        flash(f'Error al enviar: {str(e)}', 'danger')
+    return redirect(url_for('purchase_orders'))
+
+
+@app.route('/purchase-orders/<int:po_id>/pdf')
+@login_required
+def purchase_order_pdf(po_id):
+    if not current_user.can_manage_purchases():
+        return {'error': 'Permiso denegado'}, 403
+    po = db.session.get(PurchaseOrder, po_id)
+    if not po:
+        return {'error': 'OC no encontrada'}, 404
+    items = json.loads(po.items_json)
+    biz = get_config('business_name', 'Mi Negocio')
+    rows = ''
+    for i, item in enumerate(items, 1):
+        p = db.session.get(Product, item['product_id'])
+        name = item.get('name', p.name if p else '?')
+        qty = item.get('quantity', 0)
+        u = p.unit_type if p else 'unit'
+        unit_label = '' if u == 'unit' else f' {u}'
+        subtotal = item.get('subtotal', qty * item.get('cost', 0))
+        rows += f'<tr><td>{i}</td><td>{name}</td><td>{qty}{unit_label}</td><td>${item.get("cost",0):.2f}</td><td>${subtotal:.2f}</td></tr>'
+    html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><title>OC #{po.id}</title>
+<style>
+body {{ font-family: Arial, sans-serif; padding: 30px; color: #293241; }}
+.header {{ text-align: center; border-bottom: 3px solid #3d5a80; padding-bottom: 15px; margin-bottom: 20px; }}
+.header h1 {{ color: #3d5a80; margin: 0; }} .header p {{ color: #666; margin: 5px 0; }}
+table {{ width: 100%; border-collapse: collapse; }}
+th {{ background: #3d5a80; color: #fff; padding: 10px; text-align: left; }}
+td {{ padding: 8px 10px; border-bottom: 1px solid #ddd; }}
+.total {{ text-align: right; font-size: 1.2em; margin-top: 20px; padding-top: 10px; border-top: 2px solid #3d5a80; }}
+.footer {{ margin-top: 40px; font-size: 0.85em; color: #999; text-align: center; }}
+.badge {{ display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.8em; }}
+.badge-pending {{ background: #ffc107; color: #000; }}
+.badge-received {{ background: #198754; color: #fff; }}
+</style></head><body>
+<div class="header"><h1>🧾 ORDEN DE COMPRA #{po.id}</h1>
+<p><strong>{biz}</strong></p>
+<p>Fecha: {to_ar(po.created_at).strftime("%d/%m/%Y %H:%M")} | Estado: <span class="badge badge-{po.status}">{po.status}</span></p>
+<p>Proveedor: <strong>{po.supplier.name if po.supplier else "—"}</strong></p></div>
+<table><thead><tr><th>#</th><th>Producto</th><th>Cantidad</th><th>Costo U.</th><th>Subtotal</th></tr></thead><tbody>{rows}</tbody></table>
+<div class="total">Total: <strong>${po.total:.2f}</strong></div>
+<div class="footer">Documento generado por {biz} — {to_ar(datetime.now(AR_TZ)).strftime("%d/%m/%Y %H:%M")}</div>
+</body></html>'''
+    return html
 @login_required
 def settings():
     if current_user.role != 'admin':
@@ -3627,6 +3743,7 @@ def init_app():
             'demo_reset_interval': '24',
             'weather_lat': '-34.6037',
             'weather_lon': '-58.3816',
+            'po_email_from': '',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
