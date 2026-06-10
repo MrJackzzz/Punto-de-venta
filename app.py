@@ -2068,7 +2068,17 @@ def api_history():
         'product_delete': 'Eliminar Producto', 'sale': 'Venta',
         'supplier_create': 'Crear Proveedor', 'supplier_edit': 'Editar Proveedor',
         'supplier_delete': 'Eliminar Proveedor', 'user_create': 'Crear Usuario',
-        'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass'
+        'user_toggle': 'Estado Usuario', 'user_reset_pass': 'Reset Pass',
+        'user_delete': 'Eliminar Usuario',
+        'category_create': 'Crear Categoría', 'category_edit': 'Editar Categoría',
+        'category_delete': 'Eliminar Categoría',
+        'refund': 'Anular Venta', 'payment_confirm': 'Confirmar Pago',
+        'cash_close': 'Cierre de Caja', 'cash_close_void': 'Anular Cierre',
+        'order_create': 'Crear Pedido', 'order_complete': 'Completar Pedido',
+        'order_cancel': 'Cancelar Pedido',
+        'purchase_create': 'Crear OC', 'purchase_receive': 'Recibir OC',
+        'purchase_cancel': 'Cancelar OC', 'purchase_receive_item': 'Recibir Ítem OC',
+        'system_reset': 'Reset del Sistema'
     }
 
     log_list = []
