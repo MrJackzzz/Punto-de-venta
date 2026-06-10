@@ -62,12 +62,6 @@
                 <small class="text-muted d-block">Recomendado: PNG 64x64 o 128x128. Visible en la pestaña del navegador.</small>
             </div>
             </div>
-            <div class="mb-3">
-                <label for="po_email_from" class="form-label">Email remitente para Órdenes de Compra</label>
-                <input type="email" id="po_email_from" name="po_email_from" class="form-control"
-                       value="{{ configs.get('po_email_from', '') }}" placeholder="compras@tunegocio.com">
-                <small class="text-muted">Si se deja vacío, se usa el mismo email de SMTP. Los proveedores reciben acá las OC.</small>
-            </div>
         </div>
     </div>
 
@@ -142,6 +136,13 @@
                     <input type="password" id="smtp_password" name="smtp_password" class="form-control"
                            value="{{ configs.get('smtp_password', '') }}" placeholder="••••••••">
                 </div>
+            </div>
+            <hr class="my-3">
+            <div class="mb-3">
+                <label for="po_email_from" class="form-label">Email remitente para Órdenes de Compra</label>
+                <input type="email" id="po_email_from" name="po_email_from" class="form-control"
+                       value="{{ configs.get('po_email_from', '') }}" placeholder="compras@tunegocio.com">
+                <small class="text-muted">Cuando envies una OC por email desde "Órdenes de Compra", el proveedor verá este email como remitente. Si lo dejás vacío, se usa el mismo "Usuario / Email" de SMTP de arriba.</small>
             </div>
         </div>
     </div>
