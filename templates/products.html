@@ -16,6 +16,18 @@
                 <option value="{{ c.name|lower }}">{{ c.name }}</option>
                 {% endfor %}
             </select>
+            <select id="unitFilter" class="form-control w-auto" onchange="filterProducts()">
+                <option value="">Todas las unidades</option>
+                <option value="unit">Unidad</option>
+                <option value="kg">KG</option>
+                <option value="g">Gr</option>
+                <option value="liter">Litro</option>
+                <option value="ml">ML</option>
+                <option value="m">Metro</option>
+                <option value="cm">CM</option>
+                <option value="dozen">Docena</option>
+                <option value="pack">Pack</option>
+            </select>
             <select id="sortOrder" class="form-control w-auto" onchange="filterProducts()">
                 <option value="">Orden por defecto</option>
                 <option value="stock_asc">Menor stock primero</option>
@@ -29,7 +41,9 @@
                         <th>Nombre</th>
                         <th>Descripción</th>
                         <th>Categoría</th>
-                        <th>Precio</th>
+                        <th>Precio Venta</th>
+                        <th>Costo</th>
+                        <th>% Ganancia</th>
                         <th>Moneda</th>
                         <th>Stock</th>
                         <th>Unidad</th>
@@ -45,6 +59,14 @@
                         <td class="text-truncate text-muted small" style="max-width:150px;" title="{{ p.description or '' }}">{{ p.description[:40] + '...' if p.description and p.description|length > 40 else p.description or '-' }}</td>
                         <td>{% if p.category %}<span class="badge bg-primary text-white">{{ p.category.name }}</span>{% else %}-{% endif %}</td>
                         <td>{{ p.price|fmt }}</td>
+                        <td class="text-muted">{{ p.cost|fmt }}</td>
+                        <td>
+                            {% if p.cost > 0 %}
+                            <span class="badge {% if p.markup_percentage >= 50 %}bg-success{% elif p.markup_percentage >= 20 %}bg-info{% else %}bg-secondary{% endif %}">{{ "%.0f"|format(p.markup_percentage) }}%</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
                         <td>{{ p.currency }}</td>
                         <td>
                             {% if p.stock < low_stock_threshold %}
@@ -71,7 +93,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="10" class="text-center text-muted py-4">No hay productos registrados</td></tr>
+                    <tr><td colspan="12" class="text-center text-muted py-4">No hay productos registrados</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -284,19 +306,24 @@ function editProduct(id, code, name, cost, markup, currency, stock, unitType, su
 }
 
 function filterProducts() {
-    const q = document.getElementById('productSearch').value.toLowerCase();
-    const cat = document.getElementById('categoryFilter').value;
-    const sort = document.getElementById('sortOrder').value;
-    const tbody = document.getElementById('productsBody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    rows.forEach(row => {
-        if (row.cells.length < 2) return;
-        const code = (row.cells[0].textContent || '').toLowerCase();
-        const name = (row.cells[1].textContent || '').toLowerCase();
-        const rowCat = (row.cells[3].textContent || '').toLowerCase().trim();
-        const matchesSearch = code.includes(q) || name.includes(q);
-        const matchesCat = !cat || rowCat === cat;
-        row.style.display = matchesSearch && matchesCat ? '' : 'none';
+    var search = document.getElementById('productSearch').value.toLowerCase();
+    var cat = document.getElementById('categoryFilter').value;
+    var unit = document.getElementById('unitFilter').value;
+    var sort = document.getElementById('sortOrder').value;
+    var rows = document.querySelectorAll('#productsBody tr');
+    var visibleRows = [];
+    rows.forEach(function(row) {
+        var code = (row.cells[0].textContent || '').toLowerCase();
+        var name = (row.cells[1].textContent || '').toLowerCase();
+        var catCell = (row.cells[3].textContent || '').toLowerCase();
+        var unitCell = (row.cells[9].textContent || '').trim();
+        var matches = (!search || code.indexOf(search) > -1 || name.indexOf(search) > -1) && (!cat || catCell.indexOf(cat) > -1) && (!unit || unitCell.toLowerCase() === unit);
+        if (matches) {
+            row.style.display = '';
+            visibleRows.push(row);
+        } else {
+            row.style.display = 'none';
+        }
     });
     if (sort === 'stock_asc') {
         const visible = rows.filter(r => r.style.display !== 'none');
