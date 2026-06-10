@@ -1518,6 +1518,8 @@ def mp_webhook():
                             sale.mp_status = pay.get('status', 'unknown')
                             if pay.get('status') == 'approved':
                                 sale.payment_method = 'mercadopago'
+                                if sale.payment_status == 'pending':
+                                    sale.payment_status = 'paid'
                             db.session.commit()
                         break
     except Exception:

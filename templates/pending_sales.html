@@ -27,6 +27,9 @@
                         <td>{{ s.total|fmt }}</td>
                         <td class="text-nowrap">
                             <a href="/ticket/{{ s.id }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Ver ticket"><i class="bi bi-receipt"></i></a>
+                            {% if configs.get('mp_access_token') %}
+                            <button class="btn btn-sm btn-info text-white" onclick="generateMpLink({{ s.id }}, {{ s.total }})" title="Cobrar con Mercado Pago"><i class="bi bi-credit-card"></i> MP</button>
+                            {% endif %}
                             {% if current_user.can_confirm_payment() %}
                             <form method="POST" action="{{ url_for('confirm_payment', sale_id=s.id) }}" class="d-inline" onsubmit="return confirm('¿Confirmar pago de Venta #{{ s.id }} por {{ s.total|fmt }}?')">
                                 <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado"><i class="bi bi-check-lg"></i> Cobrar</button>
@@ -42,4 +45,66 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="mpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cobrar con Mercado Pago</h5>
+                <button type="button" class="btn-close" onclick="closeModal('mpModal')"></button>
+            </div>
+            <div class="modal-body text-center" id="mpModalBody">
+                <div class="spinner-border text-primary my-3" role="status"></div>
+                <p class="text-muted">Generando link de pago...</p>
+            </div>
+            <div class="modal-footer justify-content-center" id="mpModalFooter" style="display:none;">
+                <a id="mpLinkBtn" href="#" target="_blank" class="btn btn-primary"><i class="bi bi-credit-card"></i> Abrir link de pago</a>
+                <button class="btn btn-success" onclick="copyMpLink()"><i class="bi bi-clipboard"></i> Copiar link</button>
+                <button class="btn btn-info text-white" onclick="shareMpWhatsApp()"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let _mpLink = '';
+
+function generateMpLink(saleId, total) {
+    openModal('mpModal');
+    const body = document.getElementById('mpModalBody');
+    const footer = document.getElementById('mpModalFooter');
+    footer.style.display = 'none';
+    body.innerHTML = '<div class="spinner-border text-primary my-3" role="status"></div><p class="text-muted">Generando link de pago...</p>';
+    fetch('/api/create-mp-payment', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({sale_id: saleId, total: total, description: 'Venta #' + saleId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            body.innerHTML = '<p class="text-danger"><i class="bi bi-exclamation-triangle"></i> ' + data.error + '</p>';
+            return;
+        }
+        _mpLink = data.init_point;
+        body.innerHTML = '<p class="mb-1"><strong>Venta #' + saleId + '</strong></p><p class="fs-4 fw-bold text-primary">$' + total.toFixed(2).replace('.', ',') + '</p><p class="text-muted small">Enviale este link al cliente para que pague con Mercado Pago:</p><div class="input-group"><input type="text" class="form-control" id="mpLinkInput" value="' + _mpLink + '" readonly><button class="btn btn-outline-secondary" onclick="copyMpLink()"><i class="bi bi-clipboard"></i></button></div>';
+        footer.style.display = '';
+        document.getElementById('mpLinkBtn').href = _mpLink;
+    })
+    .catch(() => {
+        body.innerHTML = '<p class="text-danger">Error al conectar con Mercado Pago</p>';
+    });
+}
+
+function copyMpLink() {
+    const input = document.getElementById('mpLinkInput');
+    if (input) { input.select(); navigator.clipboard.writeText(input.value).catch(function(){}); }
+}
+
+function shareMpWhatsApp() {
+    if (_mpLink) {
+        window.open('https://wa.me/?text=' + encodeURIComponent('Hola, te envio el link para pagar tu compra: ' + _mpLink), '_blank');
+    }
+}
+</script>
 {% endblock %}
