@@ -51,9 +51,10 @@
             <a href="{{ url_for('trash') }}" class="sidebar-link"><span class="si"><i class="bi bi-trash3"></i></span><span class="st">Papelera</span></a>
             {% endif %}
             {% endif %}
-            {% if current_user.role == 'admin' or current_user.can_manage_users() %}
             <hr class="sidebar-divider">
             <a href="{{ url_for('manual') }}" class="sidebar-link"><span class="si"><i class="bi bi-question-circle"></i></span><span class="st">Manual</span></a>
+            {% if current_user.role == 'admin' or current_user.can_manage_users() %}
+            <hr class="sidebar-divider">
             {% if current_user.role == 'admin' %}
             <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si"><i class="bi bi-gear"></i></span><span class="st">Config</span></a>
             <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Planes</span></a>
@@ -74,6 +75,7 @@
             {% endif %}
             {% if current_user.can_manage_users() %}
             <a href="{{ url_for('users') }}" class="sidebar-link"><span class="si"><i class="bi bi-people"></i></span><span class="st">Usuarios</span></a>
+            {% endif %}
             {% endif %}
         </nav>
         <div class="sidebar-footer">
@@ -122,6 +124,7 @@
                 <a href="{{ url_for('purchase_orders') }}">Órdenes Compra</a>
                 {% endif %}
                 {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>{% endif %}
+                {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('admin_systems') }}">Sistemas</a>
                 {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}
                 <a href="{{ url_for('planes') }}">Planes</a>
