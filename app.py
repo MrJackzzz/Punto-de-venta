@@ -20,7 +20,7 @@ def to_ar(dt):
     return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func, or_
-import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading, re
+import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading, re, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -96,8 +96,26 @@ def inject_globals():
         'local_name': get_config('local_name', ''),
         'logo_url': get_config('logo_filename', ''),
         'now': lambda: datetime.now(AR_TZ),
-        'membership_warning': getattr(g, 'membership_warning', '')
+        'membership_warning': getattr(g, 'membership_warning', ''),
+        'configs': {c.key: c.value for c in Config.query.all()},
     }
+
+_last_bg_check = 0
+_BG_INTERVAL = 300  # 5 minutes
+
+@app.before_request
+def run_bg_tasks():
+    global _last_bg_check
+    now = time.time()
+    if now - _last_bg_check < _BG_INTERVAL:
+        return
+    _last_bg_check = now
+    try:
+        check_critical_stock()
+        auto_backup_check()
+        demo_auto_reset_check()
+    except Exception:
+        pass
 
 db.init_app(app)
 login_manager = LoginManager(app)
@@ -258,6 +276,69 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/demo/reset', methods=['POST'])
+def demo_reset():
+    try:
+        SaleItem.query.delete()
+        Sale.query.delete()
+        MovementLog.query.delete()
+        PendingOrder.query.delete()
+        CashClose.query.delete()
+        DeletedRecord.query.delete()
+        PurchaseOrder.query.delete()
+        Product.query.delete()
+        Supplier.query.delete()
+        Category.query.delete()
+        admin = User.query.filter_by(username='admin').first()
+        if admin:
+            User.query.filter(User.id != admin.id).delete()
+        else:
+            User.query.delete()
+            admin = User(username='admin', role='admin')
+            admin.set_password('admin123')
+            db.session.add(admin)
+        db.session.commit()
+        categories_data = ['Bebidas', 'Lácteos', 'Almacén', 'Limpieza', 'Snacks']
+        cat_ids = {}
+        for cname in categories_data:
+            c = Category(name=cname)
+            db.session.add(c)
+            db.session.flush()
+            cat_ids[cname] = c.id
+        products_data = [
+            ('AGUA01', 'Agua Mineral 500ml', 80, 100, 'Bebidas', 50, 'unit'),
+            ('GASE01', 'Coca-Cola 1.5L', 180, 220, 'Bebidas', 30, 'unit'),
+            ('GASE02', 'Sprite 500ml', 100, 130, 'Bebidas', 40, 'unit'),
+            ('LEC01', 'Leche Entera 1L', 120, 150, 'Lácteos', 25, 'unit'),
+            ('YOG01', 'Yogur Natural 200g', 90, 115, 'Lácteos', 20, 'unit'),
+            ('QSO01', 'Queso Cremoso x500g', 350, 420, 'Lácteos', 15, 'unit'),
+            ('ARR01', 'Arroz 1kg', 150, 185, 'Almacén', 35, 'unit'),
+            ('FID01', 'Fideos Tallarín 500g', 80, 105, 'Almacén', 40, 'unit'),
+            ('AZU01', 'Azúcar 1kg', 130, 160, 'Almacén', 30, 'unit'),
+            ('ACE01', 'Aceite Girasol 900ml', 250, 300, 'Almacén', 20, 'unit'),
+            ('JAB01', 'Jabón en Polvo x500g', 200, 250, 'Limpieza', 18, 'unit'),
+            ('DET01', 'Detergente 750ml', 120, 155, 'Limpieza', 22, 'unit'),
+            ('PAP01', 'Papel Higiénico x4', 180, 225, 'Limpieza', 28, 'unit'),
+            ('SAL01', 'Sal Fina 500g', 60, 80, 'Almacén', 50, 'unit'),
+            ('GAL01', 'Galletitas Dulces 200g', 90, 115, 'Snacks', 45, 'unit'),
+            ('CHI01', 'Chicles Menta x10', 40, 55, 'Snacks', 60, 'unit'),
+        ]
+        for code, name, cost, price, cat, stock, unit_type in products_data:
+            p = Product(code=code, name=name, cost=cost, price=price, category_id=cat_ids.get(cat), stock=stock, unit_type=unit_type)
+            db.session.add(p)
+        db.session.commit()
+        cfg = Config.query.filter_by(key='demo_last_reset').first()
+        if cfg:
+            cfg.value = datetime.now(timezone.utc).isoformat()
+        else:
+            db.session.add(Config(key='demo_last_reset', value=datetime.now(timezone.utc).isoformat()))
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Demo reseteada. Productos y datos de ejemplo cargados.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 def get_low_stock_threshold():
     c = Config.query.filter_by(key='low_stock_threshold').first()
     return int(c.value) if c and c.value else 10
@@ -269,8 +350,6 @@ def get_critical_stock_threshold():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    check_critical_stock()
-    auto_backup_check()
     threshold = get_low_stock_threshold()
     total_products = Product.query.count()
     categories = Category.query.count()
@@ -329,6 +408,10 @@ def product_add():
 
     if Product.query.filter_by(code=code).first():
         flash('Ya existe un producto con ese código.', 'danger')
+        return redirect(url_for('products'))
+
+    if get_config('demo_mode', '') == 'on' and Product.query.count() >= 20:
+        flash('Modo Demo: máximo 20 productos. Contratá el servicio completo para usar sin límites.', 'warning')
         return redirect(url_for('products'))
 
     product = Product(
@@ -1500,6 +1583,9 @@ def supplier_add():
     if not current_user.can_add_suppliers():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('suppliers'))
+    if get_config('demo_mode', '') == 'on' and Supplier.query.count() >= 10:
+        flash('Modo Demo: máximo 10 proveedores. Contratá el servicio completo.', 'warning')
+        return redirect(url_for('suppliers'))
     supplier = Supplier(
         name=request.form.get('name'),
         contact=request.form.get('contact', ''),
@@ -2486,7 +2572,7 @@ def settings():
     if request.method == 'POST':
         # Only save keys that are actually present in the form (each form has its own fields)
         for key in request.form:
-            if key in ('csrf_token',):  # skip any non-config keys if needed
+            if key in ('csrf_token', 'form_section'):
                 continue
             val = request.form.get(key, '').strip()
             config = Config.query.filter_by(key=key).first()
@@ -2736,6 +2822,46 @@ def auto_backup_check():
             except Exception:
                 pass
     trim_backups()
+
+
+def demo_auto_reset_check():
+    if get_config('demo_mode', '') != 'on':
+        return
+    interval = int(get_config('demo_reset_interval', '24'))
+    last_reset = get_config('demo_last_reset', '')
+    if last_reset:
+        try:
+            last = datetime.fromisoformat(last_reset)
+            if (datetime.now(timezone.utc) - last).total_seconds() < interval * 3600:
+                return
+        except ValueError:
+            pass
+    with app.app_context():
+        try:
+            SaleItem.query.delete()
+            Sale.query.delete()
+            MovementLog.query.delete()
+            PendingOrder.query.delete()
+            CashClose.query.delete()
+            DeletedRecord.query.delete()
+            PurchaseOrder.query.delete()
+            Product.query.delete()
+            Supplier.query.delete()
+            Category.query.delete()
+            admin = User.query.filter_by(username='admin').first()
+            if admin:
+                User.query.filter(User.id != admin.id).delete()
+            db.session.commit()
+            cfg = Config.query.filter_by(key='demo_last_reset').first()
+            if cfg:
+                cfg.value = datetime.now(timezone.utc).isoformat()
+            else:
+                db.session.add(Config(key='demo_last_reset', value=datetime.now(timezone.utc).isoformat()))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 @app.route('/backups')
 @login_required
 def backups():
@@ -3497,6 +3623,10 @@ def init_app():
             'membership_payment_info': 'Alias: nesxocontrol.mp\nCBU: 0000000000000000000000',
             'multi_branch_enabled': 'false',
             'timezone': 'America/Argentina/Buenos_Aires',
+            'demo_mode': '',
+            'demo_reset_interval': '24',
+            'weather_lat': '-34.6037',
+            'weather_lon': '-58.3816',
         }
         for k, v in defaults.items():
             if not Config.query.filter_by(key=k).first():
@@ -3513,7 +3643,8 @@ def init_app():
                          'can_view_charts','can_pay_membership','can_take_orders',
                          'can_view_barcodes','can_view_trash','can_refund_sales',
                          'can_close_cash','can_void_cash_close',
-                         'can_view_pending_sales','can_confirm_payment']
+                         'can_view_pending_sales','can_confirm_payment',
+                         'can_view_backups','can_manage_purchases']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
             'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash','can_void_cash_close','can_confirm_payment') for k in all_perm_keys},

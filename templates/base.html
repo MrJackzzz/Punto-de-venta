@@ -138,6 +138,13 @@
                 <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i></a>
             </div>
         </header>
+        {% if configs.get('demo_mode') == 'on' %}
+        <div class="bg-danger text-white text-center py-2 px-3 small sticky-top" style="z-index:99;">
+            <i class="bi bi-info-circle"></i> <strong>MODO DEMO</strong> — Los datos se borran automáticamente cada {{ configs.get('demo_reset_interval', '24') }}h. No uses este sistema para datos reales.
+            <button class="btn btn-sm btn-light ms-2" onclick="resetDemo()"><i class="bi bi-arrow-repeat"></i> Iniciar Demo</button>
+            <span id="demoResetMsg" class="small ms-2"></span>
+        </div>
+        {% endif %}
         {% endif %}
         {% if membership_warning %}
         <div class="bg-danger text-white text-center py-2 px-3 small sticky-top" style="top:60px;z-index:99;white-space:pre-line;">
@@ -215,7 +222,20 @@
                     if (msgEl) msgEl.textContent = 'Error: ' + data.error;
                     btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card"></i> Pagar con Mercado Pago';
                     return;
-                }
+    }
+    function resetDemo() {
+        const msg = document.getElementById('demoResetMsg');
+        const btn = event.target;
+        btn.disabled = true;
+        msg.textContent = 'Reseteando...';
+        fetch('/demo/reset', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { msg.innerHTML = '<span class="text-success">✓ Demo reseteada. Recargando...</span>'; setTimeout(function() { location.reload(); }, 1000); }
+            else { msg.innerHTML = '<span class="text-danger">Error: ' + data.message + '</span>'; btn.disabled = false; }
+        })
+        .catch(function() { msg.innerHTML = '<span class="text-danger">Error de conexión</span>'; btn.disabled = false; });
+    }
                 window.location.href = data.init_point;
             }).catch(() => {
                 const msgEl = document.getElementById('bannerMpMsg');

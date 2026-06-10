@@ -167,7 +167,7 @@ function searchProductPO() {
     if (!q) { div.style.display = 'none'; return; }
     const matches = products.filter(p => p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q));
     if (matches.length === 0) { div.style.display = 'none'; return; }
-    div.innerHTML = matches.map(p => `<button type="button" class="list-group-item list-group-item-action py-1" onclick="addItemPO(${p.id},'${p.code.replace(/'/g,"\\'")}','${p.name.replace(/'/g,"\\'")}',${p.cost||0})"><small><strong>${p.code}</strong> - ${p.name} ($${p.cost.toFixed(2)})</small></button>`).join('');
+    div.innerHTML = matches.map(p => `<button type="button" class="list-group-item list-group-item-action py-1" onclick="addItemPO(${p.id},'${p.code.replace(/'/g,"\\'")}','${p.name.replace(/'/g,"\\'")}',${p.cost||0},'${p.unit_type||'unit'}')"><small><strong>${p.code}</strong> - ${p.name} ($${p.cost.toFixed(2)})</small></button>`).join('');
     div.style.display = 'block';
 }
 
@@ -176,10 +176,10 @@ document.getElementById('poSearchInput').addEventListener('keydown', function(e)
     if (e.key === 'Enter') { e.preventDefault(); const first = document.querySelector('#poSearchResults .list-group-item'); if (first) first.click(); }
 });
 
-function addItemPO(pid, code, name, cost) {
+function addItemPO(pid, code, name, cost, unit_type) {
     const exist = poItems.find(i => i.product_id === pid);
     if (exist) { exist.quantity = (exist.quantity || 1) + 1; exist.subtotal = exist.quantity * exist.cost; }
-    else { poItems.push({product_id: pid, code: code, name: name, quantity: 1, cost: cost, subtotal: cost}); }
+    else { poItems.push({product_id: pid, code: code, name: name, quantity: 1, cost: cost, subtotal: cost, unit_type: unit_type || 'unit'}); }
     renderPOItems();
     document.getElementById('poSearchInput').value = '';
     document.getElementById('poSearchResults').style.display = 'none';
@@ -199,7 +199,7 @@ function renderPOItems() {
         item.subtotal = subtotal;
         total += subtotal;
         return `<tr><td class="font-monospace small">${item.code}</td><td>${item.name}</td>
-            <td><input type="number" class="form-control form-control-sm" style="width:70px" value="${item.quantity}" min="0.01" step="1" onchange="poItems[${i}].quantity=parseFloat(this.value)||0;renderPOItems()"></td>
+            <td><input type="number" class="form-control form-control-sm" style="width:70px" value="${item.quantity}" min="${(item.unit_type && item.unit_type !== 'unit') ? '0.01' : '1'}" step="${(item.unit_type && item.unit_type !== 'unit') ? '0.01' : '1'}" onchange="poItems[${i}].quantity=parseFloat(this.value)||0;renderPOItems()"></td>
             <td>$<input type="number" class="form-control form-control-sm d-inline" style="width:90px" value="${item.cost}" min="0" step="0.01" onchange="poItems[${i}].cost=parseFloat(this.value)||0;renderPOItems()"></td>
             <td>$${subtotal.toFixed(2)}</td>
             <td><button class="btn btn-sm btn-danger" onclick="removePOItem(${i})"><i class="bi bi-trash3"></i></button></td></tr>`;

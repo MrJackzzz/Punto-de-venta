@@ -222,6 +222,51 @@
     </div>
 </div>
 
+<!-- Modo Demo -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary"><i class="bi bi-laptop"></i> Modo Demo</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input type="hidden" name="demo_mode" value="">
+                    <input type="checkbox" id="demo_mode" name="demo_mode" value="on" class="form-check-input" {{ 'checked' if configs.get('demo_mode') == 'on' else '' }}>
+                    <label for="demo_mode" class="form-check-label">Activar modo Demo</label>
+                </div>
+                <small class="text-muted d-block mt-1">Muestra un banner y auto-resetea los datos cada cierto tiempo. Ideal para que clientes prueben el sistema.</small>
+            </div>
+            <div class="mb-3">
+                <label for="demo_reset_interval" class="form-label">Auto-reset cada (horas)</label>
+                <input type="number" id="demo_reset_interval" name="demo_reset_interval" class="form-control" value="{{ configs.get('demo_reset_interval', '24') }}" min="1" max="168">
+                <small class="text-muted">Cada cuántas horas se borran los datos y vuelven a estado inicial. Default 24h.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Clima -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary"><i class="bi bi-cloud-sun"></i> Clima</div>
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="form_section" value="weather">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="weather_lat" class="form-label">Latitud</label>
+                    <input type="text" id="weather_lat" name="weather_lat" class="form-control" value="{{ configs.get('weather_lat', '-34.6037') }}" placeholder="-34.6037">
+                </div>
+                <div class="col-md-6">
+                    <label for="weather_lon" class="form-label">Longitud</label>
+                    <input type="text" id="weather_lon" name="weather_lon" class="form-control" value="{{ configs.get('weather_lon', '-58.3816') }}" placeholder="-58.3816">
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">Coordenadas para mostrar el clima en el Dashboard. Por defecto Buenos Aires. Podés buscar las de tu ciudad en Google Maps.</small>
+            <button type="submit" class="btn btn-primary mt-2">Guardar</button>
+        </form>
+    </div>
+</div>
+
 <!-- Historial Admin -->
 <div class="card shadow-sm mb-4">
     <div class="card-header card-header-primary">Historial</div>
@@ -395,6 +440,7 @@
 </div>
 
 <hr class="my-4">
+{% if configs.get('demo_mode') != 'on' %}
 <div class="card shadow-sm border-danger">
     <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-triangle"></i> Resetear Sistema</div>
     <div class="card-body">
@@ -404,4 +450,5 @@
         </form>
     </div>
 </div>
+{% endif %}
 {% endblock %}

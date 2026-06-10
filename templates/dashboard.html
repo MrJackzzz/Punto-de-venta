@@ -81,7 +81,7 @@
 {% endif %}
 
 <div class="row g-3 mt-2">
-    <div class="col-md-6 col-12">
+    <div class="col-md-4 col-12">
         <div class="card shadow-sm">
             <div class="card-header">Acceso Rápido</div>
             <div class="card-body">
@@ -100,7 +100,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6 col-12">
+    <div class="col-md-4 col-12">
         <div class="card shadow-sm">
             <div class="card-header">Tu Rol</div>
             <div class="card-body">
@@ -124,6 +124,14 @@
                     <li>Cálculo de vuelto</li>
                     {% endif %}
                 </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-12">
+        <div class="card shadow-sm">
+            <div class="card-header"><i class="bi bi-cloud-sun"></i> Clima Actual</div>
+            <div class="card-body text-center" id="weatherWidget">
+                <div class="py-3 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>
             </div>
         </div>
     </div>
@@ -234,5 +242,53 @@ function refreshStats() {
 })();
 
 setInterval(refreshStats, 5000);
+
+function loadWeather() {
+    const lat = '{{ configs.get("weather_lat", "-34.6037") }}';
+    const lon = '{{ configs.get("weather_lon", "-58.3816") }}';
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current_weather=true&timezone=auto')
+        .then(r => r.json())
+        .then(d => {
+            const w = d.current_weather;
+            if (!w) return;
+            const code = w.weathercode;
+            const temp = w.temperature;
+            const iconMap = {
+                0: 'bi-sun', 1: 'bi-sun', 2: 'bi-cloud-sun', 3: 'bi-cloud',
+                45: 'bi-cloud-fog', 48: 'bi-cloud-fog',
+                51: 'bi-cloud-drizzle', 53: 'bi-cloud-drizzle', 55: 'bi-cloud-drizzle',
+                61: 'bi-cloud-rain', 63: 'bi-cloud-rain', 65: 'bi-cloud-rain-heavy',
+                71: 'bi-snow', 73: 'bi-snow', 75: 'bi-snow',
+                80: 'bi-cloud-rain', 81: 'bi-cloud-rain', 82: 'bi-cloud-rain-heavy',
+                95: 'bi-cloud-lightning-rain', 96: 'bi-cloud-lightning-rain', 99: 'bi-cloud-lightning-rain'
+            };
+            const emojiMap = {
+                0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+                45: '🌫️', 48: '🌫️',
+                51: '🌦️', 53: '🌦️', 55: '🌦️',
+                61: '🌧️', 63: '🌧️', 65: '🌧️',
+                71: '❄️', 73: '❄️', 75: '❄️',
+                80: '🌦️', 81: '🌧️', 82: '🌧️',
+                95: '⛈️', 96: '⛈️', 99: '⛈️'
+            };
+            const icon = iconMap[code] || 'bi-question-circle';
+            const emoji = emojiMap[code] || '❓';
+            const desc = {0:'Despejado',1:'May. despejado',2:'Parcial nubl.',3:'Nublado',
+                45:'Niebla',48:'Niebla',51:'Lluvia fina',53:'Lluvia fina',55:'Lluvia fina',
+                61:'Lluvia',63:'Lluvia',65:'Lluvia fuerte',
+                71:'Nieve',73:'Nieve',75:'Nieve',
+                80:'Chubascos',81:'Chubascos',82:'Chubascos',
+                95:'Tormenta',96:'Tormenta',99:'Tormenta'}[code] || 'Desconocido';
+            const color = code >= 95 ? '#ee6c4d' : code >= 61 ? '#3d5a80' : '#98c1d9';
+            document.getElementById('weatherWidget').innerHTML =
+                '<div style="font-size:2.5rem;">' + emoji + '</div>' +
+                '<div class="fs-3 fw-bold" style="color:' + color + ';">' + temp + '°C</div>' +
+                '<div class="text-muted small">' + desc + '</div>';
+        })
+        .catch(function() {
+            document.getElementById('weatherWidget').innerHTML = '<div class="text-muted py-3"><i class="bi bi-exclamation-triangle"></i> No disponible</div>';
+        });
+}
+loadWeather();
 </script>
 {% endblock %}

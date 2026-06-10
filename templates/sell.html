@@ -11,7 +11,7 @@
                 <div class="row g-2 mb-2">
                     <div class="col-4">
                         <label for="scanQty" class="form-label small mb-1">Cantidad</label>
-                        <input type="number" id="scanQty" class="form-control" value="1" min="0.1" step="0.1">
+                        <input type="number" id="scanQty" class="form-control" value="1" min="1" step="1">
                     </div>
                     <div class="col-8">
                         <label for="manualCode" class="form-label small mb-1">Código de barras</label>
@@ -195,20 +195,16 @@ function addByCode() {
 
 function changeQty(index, delta) {
     const item = cart[index];
-    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.1 : 1;
+    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.01 : 1;
     item.quantity = Math.max(step, item.quantity + delta * step);
     item.subtotal = item.quantity * item.unit_price;
     renderCart();
 }
 
-function removeFromCart(index) {
-    cart.splice(index, 1);
-    renderCart();
-}
-
-function setCartQty(index, val) {
-    const item = cart[index];
-    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.1 : 1;
+function setCartQty(i, val) {
+    const item = cart[i];
+    if (!item) return;
+    const step = (item.unit_type && item.unit_type !== 'unit') ? 0.01 : 1;
     const qty = parseFloat(val) || step;
     item.quantity = Math.max(step, qty);
     item.subtotal = item.quantity * item.unit_price;
@@ -362,7 +358,7 @@ function renderCart() {
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, -1)">−</button>
                 <div class="d-flex align-items-center">
-                    <input type="number" class="form-control form-control-sm text-center" style="width:65px;" value="${item.quantity}" min="${(item.unit_type && item.unit_type !== 'unit') ? '0.1' : '1'}" step="${(item.unit_type && item.unit_type !== 'unit') ? '0.1' : '1'}" onchange="setCartQty(${i}, this.value)" onfocus="this.select()">
+                    <input type="number" class="form-control form-control-sm text-center" style="width:65px;" value="${item.quantity}" min="${(item.unit_type && item.unit_type !== 'unit') ? '0.01' : '1'}" step="${(item.unit_type && item.unit_type !== 'unit') ? '0.01' : '1'}" onchange="setCartQty(${i}, this.value)" onfocus="this.select()">
                     ${item.unit_type && item.unit_type !== 'unit' ? '<span class="ms-1 small text-muted">' + item.unit_type + '</span>' : ''}
                 </div>
                 <button class="btn btn-sm btn-secondary fw-bold" onclick="changeQty(${i}, 1)">+</button>
