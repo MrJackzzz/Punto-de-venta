@@ -77,6 +77,11 @@ def allowed_file(filename):
 
 
 def get_config(key, default=''):
+    try:
+        if hasattr(g, '_configs_cached') and key in g._configs_cached:
+            return g._configs_cached[key] or default
+    except RuntimeError:
+        pass
     c = Config.query.filter_by(key=key).first()
     return c.value if c and c.value else default
 
@@ -96,7 +101,10 @@ def get_instance_id():
 
 @app.context_processor
 def inject_globals():
-    logo = get_config('logo_filename', '')
+    if not hasattr(g, '_configs_cached'):
+        g._configs_cached = {c.key: c.value for c in Config.query.all()}
+    cfg = g._configs_cached
+    logo = cfg.get('logo_filename', '')
     from flask import url_for
     if logo and logo.startswith('data:'):
         logo_src = logo
@@ -104,16 +112,16 @@ def inject_globals():
         logo_src = url_for('static', filename=logo)
     else:
         logo_src = ''
-    fav = get_config('favicon_data', '')
+    fav = cfg.get('favicon_data', '')
     return {
-        'business_name': get_config('business_name', 'NexoControl'),
-        'local_name': get_config('local_name', ''),
-        'logo_url': get_config('logo_filename', ''),
+        'business_name': cfg.get('business_name', 'NexoControl'),
+        'local_name': cfg.get('local_name', ''),
+        'logo_url': cfg.get('logo_filename', ''),
         'logo_src': logo_src,
         'favicon_data': fav if fav and fav.startswith('data:') else '',
         'now': lambda: datetime.now(AR_TZ),
         'membership_warning': getattr(g, 'membership_warning', ''),
-        'configs': {c.key: c.value for c in Config.query.all()},
+        'configs': cfg,
     }
 
 _last_bg_check = 0
@@ -423,7 +431,7 @@ def products():
         flash('No tienes permiso para ver productos.', 'danger')
         return redirect(url_for('dashboard'))
     threshold = get_low_stock_threshold()
-    products_list = Product.query.order_by(Product.name).all()
+    products_list = Product.query.order_by(Product.name).limit(1000).all()
     suppliers = Supplier.query.order_by(Supplier.name).all()
     categories = Category.query.order_by(Category.name).all()
     unit_types = ['unit', 'kg', 'g', 'liter', 'ml', 'm', 'cm', 'dozen', 'pack']
@@ -1195,7 +1203,7 @@ def cash_close_page():
     total_refunds = sum(abs(s.total) for s in refunds_today)
     today_sales_qty = len(sales)
     last_close = CashClose.query.order_by(CashClose.closed_at.desc()).first()
-    all_closes = CashClose.query.order_by(CashClose.closed_at.desc()).all()
+    all_closes = CashClose.query.order_by(CashClose.closed_at.desc()).limit(200).all()
     return render_template('cash_close.html', cash_sales=cash_sales, card_sales=card_sales,
                            transfer_sales=transfer_sales, mp_sales=mp_sales,
                            total_sales=total_sales, total_refunds=total_refunds,
@@ -1610,6 +1618,28 @@ def api_send_ticket_email(id):
         return jsonify({'success': True, 'message': 'Ticket enviado por email'})
     else:
         return jsonify({'error': 'No se pudo enviar el email. Verificá la configuración SMTP en Admin > Config.'}), 500
+
+
+@app.route('/api/products/send-email', methods=['POST'])
+@login_required
+def api_send_products_email():
+    if not current_user.can_view_products():
+        return jsonify({'error': 'Permiso denegado'}), 403
+    data = request.get_json()
+    email = (data.get('email') or '').strip()
+    if not email:
+        return jsonify({'error': 'Email requerido'}), 400
+    products_list = Product.query.order_by(Product.name).all()
+    rows = ''.join(f'<tr><td>{p.code}</td><td>{p.name}</td><td>${p.price:,.2f}</td><td>{p.stock}</td></tr>'
+                    for p in products_list)
+    html = f'''<h3>Lista de Productos</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;font-family:sans-serif;">
+<thead style="background:#3d5a80;color:#fff;"><tr><th>Código</th><th>Nombre</th><th>Precio</th><th>Stock</th></tr></thead>
+<tbody>{rows}</tbody></table>
+<p style="color:#888;font-size:12px;margin-top:20px;">Enviado desde NexoControl</p>'''
+    if send_email(email, 'Lista de Productos', html):
+        return jsonify({'success': True, 'message': 'Lista enviada por email'})
+    return jsonify({'error': 'No se pudo enviar. Verificá la configuración SMTP en Config.'}), 500
 
 
 @app.route('/suppliers')
@@ -2482,9 +2512,9 @@ def purchase_orders():
         flash('Permiso denegado.', 'danger')
         return redirect(url_for('dashboard'))
     configs = {c.key: c.value for c in Config.query.all()}
-    orders = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).all()
+    orders = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).limit(200).all()
     suppliers = Supplier.query.order_by(Supplier.name).all()
-    products = Product.query.order_by(Product.name).all()
+    products = Product.query.order_by(Product.name).limit(1000).all()
     products_data = [{'id': p.id, 'code': p.code, 'name': p.name, 'cost': p.cost, 'unit_type': p.unit_type} for p in products]
     suppliers_data = [{'id': s.id, 'name': s.name, 'email': s.email} for s in suppliers]
     orders_data = []
@@ -3827,6 +3857,21 @@ def init_app():
                 _mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(_ext, 'image/png')
                 logo_cfg.value = f'data:{_mime};base64,{_data}'
                 db.session.commit()
+
+        # Create missing indexes for performance
+        for idx_name, table, cols in [
+            ('ix_sale_created_at', 'sale', 'created_at'),
+            ('ix_sale_payment_status', 'sale', 'payment_status'),
+            ('ix_sale_item_sale_id', 'sale_item', 'sale_id'),
+            ('ix_sale_item_product_id', 'sale_item', 'product_id'),
+            ('ix_log_created_at', 'movement_log', 'created_at'),
+            ('ix_product_stock', 'product', 'stock'),
+        ]:
+            try:
+                db.session.execute(db.text(f'CREATE INDEX IF NOT EXISTS {idx_name} ON {table} ({cols})'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin', active=True)

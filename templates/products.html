@@ -3,7 +3,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="text-primary">Productos</h2>
-    <button class="btn btn-primary" onclick="openAddProductModal()">+ Nuevo Producto</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-info" onclick="openModal('sendProductsModal')"><i class="bi bi-envelope"></i> Enviar lista por email</button>
+        <button class="btn btn-primary" onclick="openAddProductModal()">+ Nuevo Producto</button>
+    </div>
 </div>
 
 <div class="card shadow-sm">
@@ -328,8 +331,8 @@ function filterProducts() {
     if (sort === 'stock_asc') {
         const visible = rows.filter(r => r.style.display !== 'none');
         visible.sort((a, b) => {
-            const aVal = parseFloat(a.cells[6].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
-            const bVal = parseFloat(b.cells[6].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
+            const aVal = parseFloat(a.cells[8].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
+            const bVal = parseFloat(b.cells[8].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
             return aVal - bVal;
         });
         visible.forEach(r => tbody.appendChild(r));
@@ -361,5 +364,58 @@ function startScanner() {
 }
 
 document.addEventListener('DOMContentLoaded', saveOriginalOrder);
+</script>
+
+<div class="modal fade" id="sendProductsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-envelope"></i> Enviar lista de productos</h5>
+                <button type="button" class="btn-close" onclick="closeModal('sendProductsModal')"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Se enviará un listado completo de todos los productos al siguiente email:</p>
+                <div class="mb-3">
+                    <label class="form-label">Email del cliente</label>
+                    <input type="email" id="sendProductsEmail" class="form-control" placeholder="cliente@ejemplo.com">
+                </div>
+                <div id="sendProductsMsg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('sendProductsModal')">Cancelar</button>
+                <button class="btn btn-primary" id="sendProductsBtn" onclick="sendProductList()"><i class="bi bi-send"></i> Enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendProductList() {
+    const email = document.getElementById('sendProductsEmail').value.trim();
+    const msg = document.getElementById('sendProductsMsg');
+    const btn = document.getElementById('sendProductsBtn');
+    if (!email) { msg.innerHTML = '<span class="text-danger">Ingresá un email</span>'; return; }
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass"></i> Enviando...';
+    msg.innerHTML = '';
+    fetch('/api/products/send-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Lista enviada</span>';
+            setTimeout(function() { closeModal('sendProductsModal'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Enviar'; }, 1500);
+        } else {
+            msg.innerHTML = '<span class="text-danger">' + (data.error || 'Error') + '</span>';
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Enviar';
+        }
+    })
+    .catch(function() {
+        msg.innerHTML = '<span class="text-danger">Error de conexión</span>';
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Enviar';
+    });
+}
 </script>
 {% endblock %}
