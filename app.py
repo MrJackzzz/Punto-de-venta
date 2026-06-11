@@ -1761,6 +1761,30 @@ def confidencialidad_pdf():
                            pdf_mode=True)
 
 
+@app.route('/admin/onboarding/<filename>/confidencialidad')
+@login_required
+def admin_confidencialidad(filename):
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    fpath = os.path.join(ONBOARDING_DIR, filename)
+    if not os.path.exists(fpath):
+        flash('Archivo no encontrado.', 'danger')
+        return redirect(url_for('admin_onboarding'))
+    with open(fpath, 'r', encoding='utf-8') as fh:
+        data = json.load(fh)
+    cfg = Config.query.all()
+    configs = {c.key: c.value for c in cfg}
+    return render_template('confidencialidad.html',
+                           business_name=configs.get('business_name', 'SmartPost'),
+                           cliente=data.get('business_name', ''),
+                           cliente_titular=data.get('owner_name', ''),
+                           cliente_email=data.get('email', ''),
+                           cliente_direccion=data.get('address', ''),
+                           cliente_cuit=data.get('cuit', ''),
+                           now=lambda: datetime.now(AR_TZ))
+
+
 @app.route('/suppliers')
 @login_required
 def suppliers():

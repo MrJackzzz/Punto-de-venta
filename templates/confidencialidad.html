@@ -33,14 +33,26 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
 <body>
 <div class="no-print text-center mb-3">
     <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir / Guardar como PDF</button>
+    {% if cliente %}
+    <a href="{{ url_for('admin_onboarding') }}" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> Volver a Formularios</a>
+    {% else %}
     <a href="/onboarding" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> Volver al formulario</a>
+    {% endif %}
 </div>
 <div class="paper">
     <h1>Acuerdo de Confidencialidad</h1>
     <p class="subtitle">Protección de datos del cliente — {{ business_name or 'SmartPost' }}</p>
     <div class="fecha">Fecha: {{ now().strftime('%d/%m/%Y') if now else '' }}</div>
 
-    <p>El presente Acuerdo de Confidencialidad (en adelante, el "Acuerdo") es suscrito entre <strong>{{ business_name or 'SmartPost' }}</strong> (en adelante, el "Proveedor") y el cliente que completa el formulario de registro (en adelante, el "Cliente"), con el objeto de establecer los términos y condiciones bajo los cuales se protegerá la información compartida entre las partes.</p>
+    <p>El presente Acuerdo de Confidencialidad (en adelante, el "Acuerdo") es suscrito entre <strong>{{ business_name or 'SmartPost' }}</strong> (en adelante, el "Proveedor") y <strong>{{ cliente or 'el cliente' }}</strong>{% if cliente_titular %} representado por <strong>{{ cliente_titular }}</strong>{% endif %} (en adelante, el "Cliente"), con el objeto de establecer los términos y condiciones bajo los cuales se protegerá la información compartida entre las partes.</p>
+
+    <table class="table table-sm table-borderless" style="font-size:.85rem;margin-bottom:18px;">
+        {% if cliente %}<tr><td class="text-muted" style="width:120px;">Cliente</td><td class="fw-medium">{{ cliente }}</td></tr>{% endif %}
+        {% if cliente_titular %}<tr><td class="text-muted">Titular</td><td>{{ cliente_titular }}</td></tr>{% endif %}
+        {% if cliente_cuit %}<tr><td class="text-muted">CUIT</td><td>{{ cliente_cuit }}</td></tr>{% endif %}
+        {% if cliente_direccion %}<tr><td class="text-muted">Dirección</td><td>{{ cliente_direccion }}</td></tr>{% endif %}
+        {% if cliente_email %}<tr><td class="text-muted">Email</td><td>{{ cliente_email }}</td></tr>{% endif %}
+    </table>
 
     <h2>1. Definición de Información Confidencial</h2>
     <p>Se considera Información Confidencial toda aquella información proporcionada por el Cliente al Proveedor a través del formulario de configuración, incluyendo pero no limitándose a: datos del negocio, nombres de titulares, direcciones, números de contacto, correos electrónicos, CUIT/CUIL, credenciales de acceso a servicios de terceros (SMTP, Mercado Pago, Google Drive), preferencias del sistema, y cualquier otro dato que el Cliente proporcione durante la vigencia de la relación comercial.</p>
@@ -78,12 +90,23 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
 
     <div class="firmas">
         <div class="firma-box">
-            <div class="line">{{ business_name or 'SmartPost' }}</div>
+            <div class="fw-semibold mb-2" style="font-size:.85rem;">{{ business_name or 'SmartPost' }}</div>
+            <div style="margin-top:44px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">Firma</div>
+            <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">Aclaración</div>
+            <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">DNI</div>
         </div>
         <div class="firma-box">
-            <div class="line">Cliente</div>
+            <div class="fw-semibold mb-2" style="font-size:.85rem;">{{ cliente or 'Cliente' }}</div>
+            <div style="margin-top:44px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">Firma</div>
+            <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">Aclaración</div>
+            <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">DNI</div>
         </div>
     </div>
+    {% if not pdf_mode %}
+    <div style="margin-top:30px;padding-top:16px;border-top:1px solid #dee2e6;font-size:.82rem;color:#868e96;">
+        <p class="mb-1"><i class="bi bi-info-circle"></i> Imprimí este documento, firmalo a mano y entregale una copia al cliente. El cliente también debe firmar.</p>
+    </div>
+    {% endif %}
 </div>
 <footer>
     <i class="bi bi-shield-lock"></i> Documento generado electrónicamente &mdash; {{ now().strftime('%d/%m/%Y %H:%M') if now else '' }}
