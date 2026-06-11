@@ -190,6 +190,31 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
             </div>
         </div>
 
+        <!-- 7. Acuerdo de Confidencialidad -->
+        <div class="card form-card border-{{ 'danger' if error_confidencialidad else 'primary' }}">
+            <div class="card-header"><span class="section-icon" style="background:#000;"><i class="bi bi-shield-lock"></i></span> Acuerdo de Confidencialidad</div>
+            <div class="card-body">
+                <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;max-height:220px;overflow-y:auto;font-size:.82rem;line-height:1.5;color:#495057;margin-bottom:12px;">
+                    <p class="fw-semibold mb-2" style="color:#293241;">Resumen del Acuerdo:</p>
+                    <p>Los datos proporcionados en este formulario son de carácter confidencial. El proveedor se compromete a:</p>
+                    <ul class="mb-0" style="padding-left:18px;">
+                        <li>Utilizar la información <strong>exclusivamente</strong> para configurar y operar el sistema contratado.</li>
+                        <li><strong>No divulgar</strong> los datos a terceros sin autorización expresa del cliente.</li>
+                        <li>Implementar <strong>medidas de seguridad</strong> para proteger la información contra accesos no autorizados.</li>
+                        <li>Permitir al cliente <strong>acceder, rectificar y eliminar</strong> sus datos en cualquier momento.</li>
+                    </ul>
+                    <p class="mb-0 mt-2"><a href="/onboarding/confidencialidad" target="_blank" class="text-decoration-none"><i class="bi bi-file-text"></i> Ver acuerdo completo &rarr;</a></p>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="confidencialidad_aceptado" id="confidencialidad_aceptado" class="form-check-input" value="on" required>
+                    <label class="form-check-label fw-medium" for="confidencialidad_aceptado" style="font-size:.85rem;">
+                        He leído y acepto el <a href="/onboarding/confidencialidad" target="_blank">Acuerdo de Confidencialidad</a>
+                    </label>
+                    <div class="form-text">Es necesario aceptar para enviar el formulario.</div>
+                </div>
+            </div>
+        </div>
+
         <div class="text-center mb-5">
             <button type="submit" class="btn btn-submit btn-lg text-white"><i class="bi bi-send-check"></i> Enviar formulario</button>
             <p class="text-muted small mt-2">Los datos se guardan de forma segura y solo los ve el administrador.</p>

@@ -115,12 +115,14 @@ def inject_globals():
     else:
         logo_src = ''
     fav = cfg.get('favicon_data', '')
+    if fav and not fav.startswith('data:') and not fav.startswith('http'):
+        fav = ''
     return {
         'business_name': cfg.get('business_name', 'NexoControl'),
         'local_name': cfg.get('local_name', ''),
         'logo_url': cfg.get('logo_filename', ''),
         'logo_src': logo_src,
-        'favicon_data': fav if fav and fav.startswith('data:') else '',
+        'favicon_data': fav,
         'now': lambda: datetime.now(AR_TZ),
         'membership_warning': getattr(g, 'membership_warning', ''),
         'configs': cfg,
@@ -1699,6 +1701,8 @@ def onboarding_submit():
         'mp_access_token': request.form.get('mp_access_token', ''),
         'drive_enabled': 'on' if request.form.get('drive_enabled') else '',
         'notes': request.form.get('notes', ''),
+        'confidencialidad_aceptado': True if request.form.get('confidencialidad_aceptado') else False,
+        'confidencialidad_fecha': datetime.now().strftime('%Y-%m-%d %H:%M:%S') if request.form.get('confidencialidad_aceptado') else '',
     }
     filename = f'onboarding_{ts}.json'
     filepath = os.path.join(ONBOARDING_DIR, filename)
@@ -1736,6 +1740,25 @@ def admin_onboarding_delete(filename):
         os.remove(fpath)
         flash('Eliminado.', 'success')
     return redirect(url_for('admin_onboarding'))
+
+
+@app.route('/onboarding/confidencialidad')
+def confidencialidad():
+    cfg = Config.query.all()
+    configs = {c.key: c.value for c in cfg}
+    return render_template('confidencialidad.html',
+                           business_name=configs.get('business_name', 'SmartPost'),
+                           now=lambda: datetime.now(AR_TZ))
+
+
+@app.route('/onboarding/confidencialidad/pdf')
+def confidencialidad_pdf():
+    cfg = Config.query.all()
+    configs = {c.key: c.value for c in cfg}
+    return render_template('confidencialidad.html',
+                           business_name=configs.get('business_name', 'SmartPost'),
+                           now=lambda: datetime.now(AR_TZ),
+                           pdf_mode=True)
 
 
 @app.route('/suppliers')
@@ -3195,6 +3218,21 @@ def delete_favicon():
         db.session.commit()
     flash('Favicon eliminado.', 'success')
     return redirect(url_for('settings'))
+
+
+@app.route('/favicon.ico')
+def favicon_ico():
+    cfg = Config.query.filter_by(key='favicon_data').first()
+    if cfg and cfg.value and cfg.value.startswith('data:'):
+        import base64
+        try:
+            header, b64 = cfg.value.split(',', 1)
+            mime = header.replace('data:', '').replace(';base64', '').strip()
+            data = base64.b64decode(b64)
+            return Response(data, mimetype=mime)
+        except Exception:
+            pass
+    return Response('', status=204)
 
 
 BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')

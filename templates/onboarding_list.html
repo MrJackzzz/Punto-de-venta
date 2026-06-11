@@ -87,6 +87,12 @@ function copyOnboardingLink() {
                         <p class="small text-muted">Habilitado</p>
                     </div>
                     {% endif %}
+                    {% if s.confidencialidad_aceptado %}
+                    <div class="col-12">
+                        <h6 class="text-success"><i class="bi bi-shield-check"></i> Confidencialidad</h6>
+                        <p class="small text-success">Aceptada el {{ s.confidencialidad_fecha or '—' }}</p>
+                    </div>
+                    {% endif %}
                     {% if s.notes %}
                     <div class="col-12">
                         <h6 class="text-primary"><i class="bi bi-chat-dots"></i> Notas</h6>

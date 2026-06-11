@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acuerdo de Confidencialidad</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { font-family: 'Inter', sans-serif; }
+body { background: #f0f4f8; padding: 40px 0; }
+.paper { background: #fff; max-width: 800px; margin: 0 auto; padding: 50px 60px; border-radius: 4px; box-shadow: 0 2px 20px rgba(0,0,0,.06); }
+h1 { font-size: 1.4rem; font-weight: 700; color: #3d5a80; text-align: center; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+.subtitle { text-align: center; color: #868e96; font-size: .85rem; margin-bottom: 30px; }
+.fecha { text-align: right; font-size: .85rem; color: #495057; margin-bottom: 24px; }
+h2 { font-size: 1rem; font-weight: 600; color: #293241; margin-top: 22px; margin-bottom: 8px; }
+p { font-size: .88rem; line-height: 1.6; color: #495057; margin-bottom: 10px; text-align: justify; }
+ul { font-size: .88rem; line-height: 1.6; color: #495057; padding-left: 20px; }
+ul li { margin-bottom: 6px; }
+.firmas { margin-top: 40px; display: flex; justify-content: space-between; gap: 40px; }
+.firma-box { flex: 1; }
+.firma-box .line { border-top: 1px solid #495057; margin-top: 50px; padding-top: 8px; font-size: .8rem; text-align: center; color: #868e96; }
+footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
+@media print {
+    body { background: #fff; padding: 0; }
+    .paper { box-shadow: none; padding: 40px 50px; }
+    .no-print { display: none !important; }
+    @page { margin: 1.5cm; }
+}
+</style>
+</head>
+<body>
+<div class="no-print text-center mb-3">
+    <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir / Guardar como PDF</button>
+    <a href="/onboarding" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> Volver al formulario</a>
+</div>
+<div class="paper">
+    <h1>Acuerdo de Confidencialidad</h1>
+    <p class="subtitle">Protección de datos del cliente — {{ business_name or 'SmartPost' }}</p>
+    <div class="fecha">Fecha: {{ now().strftime('%d/%m/%Y') if now else '' }}</div>
+
+    <p>El presente Acuerdo de Confidencialidad (en adelante, el "Acuerdo") es suscrito entre <strong>{{ business_name or 'SmartPost' }}</strong> (en adelante, el "Proveedor") y el cliente que completa el formulario de registro (en adelante, el "Cliente"), con el objeto de establecer los términos y condiciones bajo los cuales se protegerá la información compartida entre las partes.</p>
+
+    <h2>1. Definición de Información Confidencial</h2>
+    <p>Se considera Información Confidencial toda aquella información proporcionada por el Cliente al Proveedor a través del formulario de configuración, incluyendo pero no limitándose a: datos del negocio, nombres de titulares, direcciones, números de contacto, correos electrónicos, CUIT/CUIL, credenciales de acceso a servicios de terceros (SMTP, Mercado Pago, Google Drive), preferencias del sistema, y cualquier otro dato que el Cliente proporcione durante la vigencia de la relación comercial.</p>
+
+    <h2>2. Obligaciones del Proveedor</h2>
+    <ul>
+        <li><strong>Uso limitado:</strong> La Información Confidencial será utilizada exclusivamente para los fines de configurar, operar y mantener el sistema de gestión contratado por el Cliente.</li>
+        <li><strong>No divulgación:</strong> El Proveedor se obliga a no divulgar, publicar, ceder, transferir o de cualquier otra forma poner a disposición de terceros la Información Confidencial del Cliente, salvo autorización expresa por escrito del Cliente o requerimiento judicial.</li>
+        <li><strong>Seguridad:</strong> El Proveedor implementará medidas de seguridad técnicas y organizativas adecuadas para proteger la Información Confidencial contra accesos no autorizados, pérdida, alteración o destrucción.</li>
+        <li><strong>Acceso restringido:</strong> El acceso a la Información Confidencial estará limitado únicamente al personal del Proveedor que necesite conocerla para prestar los servicios contratados.</li>
+        <li><strong>Almacenamiento:</strong> Los datos se almacenan en servidores seguros con acceso restringido por autenticación y contraseña.</li>
+    </ul>
+
+    <h2>3. Excepciones</h2>
+    <p>No se considerará Información Confidencial aquella que:</p>
+    <ul>
+        <li>Sea o se vuelva de dominio público sin que medie incumplimiento del Proveedor.</li>
+        <li>Sea requerida por ley, autoridad judicial o gubernamental competente.</li>
+        <li>Haya sido desarrollada de forma independiente por el Proveedor sin uso de la Información Confidencial del Cliente.</li>
+    </ul>
+
+    <h2>4. Vigencia</h2>
+    <p>Este Acuerdo entra en vigor en la fecha de aceptación por parte del Cliente y permanecerá vigente durante la relación comercial entre las partes, e incluso después de su terminación, manteniéndose las obligaciones de confidencialidad por un período adicional de dos (2) años.</p>
+
+    <h2>5. Derechos del Cliente</h2>
+    <ul>
+        <li><strong>Acceso:</strong> El Cliente puede solicitar en cualquier momento una copia de los datos almacenados.</li>
+        <li><strong>Rectificación:</strong> El Cliente puede solicitar la corrección de datos inexactos.</li>
+        <li><strong>Cancelación:</strong> El Cliente puede solicitar la eliminación de sus datos una vez finalizada la relación comercial.</li>
+        <li><strong>Portabilidad:</strong> El Cliente puede solicitar la exportación de sus datos en formato estándar.</li>
+    </ul>
+
+    <h2>6. Legislación Aplicable</h2>
+    <p>Este Acuerdo se rige por las leyes de la República Argentina. Para cualquier controversia derivada del mismo, las partes se someten a la jurisdicción de los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.</p>
+
+    <div class="firmas">
+        <div class="firma-box">
+            <div class="line">{{ business_name or 'SmartPost' }}</div>
+        </div>
+        <div class="firma-box">
+            <div class="line">Cliente</div>
+        </div>
+    </div>
+</div>
+<footer>
+    <i class="bi bi-shield-lock"></i> Documento generado electrónicamente &mdash; {{ now().strftime('%d/%m/%Y %H:%M') if now else '' }}
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
