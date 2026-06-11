@@ -161,6 +161,7 @@ function saveContent() {
     _pendingChanges[key]['content'] = html;
     document.getElementById('content-' + key).innerHTML = html;
     closeModal('contentModal');
+    saveManual();
 }
 
 function toggleSection(key) {
