@@ -172,6 +172,7 @@ function toggleSection(key) {
     visBtn.innerHTML = '<i class="bi ' + (newVis === 'hidden' ? 'bi-eye-slash' : 'bi-eye') + '"></i>';
     _pendingChanges[key] = _pendingChanges[key] || {};
     _pendingChanges[key]['visible'] = newVis;
+    saveManual();
 }
 
 function saveManual() {
@@ -190,14 +191,14 @@ function saveManual() {
     .then(data => {
         if (data.success) {
             _pendingChanges = {};
-            alert('Cambios guardados.');
+            if (btn) { btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardado'; }
         } else {
             alert('Error: ' + (data.error || 'desconocido'));
         }
     })
     .catch(function() { alert('Error de conexión'); })
     .finally(function() {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save"></i> Guardar cambios'; }
+        if (btn) { setTimeout(function() { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save"></i> Guardar cambios'; }, 1500); }
     });
 }
 </script>
