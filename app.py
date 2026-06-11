@@ -3000,10 +3000,12 @@ def settings():
 
     if request.method == 'POST':
         # Only save keys that are actually present in the form (each form has its own fields)
+        processed = set()
         for key in request.form:
-            if key in ('csrf_token', 'form_section'):
+            if key in ('csrf_token', 'form_section') or key in processed:
                 continue
-            val = request.form.get(key, '').strip()
+            vals = request.form.getlist(key)
+            val = vals[-1].strip() if vals else ''
             config = Config.query.filter_by(key=key).first()
             if config:
                 config.value = val
