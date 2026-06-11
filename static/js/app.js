@@ -53,7 +53,7 @@ document.addEventListener('keydown', function(e) {
 
 document.addEventListener('input', function(e) {
     const tag = e.target.tagName;
-    if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page') && !e.target.closest('.login-form')) {
+    if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page') && !e.target.closest('.login-form') && !e.target.closest('.login-page')) {
         if (e.target.type === 'password') return;
         if (e.target.type === 'text' || e.target.type === 'search' || !e.target.type) {
             if (!e.target.classList.contains('no-upper')) {
