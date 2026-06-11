@@ -2711,6 +2711,7 @@ def api_manual_save():
     else:
         existing = {k: dict(v) for k, v in MANUAL_DEFAULT_SECTIONS.items()}
         c = Config(key='manual_sections', value=json.dumps(existing, ensure_ascii=False))
+        db.session.add(c)
     for key, val in data.items():
         if key in existing:
             existing[key].update(val)
@@ -3036,6 +3037,7 @@ def admin_reset_system():
         SaleItem.query.delete()
         Sale.query.delete()
         MovementLog.query.delete()
+        PurchaseOrder.query.delete()
         PendingOrder.query.delete()
         CashClose.query.delete()
         DeletedRecord.query.delete()
@@ -3063,9 +3065,12 @@ def admin_clear_section():
             Product.query.delete()
             log_movement(current_user, 'bulk_delete', 'Todos los productos eliminados')
         elif section == 'suppliers':
+            Product.query.filter(Product.supplier_id.isnot(None)).update({Product.supplier_id: None})
+            PurchaseOrder.query.delete()
             Supplier.query.delete()
             log_movement(current_user, 'bulk_delete', 'Todos los proveedores eliminados')
         elif section == 'categories':
+            Product.query.filter(Product.category_id.isnot(None)).update({Product.category_id: None})
             Category.query.delete()
             log_movement(current_user, 'bulk_delete', 'Todas las categorías eliminadas')
         elif section == 'cash_closes':
