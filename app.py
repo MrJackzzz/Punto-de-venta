@@ -2496,10 +2496,100 @@ def api_cancel_order(order_id):
 # ─── Manual de uso ───────────────────
 
 
+MANUAL_DEFAULT_SECTIONS = {
+    'mDash': {'title': 'Dashboard (Inicio)', 'icon': 'speedometer2', 'color': '#3d5a80',
+        'content': '<p>Al iniciar sesión ves el panel principal con <strong>7 tarjetas</strong> que resumen el estado del negocio.</p><div class=\"row g-2 mb-3\"><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#3d5a80;\">📦 Productos</span></div><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#98c1d9;color:#000;\">🏷️ Categorías</span></div><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#ee6c4d;\">⚠️ Stock bajo</span></div><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#293241;\">🔴 Stock crítico</span></div><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#3d5a80;\">💰 Ventas hoy</span></div><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#98c1d9;color:#000;\">📊 Ingresos hoy</span></div><div class=\"col-6 col-md-3\"><span class=\"badge d-block p-2\" style=\"background:#ee6c4d;\">📋 Pedidos pendientes</span></div></div><p>También hay un <strong>gráfico de barras</strong> con ventas de los últimos 7 días y un <strong>widget de clima</strong> actual. El panel se actualiza solo cada 5 segundos.</p>',
+        'visible': 'all'},
+    'mSell': {'title': 'Vender (cobrar)', 'icon': 'cart3', 'color': '#ee6c4d',
+        'content': '<ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Escanear o buscar:</strong> pasá el código de barras por el scanner o escribí el código/nombre en el campo de búsqueda. Aparecen los productos debajo, hacé click para agregarlos.</li><li class=\"list-group-item px-0\"><strong>Cantidad:</strong> antes de escanear, podés cambiar el número en el campo \"Cantidad\" (default 1). Cada escaneo agrega esa cantidad. Al agregar un producto, la cantidad vuelve a 1 automáticamente.</li><li class=\"list-group-item px-0\"><strong>Precio mayorista:</strong> si el producto tiene precio mayorista configurado, se aplica automáticamente al superar la cantidad mínima.</li><li class=\"list-group-item px-0\"><strong>Cliente:</strong> opcional, podés escribir el nombre del cliente para que aparezca en el ticket e historial.</li><li class=\"list-group-item px-0\"><strong>Pendiente de pago:</strong> si activás esta opción, la venta se registra pero no resta el dinero del cierre de caja. Aparece en \"Pendientes\" para cobrar después.</li><li class=\"list-group-item px-0\"><strong>Método de pago:</strong> seleccioná Efectivo, Tarjeta, Transferencia o Mercado Pago.</li><li class=\"list-group-item px-0\"><strong>Finalizar:</strong> click en \"Cobrar\". Se descarga el ticket automáticamente. Si hay vuelto, se calcula solo.</li></ol><p class=\"mt-2 mb-0 text-muted small\">Podés enviar el ticket por email si configuraste SMTP en Config.</p>',
+        'visible': 'all'},
+    'mProducts': {'title': 'Productos', 'icon': 'box-seam', 'color': '#3d5a80',
+        'content': '<p>Gestión completa del catálogo de productos.</p><ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Agregar:</strong> click en \"+ Nuevo Producto\". Completá código, nombre, costo, margen de ganancia, precio de venta, stock, tipo de unidad (unidad o kilo), categoría y proveedor.</li><li class=\"list-group-item px-0\"><strong>Precio mayorista:</strong> en el mismo formulario, configurá cantidad mínima y precio especial. Se aplica automáticamente al vender.</li><li class=\"list-group-item px-0\"><strong>Editar:</strong> click en <i class=\"bi bi-pencil text-primary\"></i>. Todos los campos se pueden modificar.</li><li class=\"list-group-item px-0\"><strong>Eliminar:</strong> click en <i class=\"bi bi-trash3 text-danger\"></i>. El producto va a la Papelera y se puede restaurar.</li><li class=\"list-group-item px-0\"><strong>Buscar/filtrar:</strong> usá el campo de búsqueda o el filtro por categoría y orden.</li></ol><p class=\"mt-2 mb-0 text-muted small\">El código de barras es único. No podés tener dos productos con el mismo código.</p>',
+        'visible': 'all'},
+    'mSuppliers': {'title': 'Proveedores', 'icon': 'building', 'color': '#98c1d9',
+        'content': '<ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Agregar:</strong> click en \"+ Nuevo Proveedor\". Completá nombre (obligatorio), contacto, teléfono, email y dirección.</li><li class=\"list-group-item px-0\"><strong>Editar:</strong> click en <i class=\"bi bi-pencil text-primary\"></i> para modificar cualquier campo.</li><li class=\"list-group-item px-0\"><strong>Eliminar:</strong> click en <i class=\"bi bi-trash3 text-danger\"></i>. Se puede restaurar desde la Papelera.</li><li class=\"list-group-item px-0\"><strong>Buscar:</strong> escribí en el campo de búsqueda para filtrar por nombre, teléfono, email o contacto.</li></ol><p class=\"mt-2 mb-0 text-muted small\">Los proveedores se vinculan a productos y a Órdenes de Compra.</p>',
+        'visible': 'all'},
+    'mCats': {'title': 'Categorías', 'icon': 'tags', 'color': '#ee6c4d',
+        'content': '<ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Agregar:</strong> click en \"+ Nueva Categoría\", escribí el nombre y guardá.</li><li class=\"list-group-item px-0\"><strong>Editar:</strong> click en <i class=\"bi bi-pencil text-primary\"></i> para renombrar.</li><li class=\"list-group-item px-0\"><strong>Eliminar:</strong> click en <i class=\"bi bi-trash3 text-danger\"></i>. Los productos de esa categoría pasan a \"Sin categoría\".</li></ol><p class=\"mt-2 mb-0 text-muted small\">Las categorías se usan para organizar productos y filtrar en el listado.</p>',
+        'visible': 'all'},
+    'mPO': {'title': 'Órdenes de Compra', 'icon': 'truck', 'color': '#293241',
+        'content': '<p>Gestión de compras a proveedores (recepción de mercadería tipo Carrefour).</p><div class=\"d-flex gap-2 mb-3 flex-wrap\"><span class=\"badge d-inline-block p-2\" style=\"background:#ee6c4d;\">📝 Crear OC</span><span class=\"badge d-inline-block p-2\" style=\"background:#ffc107;color:#000;\">⏳ Pendiente</span><span class=\"badge d-inline-block p-2\" style=\"background:#198754;\">📦 Recibir</span><span class=\"badge d-inline-block p-2\" style=\"background:#6c757d;\">✅ Recibida</span></div><ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Crear OC:</strong> seleccioná el proveedor, escaneá productos para agregar, ajustá cantidad/precio, click en \"Crear OC\".</li><li class=\"list-group-item px-0\"><strong>Recibir:</strong> cuando llega la mercadería, click en \"Recibir\". Escaneá cada producto (como Carrefour). Cada escaneo suma +1 al stock. La fila se pone verde cuando está completa.</li><li class=\"list-group-item px-0\"><strong>OC Recibida:</strong> badge verde, no se puede modificar.</li></ol><p class=\"mt-2 mb-0 text-muted small\">Cada escaneo registra un movimiento en el historial del sistema.</p>',
+        'visible': 'admin'},
+    'mOrders': {'title': 'Pedidos (clientes)', 'icon': 'journal-text', 'color': '#3d5a80',
+        'content': '<p>Registrá pedidos de clientes que no se cobran en el momento.</p><ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Crear:</strong> desde la página de Pedidos, agregá productos, nombre del cliente, notas y total estimado.</li><li class=\"list-group-item px-0\"><strong>Completar:</strong> cuando el cliente viene a retirar, click en \"Completar\" y se genera una venta automáticamente restando stock.</li><li class=\"list-group-item px-0\"><strong>Cancelar:</strong> si el cliente cancela, podés cancelar el pedido.</li></ol>',
+        'visible': 'all'},
+    'mPending': {'title': 'Ventas Pendientes de Pago', 'icon': 'hourglass-split', 'color': '#ee6c4d',
+        'content': '<p>Cuando activás \"Pendiente de pago\" al vender, la venta queda registrada con status <span class=\"badge bg-warning text-dark\">pending</span> y no suma al cierre de caja.</p><ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\">Las ventas pendientes aparecen en la pestaña \"Pendientes\" del sidebar.</li><li class=\"list-group-item px-0\">Ves el total, cliente, fecha y productos.</li><li class=\"list-group-item px-0\">Cuando el cliente paga, click en <strong>\"Cobrar\"</strong>. Se marca como pagada y pasa al cierre de caja.</li><li class=\"list-group-item px-0\">Tiene su propio permiso: <code>can_view_pending_sales</code> y <code>can_confirm_payment</code>.</li></ol><p class=\"mt-2 mb-0 text-muted small\">El stock se resta en el momento de la venta, no al cobrar. Si anulás la venta, el stock se devuelve.</p>',
+        'visible': 'all'},
+    'mHistory': {'title': 'Historial / Ganancias / Ranking', 'icon': 'clock-history', 'color': '#98c1d9',
+        'content': '<ul class=\"list-group list-group-flush\"><li class=\"list-group-item px-0\"><i class=\"bi bi-journal-text me-2\" style=\"color:#3d5a80;\"></i> <strong>Historial:</strong> todas las ventas. Podés filtrar por fecha, cliente o método de pago. Cada venta tiene botón \"Ver\" con detalle y opción de <strong>Anular venta</strong> (devuelve stock). Exportá a Excel.</li><li class=\"list-group-item px-0\"><i class=\"bi bi-graph-up me-2\" style=\"color:#ee6c4d;\"></i> <strong>Ganancias:</strong> ganancia neta por producto (precio venta - costo). Filtrable por fecha.</li><li class=\"list-group-item px-0\"><i class=\"bi bi-trophy me-2\" style=\"color:#ffc107;\"></i> <strong>Ranking:</strong> productos más vendidos, ordenados por cantidad.</li></ul>',
+        'visible': 'all'},
+    'mTrash': {'title': 'Papelera', 'icon': 'trash3', 'color': '#293241',
+        'content': '<p>Los elementos eliminados (productos, proveedores, etc.) van a la papelera en lugar de borrarse definitivamente.</p><ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Restaurar:</strong> click en \"Restaurar\" para recuperar el elemento con todos sus datos originales.</li><li class=\"list-group-item px-0\"><strong>Eliminar definitivamente:</strong> si querés borrarlo para siempre, hay un botón aparte.</li></ol><p class=\"mt-2 mb-0 text-muted small\">Al eliminar un usuario, sus ventas se reasignan al administrador para no perder datos.</p>',
+        'visible': 'admin'},
+    'mCash': {'title': 'Cierre de Caja', 'icon': 'cash-stack', 'color': '#3d5a80',
+        'content': '<ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Abrir caja:</strong> al empezar el día, registrá el monto inicial en efectivo.</li><li class=\"list-group-item px-0\"><strong>Cerrar caja:</strong> el sistema muestra ventas por método de pago, total de devoluciones, efectivo esperado. Declarás el efectivo real y calcula la diferencia.</li><li class=\"list-group-item px-0\"><strong>Historial de cierres:</strong> todos los cierres anteriores con detalle.</li><li class=\"list-group-item px-0\"><strong>Anular cierre:</strong> solo admin, si hubo un error.</li></ol><p class=\"mt-2 mb-0 text-muted small\">Permiso <code>can_close_cash</code> para ver/cerrar y <code>can_void_cash_close</code> para anular.</p>',
+        'visible': 'all'},
+    'mUsers': {'title': 'Usuarios y Roles', 'icon': 'people', 'color': '#ee6c4d',
+        'content': '<p>Hay 3 roles predefinidos:</p><div class=\"d-flex gap-2 mb-3 flex-wrap\"><span class=\"badge d-inline-block p-2\" style=\"background:#3d5a80;\">🔑 Admin — acceso total</span><span class=\"badge d-inline-block p-2\" style=\"background:#98c1d9;color:#000;\">👁️ Supervisor — gestión + informes</span><span class=\"badge d-inline-block p-2\" style=\"background:#293241;\">👤 User — solo vender</span></div><p>Los permisos son <strong>granulares</strong> y se configuran desde Config &gt; Permisos. Podés activar o desactivar cada permiso individualmente por rol.</p>',
+        'visible': 'admin'},
+    'mBackups': {'title': 'Backups', 'icon': 'database', 'color': '#293241',
+        'content': '<ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\"><strong>Backup manual:</strong> click en \"Crear Backup Ahora\". Se descarga un .zip con toda la base de datos.</li><li class=\"list-group-item px-0\"><strong>Restaurar:</strong> subí un archivo .zip de backup. <strong>Cuidado:</strong> reemplaza TODOS los datos actuales.</li><li class=\"list-group-item px-0\"><strong>Backup automático:</strong> configurá días de la semana y horario. Se genera automáticamente.</li><li class=\"list-group-item px-0\"><strong>Google Drive:</strong> si configuraste cuenta de servicio, los backups se suben a Drive.</li></ol><p class=\"mt-2 mb-0 text-muted small\">Accesible para admin y supervisor (permiso <code>can_view_backups</code>).</p>',
+        'visible': 'all'},
+    'mBarcodes': {'title': 'Códigos de Barras y QR', 'icon': 'upc-scan', 'color': '#3d5a80',
+        'content': '<ol class=\"list-group list-group-numbered list-group-flush\"><li class=\"list-group-item px-0\">Seleccioná los productos para imprimir.</li><li class=\"list-group-item px-0\">Elegí el tamaño de etiqueta (chica, mediana, grande).</li><li class=\"list-group-item px-0\">Descargá el PDF listo para imprimir en hojas autoadhesivas.</li></ol>',
+        'visible': 'all'},
+    'mConfig': {'title': 'Configuración', 'icon': 'gear', 'color': '#ee6c4d',
+        'content': '<p>Solo visible para administradores:</p><div class=\"row g-2\"><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#3d5a80;\">🏪 Negocio</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#98c1d9;color:#000;\">🌍 Zona horaria</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#ee6c4d;\">📦 Umbrales stock</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#293241;\">📧 SMTP Email</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#3d5a80;\">☁️ Google Drive</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#98c1d9;color:#000;\">🔄 Multi-sucursal</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#ee6c4d;\">🔐 Permisos</span></div><div class=\"col-6 col-md-4\"><span class=\"badge d-block p-2\" style=\"background:#293241;\">🗑️ Resetear sistema</span></div></div>',
+        'visible': 'admin'},
+}
+
 @app.route('/manual')
 @login_required
 def manual():
-    return render_template('manual.html')
+    raw = get_config('manual_sections', '')
+    if raw:
+        sections = json.loads(raw)
+    else:
+        sections = MANUAL_DEFAULT_SECTIONS
+        c = Config.query.filter_by(key='manual_sections').first()
+        if not c:
+            db.session.add(Config(key='manual_sections', value=json.dumps(sections, ensure_ascii=False)))
+            db.session.commit()
+    is_admin = current_user.role == 'admin'
+    if not is_admin:
+        sections = {k: v for k, v in sections.items() if v.get('visible') == 'all'}
+    return render_template('manual.html', sections=sections, is_admin=is_admin)
+
+
+@app.route('/api/manual/save', methods=['POST'])
+@login_required
+def api_manual_save():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos requeridos'}), 400
+    c = Config.query.filter_by(key='manual_sections').first()
+    if c:
+        existing = json.loads(c.value) if c.value else {}
+    else:
+        existing = MANUAL_DEFAULT_SECTIONS
+    for key, val in data.items():
+        if key in existing:
+            existing[key].update(val)
+        elif key in MANUAL_DEFAULT_SECTIONS:
+            s = dict(MANUAL_DEFAULT_SECTIONS[key])
+            s.update(val)
+            existing[key] = s
+        else:
+            continue
+    c.value = json.dumps(existing, ensure_ascii=False)
+    db.session.commit()
+    # Clear cache
+    if hasattr(g, '_configs_cached'):
+        del g._configs_cached
+    return jsonify({'success': True})
 
 
 # ─── Purchase Orders (Recepción / Orden de Compra) ───────────────────
@@ -2825,6 +2915,51 @@ def admin_reset_system():
     return redirect(url_for('settings'))
 
 
+@app.route('/admin/clear-section', methods=['POST'])
+@login_required
+def admin_clear_section():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    section = request.form.get('section', '')
+    try:
+        if section == 'products':
+            SaleItem.query.delete()
+            Product.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todos los productos eliminados')
+        elif section == 'suppliers':
+            Supplier.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todos los proveedores eliminados')
+        elif section == 'categories':
+            Category.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todas las categorías eliminadas')
+        elif section == 'cash_closes':
+            CashClose.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todos los cierres de caja eliminados')
+        elif section == 'sales':
+            SaleItem.query.delete()
+            Sale.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todas las ventas eliminadas')
+        elif section == 'history':
+            MovementLog.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todo el historial eliminado')
+        elif section == 'trash':
+            DeletedRecord.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Papelera vaciada')
+        elif section == 'purchase_orders':
+            PurchaseOrder.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todas las OC eliminadas')
+        elif section == 'pending_orders':
+            PendingOrder.query.delete()
+            log_movement(current_user, 'bulk_delete', 'Todos los pedidos eliminados')
+        else:
+            return jsonify({'error': 'Sección inválida'}), 400
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Sección "{section}" limpiada'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)[:200]}), 500
+
+
 @app.route('/settings/backup-config', methods=['POST'])
 @login_required
 def save_backup_config():
@@ -3133,8 +3268,8 @@ def backups():
 @app.route('/backups/create', methods=['POST'])
 @login_required
 def backup_create():
-    if current_user.role != 'admin':
-        flash('Solo Admin.', 'danger')
+    if not current_user.can_view_backups():
+        flash('Permiso denegado.', 'danger')
         return redirect(url_for('dashboard'))
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     db_url = app.config['SQLALCHEMY_DATABASE_URI']
@@ -3183,8 +3318,8 @@ def backup_create():
 @app.route('/backups/download/<name>')
 @login_required
 def backup_download(name):
-    if current_user.role != 'admin':
-        flash('Solo Admin.', 'danger')
+    if not current_user.can_view_backups():
+        flash('Permiso denegado.', 'danger')
         return redirect(url_for('dashboard'))
     fpath = os.path.join(BACKUP_DIR, name)
     if not os.path.exists(fpath):

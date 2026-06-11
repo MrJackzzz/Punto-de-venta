@@ -11,190 +11,196 @@
     </div>
 </div>
 
-<div class="accordion" id="manualAccordion">
+{% if is_admin %}
+<div class="alert alert-info d-flex justify-content-between align-items-center py-2">
+    <span><i class="bi bi-pencil-square"></i> Modo edición activo — pasá el mouse sobre cada sección para editar</span>
+    <button class="btn btn-sm btn-primary" id="saveManualBtn" onclick="saveManual()"><i class="bi bi-save"></i> Guardar cambios</button>
+</div>
+{% endif %}
 
-  {% macro section(id, icon, title, color, items) %}
-  <div class="accordion-item border-0 mb-2 rounded-3 shadow-sm overflow-hidden">
+<div class="accordion" id="manualAccordion">
+  {% for key, sec in sections.items() %}
+  <div class="accordion-item border-0 mb-2 rounded-3 shadow-sm overflow-hidden" id="sec-{{ key }}">
     <h2 class="accordion-header">
-      <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#{{ id }}" style="background:{{ color }}15;color:#293241;">
+      {% if is_admin %}
+      <div class="d-flex align-items-center gap-2 pe-2" style="background:{{ sec.color }}10;">
+        <button class="accordion-button collapsed fw-semibold flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#{{ key }}" style="background:transparent;color:#293241;width:auto;">
+          <span class="d-flex align-items-center gap-3">
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;background:{{ sec.color }};color:#fff;flex-shrink:0;"><i class="bi bi-{{ sec.icon }}"></i></span>
+            <span class="sec-title" id="title-{{ key }}">{{ sec.title }}</span>
+          </span>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();editSection('{{ key }}')" title="Editar"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm {% if sec.visible == 'hidden' %}btn-outline-danger{% else %}btn-outline-success{% endif %}" onclick="event.stopPropagation();toggleSection('{{ key }}')" id="vis-{{ key }}" title="Mostrar/ocultar">
+          <i class="bi {% if sec.visible == 'hidden' %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+        </button>
+      </div>
+      {% else %}
+      <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#{{ key }}" style="background:{{ sec.color }}15;color:#293241;">
         <span class="d-flex align-items-center gap-3">
-          <span class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;background:{{ color }};color:#fff;flex-shrink:0;"><i class="bi bi-{{ icon }}"></i></span>
-          <span>{{ title }}</span>
+          <span class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;background:{{ sec.color }};color:#fff;flex-shrink:0;"><i class="bi bi-{{ sec.icon }}"></i></span>
+          <span>{{ sec.title }}</span>
         </span>
       </button>
+      {% endif %}
     </h2>
-    <div id="{{ id }}" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+    <div id="{{ key }}" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
       <div class="accordion-body px-4 py-3">
-        {{ caller() }}
+        {% if is_admin %}
+        <div class="border border-warning rounded p-2 mb-3" id="content-{{ key }}" style="background:#fffbe6;">{{ sec.content|safe }}</div>
+        <button class="btn btn-sm btn-warning" onclick="event.stopPropagation();editContent('{{ key }}')"><i class="bi bi-pencil"></i> Editar contenido</button>
+        {% else %}
+        {{ sec.content|safe }}
+        {% endif %}
       </div>
     </div>
   </div>
-  {% endmacro %}
-
-  {% call section('mDash', 'speedometer2', 'Dashboard (Inicio)', '#3d5a80') %}
-  <p>Al iniciar sesión ves el panel principal con <strong>7 tarjetas</strong> que resumen el estado del negocio:</p>
-  <div class="row g-2 mb-3">
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#3d5a80;">📦 Productos</span></div>
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#98c1d9;color:#000;">🏷️ Categorías</span></div>
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#ee6c4d;">⚠️ Stock bajo</span></div>
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#293241;">🔴 Stock crítico</span></div>
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#3d5a80;">💰 Ventas hoy</span></div>
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#98c1d9;color:#000;">📊 Ingresos hoy</span></div>
-    <div class="col-6 col-md-3"><span class="badge d-block p-2" style="background:#ee6c4d;">📋 Pedidos pendientes</span></div>
-  </div>
-  <p>También hay un <strong>gráfico de barras</strong> con ventas de los últimos 7 días y un <strong>widget de clima</strong> actual. El panel se actualiza solo cada 5 segundos.</p>
-  {% endcall %}
-
-  {% call section('mSell', 'cart3', 'Vender (cobrar)', '#ee6c4d') %}
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Escanear o buscar:</strong> pasá el código de barras por el scanner o escribí el código/nombre en el campo de búsqueda. Aparecen los productos debajo, hacé click para agregarlos.</li>
-    <li class="list-group-item px-0"><strong>Cantidad:</strong> antes de escanear, podés cambiar el número en el campo "Cantidad" (default 1). Cada escaneo agrega esa cantidad. Al agregar un producto, la cantidad vuelve a 1 automáticamente.</li>
-    <li class="list-group-item px-0"><strong>Precio mayorista:</strong> si el producto tiene precio mayorista configurado, se aplica automáticamente al superar la cantidad mínima.</li>
-    <li class="list-group-item px-0"><strong>Cliente:</strong> opcional, podés escribir el nombre del cliente para que aparezca en el ticket e historial.</li>
-    <li class="list-group-item px-0"><strong>Pendiente de pago:</strong> si activás esta opción, la venta se registra pero no resta el dinero del cierre de caja. Aparece en "Pendientes" para cobrar después.</li>
-    <li class="list-group-item px-0"><strong>Método de pago:</strong> seleccioná Efectivo, Tarjeta, Transferencia o Mercado Pago.</li>
-    <li class="list-group-item px-0"><strong>Finalizar:</strong> click en "Cobrar". Se descarga el ticket automáticamente. Si hay vuelto, se calcula solo.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Podés enviar el ticket por email si configuraste SMTP en Config.</p>
-  {% endcall %}
-
-  {% call section('mProducts', 'box-seam', 'Productos', '#3d5a80') %}
-  <p>Gestión completa del catálogo de productos.</p>
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Agregar:</strong> click en "+ Nuevo Producto". Completá código, nombre, costo, margen de ganancia, precio de venta, stock, tipo de unidad (unidad o kilo), categoría y proveedor.</li>
-    <li class="list-group-item px-0"><strong>Precio mayorista:</strong> en el mismo formulario, configurá cantidad mínima y precio especial. Se aplica automáticamente al vender.</li>
-    <li class="list-group-item px-0"><strong>Editar:</strong> click en <i class="bi bi-pencil text-primary"></i>. Todos los campos se pueden modificar.</li>
-    <li class="list-group-item px-0"><strong>Eliminar:</strong> click en <i class="bi bi-trash3 text-danger"></i>. El producto va a la Papelera y se puede restaurar.</li>
-    <li class="list-group-item px-0"><strong>Buscar/filtrar:</strong> usá el campo de búsqueda o el filtro por categoría y orden.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">El código de barras es único. No podés tener dos productos con el mismo código.</p>
-  {% endcall %}
-
-  {% call section('mSuppliers', 'building', 'Proveedores', '#98c1d9') %}
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Agregar:</strong> click en "+ Nuevo Proveedor". Completá nombre (obligatorio), contacto, teléfono, email y dirección.</li>
-    <li class="list-group-item px-0"><strong>Editar:</strong> click en <i class="bi bi-pencil text-primary"></i> para modificar cualquier campo.</li>
-    <li class="list-group-item px-0"><strong>Eliminar:</strong> click en <i class="bi bi-trash3 text-danger"></i>. Se puede restaurar desde la Papelera.</li>
-    <li class="list-group-item px-0"><strong>Buscar:</strong> escribí en el campo de búsqueda para filtrar por nombre, teléfono, email o contacto.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Los proveedores se vinculan a productos y a Órdenes de Compra.</p>
-  {% endcall %}
-
-  {% call section('mCats', 'tags', 'Categorías', '#ee6c4d') %}
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Agregar:</strong> click en "+ Nueva Categoría", escribí el nombre y guardá.</li>
-    <li class="list-group-item px-0"><strong>Editar:</strong> click en <i class="bi bi-pencil text-primary"></i> para renombrar.</li>
-    <li class="list-group-item px-0"><strong>Eliminar:</strong> click en <i class="bi bi-trash3 text-danger"></i>. Los productos de esa categoría pasan a "Sin categoría".</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Las categorías se usan para organizar productos y filtrar en el listado.</p>
-  {% endcall %}
-
-  {% call section('mPO', 'truck', 'Órdenes de Compra', '#293241') %}
-  <p>Gestión de compras a proveedores (recepción de mercadería tipo Carrefour).</p>
-  <div class="d-flex gap-2 mb-3 flex-wrap">
-    <span class="badge d-inline-block p-2" style="background:#ee6c4d;">📝 Crear OC</span>
-    <span class="badge d-inline-block p-2" style="background:#ffc107;color:#000;">⏳ Pendiente</span>
-    <span class="badge d-inline-block p-2" style="background:#198754;">📦 Recibir</span>
-    <span class="badge d-inline-block p-2" style="background:#6c757d;">✅ Recibida</span>
-  </div>
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Crear OC:</strong> seleccioná el proveedor, escaneá productos para agregar, ajustá cantidad/precio, click en "Crear OC".</li>
-    <li class="list-group-item px-0"><strong>Recibir:</strong> cuando llega la mercadería, click en "Recibir". Escaneá cada producto (como Carrefour). Cada escaneo suma +1 al stock. La fila se pone verde cuando está completa.</li>
-    <li class="list-group-item px-0"><strong>OC Recibida:</strong> badge verde, no se puede modificar.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Cada escaneo registra un movimiento en el historial del sistema.</p>
-  {% endcall %}
-
-  {% call section('mOrders', 'journal-text', 'Pedidos (clientes)', '#3d5a80') %}
-  <p>Registrá pedidos de clientes que no se cobran en el momento.</p>
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Crear:</strong> desde la página de Pedidos, agregá productos, nombre del cliente, notas y total estimado.</li>
-    <li class="list-group-item px-0"><strong>Completar:</strong> cuando el cliente viene a retirar, click en "Completar" y se genera una venta automáticamente restando stock.</li>
-    <li class="list-group-item px-0"><strong>Cancelar:</strong> si el cliente cancela, podés cancelar el pedido.</li>
-  </ol>
-  {% endcall %}
-
-  {% call section('mPending', 'hourglass-split', 'Ventas Pendientes de Pago', '#ee6c4d') %}
-  <p>Cuando activás "Pendiente de pago" al vender, la venta queda registrada con status <span class="badge bg-warning text-dark">pending</span> y no suma al cierre de caja.</p>
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0">Las ventas pendientes aparecen en la pestaña "Pendientes" del sidebar.</li>
-    <li class="list-group-item px-0">Ves el total, cliente, fecha y productos.</li>
-    <li class="list-group-item px-0">Cuando el cliente paga, click en <strong>"Cobrar"</strong>. Se marca como pagada y pasa al cierre de caja.</li>
-    <li class="list-group-item px-0">Tiene su propio permiso: <code>can_view_pending_sales</code> y <code>can_confirm_payment</code>.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">El stock se resta en el momento de la venta, no al cobrar. Si anulás la venta, el stock se devuelve.</p>
-  {% endcall %}
-
-  {% call section('mHistory', 'clock-history', 'Historial / Ganancias / Ranking', '#98c1d9') %}
-  <ul class="list-group list-group-flush">
-    <li class="list-group-item px-0"><i class="bi bi-journal-text me-2" style="color:#3d5a80;"></i> <strong>Historial:</strong> todas las ventas. Podés filtrar por fecha, cliente o método de pago. Cada venta tiene botón "Ver" con detalle y opción de <strong>Anular venta</strong> (devuelve stock). Exportá a Excel.</li>
-    <li class="list-group-item px-0"><i class="bi bi-graph-up me-2" style="color:#ee6c4d;"></i> <strong>Ganancias:</strong> ganancia neta por producto (precio venta - costo). Filtrable por fecha.</li>
-    <li class="list-group-item px-0"><i class="bi bi-trophy me-2" style="color:#ffc107;"></i> <strong>Ranking:</strong> productos más vendidos, ordenados por cantidad.</li>
-  </ul>
-  {% endcall %}
-
-  {% call section('mTrash', 'trash3', 'Papelera', '#293241') %}
-  <p>Los elementos eliminados (productos, proveedores, etc.) van a la papelera en lugar de borrarse definitivamente.</p>
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Restaurar:</strong> click en "Restaurar" para recuperar el elemento con todos sus datos originales.</li>
-    <li class="list-group-item px-0"><strong>Eliminar definitivamente:</strong> si querés borrarlo para siempre, hay un botón aparte.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Al eliminar un usuario, sus ventas se reasignan al administrador para no perder datos.</p>
-  {% endcall %}
-
-  {% call section('mCash', 'cash-stack', 'Cierre de Caja', '#3d5a80') %}
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Abrir caja:</strong> al empezar el día, registrá el monto inicial en efectivo.</li>
-    <li class="list-group-item px-0"><strong>Cerrar caja:</strong> el sistema muestra ventas por método de pago, total de devoluciones, efectivo esperado. Declarás el efectivo real y calcula la diferencia.</li>
-    <li class="list-group-item px-0"><strong>Historial de cierres:</strong> todos los cierres anteriores con detalle.</li>
-    <li class="list-group-item px-0"><strong>Anular cierre:</strong> solo admin, si hubo un error.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Permiso <code>can_close_cash</code> para ver/cerrar y <code>can_void_cash_close</code> para anular.</p>
-  {% endcall %}
-
-  {% call section('mUsers', 'people', 'Usuarios y Roles', '#ee6c4d') %}
-  <p>Hay 3 roles predefinidos:</p>
-  <div class="d-flex gap-2 mb-3 flex-wrap">
-    <span class="badge d-inline-block p-2" style="background:#3d5a80;">🔑 Admin — acceso total</span>
-    <span class="badge d-inline-block p-2" style="background:#98c1d9;color:#000;">👁️ Supervisor — gestión + informes</span>
-    <span class="badge d-inline-block p-2" style="background:#293241;">👤 User — solo vender</span>
-  </div>
-  <p>Los permisos son <strong>granulares</strong> y se configuran desde Config &gt; Permisos. Podés activar o desactivar cada permiso individualmente por rol.</p>
-  {% endcall %}
-
-  {% call section('mBackups', 'database', 'Backups', '#293241') %}
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0"><strong>Backup manual:</strong> click en "Crear Backup Ahora". Se descarga un .zip con toda la base de datos.</li>
-    <li class="list-group-item px-0"><strong>Restaurar:</strong> subí un archivo .zip de backup. <strong>Cuidado:</strong> reemplaza TODOS los datos actuales.</li>
-    <li class="list-group-item px-0"><strong>Backup automático:</strong> configurá días de la semana y horario. Se genera automáticamente.</li>
-    <li class="list-group-item px-0"><strong>Google Drive:</strong> si configuraste cuenta de servicio, los backups se suben a Drive.</li>
-  </ol>
-  <p class="mt-2 mb-0 text-muted small">Accesible para admin y supervisor (permiso <code>can_view_backups</code>).</p>
-  {% endcall %}
-
-  {% call section('mBarcodes', 'upc-scan', 'Códigos de Barras y QR', '#3d5a80') %}
-  <ol class="list-group list-group-numbered list-group-flush">
-    <li class="list-group-item px-0">Seleccioná los productos para imprimir.</li>
-    <li class="list-group-item px-0">Elegí el tamaño de etiqueta (chica, mediana, grande).</li>
-    <li class="list-group-item px-0">Descargá el PDF listo para imprimir en hojas autoadhesivas.</li>
-  </ol>
-  {% endcall %}
-
-  {% call section('mConfig', 'gear', 'Configuración', '#ee6c4d') %}
-  <p>Solo visible para administradores:</p>
-  <div class="row g-2">
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#3d5a80;">🏪 Negocio</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#98c1d9;color:#000;">🌍 Zona horaria</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#ee6c4d;">📦 Umbrales stock</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#293241;">📧 SMTP Email</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#3d5a80;">☁️ Google Drive</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#98c1d9;color:#000;">🔄 Multi-sucursal</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#ee6c4d;">🔐 Permisos</span></div>
-    <div class="col-6 col-md-4"><span class="badge d-block p-2" style="background:#293241;">🗑️ Resetear sistema</span></div>
-  </div>
-  {% endcall %}
-
+  {% endfor %}
 </div>
+
+{% if is_admin %}
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalTitle">Editar sección</h5>
+                <button type="button" class="btn-close" onclick="closeModal('editModal')"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editKey">
+                <div class="mb-3">
+                    <label class="form-label">Título</label>
+                    <input type="text" id="editTitle" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Contenido (HTML)</label>
+                    <textarea id="editContent" class="form-control" rows="12" style="font-family:monospace;font-size:13px;"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Visibilidad</label>
+                    <select id="editVisible" class="form-control">
+                        <option value="all">Visible para todos</option>
+                        <option value="admin">Solo admin</option>
+                        <option value="hidden">Oculto</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveEditSection()"><i class="bi bi-check-lg"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="contentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contentModalTitle">Editar contenido HTML</h5>
+                <button type="button" class="btn-close" onclick="closeModal('contentModal')"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="contentKey">
+                <div class="mb-3">
+                    <label class="form-label">Contenido (HTML)</label>
+                    <textarea id="contentHtml" class="form-control" rows="16" style="font-family:monospace;font-size:13px;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('contentModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveContent()"><i class="bi bi-check-lg"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let _pendingChanges = {};
+
+function editSection(key) {
+    document.getElementById('editKey').value = key;
+    document.getElementById('editTitle').value = document.getElementById('title-' + key).textContent.trim();
+    const visBtn = document.getElementById('vis-' + key);
+    if (visBtn.classList.contains('btn-outline-danger')) {
+        document.getElementById('editVisible').value = 'hidden';
+    } else {
+        document.getElementById('editVisible').value = 'all';
+    }
+    document.getElementById('editModalTitle').textContent = 'Editar: ' + key;
+    openModal('editModal');
+}
+
+function saveEditSection() {
+    const key = document.getElementById('editKey').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const visible = document.getElementById('editVisible').value;
+    if (!title) return;
+    _pendingChanges[key] = _pendingChanges[key] || {};
+    _pendingChanges[key]['title'] = title;
+    _pendingChanges[key]['visible'] = visible;
+    document.getElementById('title-' + key).textContent = title;
+    const visBtn = document.getElementById('vis-' + key);
+    visBtn.className = 'btn btn-sm ' + (visible === 'hidden' ? 'btn-outline-danger' : 'btn-outline-success');
+    visBtn.innerHTML = '<i class="bi ' + (visible === 'hidden' ? 'bi-eye-slash' : 'bi-eye') + '"></i>';
+    closeModal('editModal');
+}
+
+function editContent(key) {
+    document.getElementById('contentKey').value = key;
+    document.getElementById('contentHtml').value = document.getElementById('content-' + key).innerHTML.trim();
+    document.getElementById('contentModalTitle').textContent = 'Editar contenido: ' + key;
+    openModal('contentModal');
+}
+
+function saveContent() {
+    const key = document.getElementById('contentKey').value;
+    const html = document.getElementById('contentHtml').value.trim();
+    if (!html) return;
+    _pendingChanges[key] = _pendingChanges[key] || {};
+    _pendingChanges[key]['content'] = html;
+    document.getElementById('content-' + key).innerHTML = html;
+    closeModal('contentModal');
+}
+
+function toggleSection(key) {
+    const visBtn = document.getElementById('vis-' + key);
+    const isHidden = visBtn.classList.contains('btn-outline-danger');
+    const newVis = isHidden ? 'all' : 'hidden';
+    visBtn.className = 'btn btn-sm ' + (newVis === 'hidden' ? 'btn-outline-danger' : 'btn-outline-success');
+    visBtn.innerHTML = '<i class="bi ' + (newVis === 'hidden' ? 'bi-eye-slash' : 'bi-eye') + '"></i>';
+    _pendingChanges[key] = _pendingChanges[key] || {};
+    _pendingChanges[key]['visible'] = newVis;
+}
+
+function saveManual() {
+    if (Object.keys(_pendingChanges).length === 0) {
+        alert('No hay cambios pendientes.');
+        return;
+    }
+    const btn = document.querySelector('#saveManualBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass"></i> Guardando...'; }
+    fetch('/api/manual/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(_pendingChanges)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            _pendingChanges = {};
+            alert('Cambios guardados.');
+        } else {
+            alert('Error: ' + (data.error || 'desconocido'));
+        }
+    })
+    .catch(function() { alert('Error de conexión'); })
+    .finally(function() {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save"></i> Guardar cambios'; }
+    });
+}
+</script>
+{% endif %}
 
 <style>
 .accordion-button:not(.collapsed) { background:#3d5a80 !important; color:#fff !important; }

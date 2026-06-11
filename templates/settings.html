@@ -497,6 +497,27 @@
     </div>
 </div>
 
+{% if current_user.role == 'admin' %}
+<div class="card shadow-sm border-warning mb-4">
+    <div class="card-header bg-warning text-dark"><i class="bi bi-eraser"></i> Limpiar secciones específicas</div>
+    <div class="card-body">
+        <p class="text-muted small">Elimina todos los registros de una sección. No se puede deshacer.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('suppliers')">Proveedores</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('categories')">Categorías</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('cash_closes')">Cierres de caja</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('sales')">Ventas</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('products')">Productos</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('history')">Historial</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('trash')">Papelera</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('purchase_orders')">Órdenes de Compra</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="clearSection('pending_orders')">Pedidos</button>
+        </div>
+        <div id="clearMsg" class="mt-2 small"></div>
+    </div>
+</div>
+{% endif %}
+
 <hr class="my-4">
 {% if configs.get('demo_mode') != 'on' %}
 <div class="card shadow-sm border-danger">
@@ -509,4 +530,26 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+function clearSection(section) {
+    const labels = {'suppliers':'Proveedores','categories':'Categorías','cash_closes':'Cierres de caja','sales':'Ventas','products':'Productos','history':'Historial','trash':'Papelera','purchase_orders':'Órdenes de Compra','pending_orders':'Pedidos'};
+    const name = labels[section] || section;
+    if (!confirm('¿Eliminar TODOS los registros de "' + name + '"? No se puede deshacer.')) return;
+    const msg = document.getElementById('clearMsg');
+    msg.innerHTML = '<span class="text-muted">Eliminando...</span>';
+    fetch('/admin/clear-section', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'section=' + section
+    })
+    .then(r => r.json())
+    .then(data => {
+        msg.innerHTML = data.success
+            ? '<span class="text-success"><i class="bi bi-check-circle"></i> ' + (data.message || name + ' limpiada') + '</span>'
+            : '<span class="text-danger">' + (data.error || 'Error') + '</span>';
+    })
+    .catch(function() { msg.innerHTML = '<span class="text-danger">Error de conexión</span>'; });
+}
+</script>
 {% endblock %}
