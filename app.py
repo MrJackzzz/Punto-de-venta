@@ -1642,6 +1642,27 @@ def api_send_products_email():
     return jsonify({'error': 'No se pudo enviar. Verificá la configuración SMTP en Config.'}), 500
 
 
+@app.route('/api/send-payment-link', methods=['POST'])
+@login_required
+def api_send_payment_link():
+    data = request.get_json() or {}
+    email = (data.get('email') or '').strip()
+    link = (data.get('link') or '').strip()
+    sale_id = data.get('sale_id', '')
+    if not email or not link:
+        return jsonify({'error': 'Email y link requeridos'}), 400
+    biz = get_config('business_name', 'NexoControl')
+    html = f'''<h2 style="color:#3d5a80;">Pago pendiente</h2>
+<p>Hacé click en el siguiente link para pagar tu compra:</p>
+<p style="text-align:center;margin:20px 0;">
+<a href="{link}" style="background:#3d5a80;color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-size:18px;">Pagar ahora</a>
+</p>
+<p class="text-muted" style="font-size:13px;">Link generado por {biz}</p>'''
+    if send_email(email, f'Link de pago - {biz}', html):
+        return jsonify({'success': True})
+    return jsonify({'error': 'No se pudo enviar. Verificá la configuración SMTP en Config.'}), 500
+
+
 @app.route('/suppliers')
 @login_required
 def suppliers():

@@ -57,10 +57,20 @@
                 <div class="spinner-border text-primary my-3" role="status"></div>
                 <p class="text-muted">Generando link de pago...</p>
             </div>
+            <div class="modal-body" id="mpEmailSection" style="display:none;">
+                <hr>
+                <label class="form-label fw-semibold"><i class="bi bi-envelope"></i> Enviar link por email</label>
+                <div class="input-group mb-2">
+                    <input type="email" id="mpEmailInput" class="form-control" placeholder="cliente@email.com">
+                    <button class="btn btn-primary" id="mpEmailBtn" onclick="sendMpLinkEmail()"><i class="bi bi-send"></i> Enviar</button>
+                </div>
+                <div id="mpEmailMsg" class="small"></div>
+            </div>
             <div class="modal-footer justify-content-center" id="mpModalFooter" style="display:none;">
-                <a id="mpLinkBtn" href="#" target="_blank" class="btn btn-primary"><i class="bi bi-credit-card"></i> Abrir link de pago</a>
+                <a id="mpLinkBtn" href="#" target="_blank" class="btn btn-primary"><i class="bi bi-credit-card"></i> Abrir link</a>
                 <button class="btn btn-success" onclick="copyMpLink()"><i class="bi bi-clipboard"></i> Copiar link</button>
                 <button class="btn btn-info text-white" onclick="shareMpWhatsApp()"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+                <button class="btn btn-outline-secondary" onclick="showMpEmail()"><i class="bi bi-envelope"></i> Email</button>
             </div>
         </div>
     </div>
@@ -68,11 +78,15 @@
 
 <script>
 let _mpLink = '';
+let _mpSaleId = '';
 
 function generateMpLink(saleId, total) {
+    _mpSaleId = saleId;
     openModal('mpModal');
     const body = document.getElementById('mpModalBody');
     const footer = document.getElementById('mpModalFooter');
+    const emailSec = document.getElementById('mpEmailSection');
+    emailSec.style.display = 'none';
     footer.style.display = 'none';
     body.innerHTML = '<div class="spinner-border text-primary my-3" role="status"></div><p class="text-muted">Generando link de pago...</p>';
     fetch('/api/create-mp-payment', {
@@ -105,6 +119,42 @@ function shareMpWhatsApp() {
     if (_mpLink) {
         window.open('https://wa.me/?text=' + encodeURIComponent('Hola, te envio el link para pagar tu compra: ' + _mpLink), '_blank');
     }
+}
+
+function showMpEmail() {
+    document.getElementById('mpEmailSection').style.display = '';
+    document.getElementById('mpEmailInput').focus();
+}
+
+function sendMpLinkEmail() {
+    const email = document.getElementById('mpEmailInput').value.trim();
+    const msg = document.getElementById('mpEmailMsg');
+    const btn = document.getElementById('mpEmailBtn');
+    if (!email || !email.includes('@')) {
+        msg.innerHTML = '<span class="text-danger">Ingresá un email válido</span>';
+        return;
+    }
+    msg.innerHTML = '<span class="text-muted">Enviando...</span>';
+    btn.disabled = true;
+    fetch('/api/send-payment-link', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email, link: _mpLink, sale_id: _mpSaleId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Link enviado a ' + email + '</span>';
+            setTimeout(function() { msg.innerHTML = ''; document.getElementById('mpEmailSection').style.display = 'none'; }, 2000);
+        } else {
+            msg.innerHTML = '<span class="text-danger">' + (data.error || 'Error') + '</span>';
+            btn.disabled = false;
+        }
+    })
+    .catch(function() {
+        msg.innerHTML = '<span class="text-danger">Error de conexión</span>';
+        btn.disabled = false;
+    });
 }
 </script>
 {% endblock %}
