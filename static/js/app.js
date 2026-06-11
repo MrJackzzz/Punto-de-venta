@@ -44,6 +44,13 @@ document.addEventListener('shown.bs.modal', function(e) {
     if (first) setTimeout(function() { first.focus(); }, 50);
 });
 
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'F5') {
+        e.preventDefault();
+        window.location.href = '/settings';
+    }
+});
+
 document.addEventListener('input', function(e) {
     const tag = e.target.tagName;
     if ((tag === 'INPUT' || tag === 'TEXTAREA') && !e.target.closest('.users-page') && !e.target.closest('.login-form')) {
