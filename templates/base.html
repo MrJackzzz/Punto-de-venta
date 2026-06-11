@@ -72,6 +72,7 @@
             {% if current_user.role == 'admin' or current_user.can_manage_users() %}
             <hr class="sidebar-divider">
             {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_onboarding') }}" class="sidebar-link"><span class="si"><i class="bi bi-file-text"></i></span><span class="st">Formularios</span></a>
             <a href="{{ url_for('settings') }}" class="sidebar-link"><span class="si"><i class="bi bi-gear"></i></span><span class="st">Config</span></a>
             <a href="{{ url_for('planes') }}" class="sidebar-link"><span class="si"><i class="bi bi-journal-text"></i></span><span class="st">Planes</span></a>
             <a href="{{ url_for('membership') }}" class="sidebar-link"><span class="si"><i class="bi bi-credit-card"></i></span><span class="st">Membresía</span></a>
@@ -145,6 +146,7 @@
                 {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}
                 <a href="{{ url_for('planes') }}">Planes</a>
                 <a href="{{ url_for('membership') }}">Membresía</a>
+                <a href="{{ url_for('admin_onboarding') }}">Formularios</a>
                 <a href="{{ url_for('settings') }}">Config</a>
                 {% endif %}
             </nav>

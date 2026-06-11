@@ -1663,6 +1663,79 @@ def api_send_payment_link():
     return jsonify({'error': 'No se pudo enviar. Verificá la configuración SMTP en Config.'}), 500
 
 
+# ─── Onboarding (formulario para el cliente) ───────────────────
+ONBOARDING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'onboarding')
+os.makedirs(ONBOARDING_DIR, exist_ok=True)
+
+
+@app.route('/onboarding')
+def onboarding():
+    return render_template('onboarding.html')
+
+
+@app.route('/onboarding/submit', methods=['POST'])
+def onboarding_submit():
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    data = {
+        'submitted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'business_name': request.form.get('business_name', '').strip(),
+        'local_name': request.form.get('local_name', '').strip(),
+        'owner_name': request.form.get('owner_name', '').strip(),
+        'address': request.form.get('address', '').strip(),
+        'phone': request.form.get('phone', '').strip(),
+        'email': request.form.get('email', '').strip(),
+        'cuit': request.form.get('cuit', '').strip(),
+        'timezone': request.form.get('timezone', 'America/Argentina/Buenos_Aires'),
+        'currency': request.form.get('currency', 'ARS'),
+        'default_markup': request.form.get('default_markup', '30'),
+        'low_stock_threshold': request.form.get('low_stock_threshold', '10'),
+        'critical_stock_threshold': request.form.get('critical_stock_threshold', '5'),
+        'smtp_host': request.form.get('smtp_host', ''),
+        'smtp_port': request.form.get('smtp_port', '587'),
+        'smtp_user': request.form.get('smtp_user', ''),
+        'smtp_password': request.form.get('smtp_password', ''),
+        'mp_access_token': request.form.get('mp_access_token', ''),
+        'drive_enabled': 'on' if request.form.get('drive_enabled') else '',
+        'notes': request.form.get('notes', ''),
+    }
+    filename = f'onboarding_{ts}.json'
+    filepath = os.path.join(ONBOARDING_DIR, filename)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return render_template('onboarding_thanks.html', name=data['business_name'] or data['owner_name'] or 'Cliente')
+
+
+@app.route('/admin/onboarding')
+@login_required
+def admin_onboarding():
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    submissions = []
+    for f in sorted(os.listdir(ONBOARDING_DIR), reverse=True):
+        if f.startswith('onboarding_') and f.endswith('.json'):
+            fpath = os.path.join(ONBOARDING_DIR, f)
+            with open(fpath, 'r', encoding='utf-8') as fh:
+                data = json.load(fh)
+            data['_file'] = f
+            data['_ts'] = f.replace('onboarding_', '').replace('.json', '')
+            submissions.append(data)
+    return render_template('onboarding_list.html', submissions=submissions)
+
+
+@app.route('/admin/onboarding/<filename>/delete', methods=['POST'])
+@login_required
+def admin_onboarding_delete(filename):
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    fpath = os.path.join(ONBOARDING_DIR, filename)
+    if os.path.exists(fpath):
+        os.remove(fpath)
+        flash('Eliminado.', 'success')
+    return redirect(url_for('admin_onboarding'))
+
+
 @app.route('/suppliers')
 @login_required
 def suppliers():

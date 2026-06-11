@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formulario de Configuración</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { font-family: 'Inter', sans-serif; }
+body { background: #f0f4f8; }
+.header-bar { background: linear-gradient(135deg, #3d5a80 0%, #293241 100%); color: #fff; padding: 28px 0 22px; }
+.header-bar h1 { font-weight: 700; font-size: 1.6rem; margin: 0; }
+.header-bar p { opacity: .8; margin: 4px 0 0; font-size: .9rem; }
+.form-card { border: none; border-radius: 14px; box-shadow: 0 2px 20px rgba(0,0,0,.06); margin-bottom: 22px; }
+.form-card .card-header { background: transparent; border-bottom: 1px solid #e9ecef; padding: 16px 22px; font-weight: 600; font-size: 1rem; }
+.form-card .card-body { padding: 18px 22px 14px; }
+.form-label { font-weight: 500; font-size: .85rem; color: #495057; margin-bottom: 3px; }
+.form-control, .form-select { border-radius: 8px; border: 1.5px solid #dee2e6; font-size: .9rem; padding: 8px 12px; }
+.form-control:focus, .form-select:focus { border-color: #3d5a80; box-shadow: 0 0 0 3px rgba(61,90,128,.12); }
+.form-text { font-size: .78rem; color: #868e96; }
+.btn-submit { background: #3d5a80; border: none; border-radius: 10px; padding: 12px 36px; font-weight: 600; font-size: 1rem; }
+.btn-submit:hover { background: #2c4566; }
+.section-icon { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff; font-size: .9rem; }
+footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; }
+@media print {
+    .header-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .btn-submit { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+    <div class="container">
+        <h1><i class="bi bi-gear"></i> Formulario de Configuración</h1>
+        <p>Completá este formulario para que configuremos el sistema a tu medida</p>
+    </div>
+</div>
+
+<div class="container py-4">
+    <form method="POST" action="/onboarding/submit" id="onboardingForm">
+
+        <!-- 1. Datos del negocio -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#3d5a80;"><i class="bi bi-shop"></i></span> Datos del negocio</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del negocio <span class="text-danger">*</span></label>
+                        <input type="text" name="business_name" class="form-control" required placeholder="Ej: SmartPost">
+                        <div class="form-text">Va a figurar en tickets, emails y encabezados.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del local / sucursal</label>
+                        <input type="text" name="local_name" class="form-control" placeholder="Ej: Sucursal Centro">
+                        <div class="form-text">Opcional. Si tenés más de un local.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del titular / dueño</label>
+                        <input type="text" name="owner_name" class="form-control" placeholder="Nombre y apellido">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">CUIT / CUIL</label>
+                        <input type="text" name="cuit" class="form-control" placeholder="XX-XXXXXXXX-X">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dirección</label>
+                        <input type="text" name="address" class="form-control" placeholder="Calle, número, ciudad">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" name="phone" class="form-control" placeholder="+54 11 ...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Email de contacto</label>
+                        <input type="email" name="email" class="form-control" placeholder="info@tunegocio.com">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Preferencias del sistema -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#ee6c4d;"><i class="bi bi-sliders2"></i></span> Preferencias del sistema</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Zona horaria</label>
+                        <select name="timezone" class="form-select">
+                            <option value="America/Argentina/Buenos_Aires">Argentina (BA)</option>
+                            <option value="America/Argentina/Cordoba">Argentina (Córdoba)</option>
+                            <option value="America/Montevideo">Uruguay</option>
+                            <option value="America/Santiago">Chile</option>
+                            <option value="America/Bogota">Colombia</option>
+                            <option value="America/Mexico_City">México</option>
+                            <option value="America/New_York">USA (Nueva York)</option>
+                            <option value="Europe/Madrid">España</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Moneda predeterminada</label>
+                        <select name="currency" class="form-select">
+                            <option value="ARS">ARS ($)</option>
+                            <option value="USD">USD (US$)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="MXN">MXN ($)</option>
+                            <option value="COP">COP ($)</option>
+                            <option value="CLP">CLP ($)</option>
+                            <option value="UYU">UYU ($)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Margen de ganancia %</label>
+                        <input type="number" name="default_markup" class="form-control" value="30" min="0" step="1">
+                        <div class="form-text">Porcentaje que se aplica al costo por defecto.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Stock bajo (umbral)</label>
+                        <input type="number" name="low_stock_threshold" class="form-control" value="10" min="1">
+                        <div class="form-text">Cantidad mínima antes de mostrar alerta.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Stock crítico (umbral)</label>
+                        <input type="number" name="critical_stock_threshold" class="form-control" value="5" min="1">
+                        <div class="form-text">Cuando llegar a este número, se envía alerta por email.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Email (SMTP) -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#98c1d9;color:#293241;"><i class="bi bi-envelope"></i></span> Configuración de Email (SMTP)</div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Necesario para enviar tickets y links de pago a los clientes. Podés usar una cuenta de Gmail con contraseña de aplicación.</p>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Servidor SMTP</label>
+                        <input type="text" name="smtp_host" class="form-control" placeholder="smtp.gmail.com">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Puerto</label>
+                        <input type="number" name="smtp_port" class="form-control" value="587">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Usuario / Email</label>
+                        <input type="text" name="smtp_user" class="form-control" placeholder="tucuenta@gmail.com">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Contraseña de aplicación</label>
+                        <input type="password" name="smtp_password" class="form-control" placeholder="••••••••">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Mercado Pago -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#009ee3;"><i class="bi bi-credit-card"></i></span> Mercado Pago (opcional)</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label">Access Token (producción)</label>
+                        <input type="text" name="mp_access_token" class="form-control" placeholder="APP_USR-...">
+                        <div class="form-text">Lo obtenés desde <a href="https://www.mercadopago.com.ar/developers" target="_blank">Mercado Pago Developers</a> → Credenciales → Access Token.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Google Drive -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#34a853;"><i class="bi bi-google"></i></span> Google Drive (opcional)</div>
+            <div class="card-body">
+                <div class="form-check mb-2">
+                    <input type="checkbox" name="drive_enabled" id="drive_enabled" class="form-check-input" value="on">
+                    <label class="form-check-label" for="drive_enabled">Habilitar backup automático a Google Drive</label>
+                </div>
+                <div class="form-text">Si activás esta opción, necesitás proporcionar el archivo JSON de cuenta de servicio de Google Cloud.</div>
+            </div>
+        </div>
+
+        <!-- 6. Notas -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-chat-dots"></i></span> Notas adicionales</div>
+            <div class="card-body">
+                <textarea name="notes" class="form-control" rows="4" placeholder="Cualquier requerimiento especial, horarios, productos específicos, etc."></textarea>
+            </div>
+        </div>
+
+        <div class="text-center mb-5">
+            <button type="submit" class="btn btn-submit btn-lg text-white"><i class="bi bi-send-check"></i> Enviar formulario</button>
+            <p class="text-muted small mt-2">Los datos se guardan de forma segura y solo los ve el administrador.</p>
+        </div>
+
+    </form>
+</div>
+
+<footer>
+    <div class="container">
+        <i class="bi bi-shield-lock"></i> Información confidencial &mdash; solo para uso interno
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Formularios de clientes{% endblock %}
+{% block content %}
+<h2 class="text-primary mb-3"><i class="bi bi-file-text"></i> Formularios de clientes</h2>
+
+{% if submissions %}
+<div class="accordion" id="onboardingAccordion">
+    {% for s in submissions %}
+    <div class="accordion-item border-0 mb-2 rounded-3 shadow-sm overflow-hidden">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#o{{ loop.index }}" style="background:#3d5a8010;">
+                <span class="d-flex align-items-center gap-3 w-100">
+                    <span><strong>{{ s.business_name or '—' }}</strong></span>
+                    <span class="text-muted small">{{ s.owner_name or '' }}</span>
+                    <span class="text-muted small ms-auto">{{ s.submitted_at }}</span>
+                </span>
+            </button>
+        </h2>
+        <div id="o{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#onboardingAccordion">
+            <div class="accordion-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="text-primary"><i class="bi bi-shop"></i> Negocio</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Nombre</td><td class="fw-medium">{{ s.business_name or '—' }}</td></tr>
+                            <tr><td class="text-muted">Local</td><td>{{ s.local_name or '—' }}</td></tr>
+                            <tr><td class="text-muted">Titular</td><td>{{ s.owner_name or '—' }}</td></tr>
+                            <tr><td class="text-muted">CUIT</td><td>{{ s.cuit or '—' }}</td></tr>
+                            <tr><td class="text-muted">Dirección</td><td>{{ s.address or '—' }}</td></tr>
+                            <tr><td class="text-muted">Teléfono</td><td>{{ s.phone or '—' }}</td></tr>
+                            <tr><td class="text-muted">Email</td><td>{{ s.email or '—' }}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary"><i class="bi bi-sliders2"></i> Preferencias</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Zona horaria</td><td>{{ s.timezone or '—' }}</td></tr>
+                            <tr><td class="text-muted">Moneda</td><td>{{ s.currency or '—' }}</td></tr>
+                            <tr><td class="text-muted">Margen %</td><td>{{ s.default_markup or '—' }}</td></tr>
+                            <tr><td class="text-muted">Stock bajo</td><td>{{ s.low_stock_threshold or '—' }}</td></tr>
+                            <tr><td class="text-muted">Stock crítico</td><td>{{ s.critical_stock_threshold or '—' }}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-envelope"></i> SMTP</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Host</td><td>{{ s.smtp_host or '—' }}{% if s.smtp_port %}:{{ s.smtp_port }}{% endif %}</td></tr>
+                            <tr><td class="text-muted">Usuario</td><td>{{ s.smtp_user or '—' }}</td></tr>
+                            <tr><td class="text-muted">Password</td><td>{% if s.smtp_password %}•••••••{% else %}—{% endif %}</td></tr>
+                        </table>
+                    </div>
+                    {% if s.mp_access_token %}
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-credit-card"></i> Mercado Pago</h6>
+                        <p class="small text-muted">Access Token cargado ({{ s.mp_access_token[:10] }}...)</p>
+                    </div>
+                    {% endif %}
+                    {% if s.drive_enabled %}
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-google"></i> Google Drive</h6>
+                        <p class="small text-muted">Habilitado</p>
+                    </div>
+                    {% endif %}
+                    {% if s.notes %}
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-chat-dots"></i> Notas</h6>
+                        <p class="small">{{ s.notes }}</p>
+                    </div>
+                    {% endif %}
+                    <div class="col-12 text-end">
+                        <form method="POST" action="{{ url_for('admin_onboarding_delete', filename=s._file) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este formulario?')">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card shadow-sm">
+    <div class="card-body text-center py-5 text-muted">
+        <div class="fs-1 mb-2"><i class="bi bi-file-text"></i></div>
+        <p class="mb-0">No hay formularios recibidos todavía.</p>
+        <p class="small">Compartí el link <code>/onboarding</code> con tus clientes para que lo completen.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
