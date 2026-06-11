@@ -3,6 +3,32 @@
 {% block content %}
 <h2 class="text-primary mb-3"><i class="bi bi-file-text"></i> Formularios de clientes</h2>
 
+<div class="card shadow-sm mb-4 border-primary">
+    <div class="card-body d-flex align-items-center gap-3 py-2">
+        <span class="text-muted small">Link del formulario:</span>
+        <code id="onboardingLink" style="background:#f0f4f8;padding:4px 12px;border-radius:6px;font-size:.9rem;">{{ url_for('onboarding', _external=True) }}</code>
+        <button class="btn btn-sm btn-outline-primary" onclick="copyOnboardingLink()"><i class="bi bi-clipboard"></i> Copiar</button>
+        <span id="copyMsg" class="small text-success" style="display:none;"><i class="bi bi-check-circle"></i> Copiado</span>
+    </div>
+</div>
+
+<script>
+function copyOnboardingLink() {
+    const link = document.getElementById('onboardingLink');
+    navigator.clipboard.writeText(link.textContent.trim()).then(function() {
+        const msg = document.getElementById('copyMsg');
+        msg.style.display = 'inline';
+        setTimeout(function() { msg.style.display = 'none'; }, 2000);
+    }).catch(function() {
+        const range = document.createRange();
+        range.selectNodeContents(link);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    });
+}
+</script>
+
 {% if submissions %}
 <div class="accordion" id="onboardingAccordion">
     {% for s in submissions %}
