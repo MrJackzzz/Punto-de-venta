@@ -23,6 +23,8 @@ from sqlalchemy import func, or_
 import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading, re, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 app = Flask(__name__)
 app.jinja_env.globals['to_ar'] = to_ar
@@ -1929,14 +1931,6 @@ def admin_change_password():
     db.session.commit()
     flash('Contraseña cambiada correctamente.', 'success')
     return redirect(url_for('settings'))
-    user = db.session.get(User, id)
-    if user:
-        new_pass = request.form.get('password', '123456')
-        user.set_password(new_pass)
-        db.session.commit()
-        log_movement(current_user, 'user_reset_pass', f'Contraseña reseteada para {user.username}')
-        flash('Contraseña actualizada.', 'success')
-    return redirect(url_for('users'))
 
 
 @app.route('/history')
@@ -2668,7 +2662,8 @@ def api_manual_save():
     if c:
         existing = json.loads(c.value) if c.value else {}
     else:
-        existing = MANUAL_DEFAULT_SECTIONS
+        existing = {k: dict(v) for k, v in MANUAL_DEFAULT_SECTIONS.items()}
+        c = Config(key='manual_sections', value=json.dumps(existing, ensure_ascii=False))
     for key, val in data.items():
         if key in existing:
             existing[key].update(val)
@@ -3695,7 +3690,6 @@ def membership():
              'membership_expiry', 'membership_payment_info', 'mp_membership_access_token']}
     data['instance_id'] = get_instance_id()
     return render_template('membership.html', m=data)
-    return render_template('membership.html', m=data)
 
 
 @app.route('/api/membership/register-payment', methods=['POST'])
@@ -3818,11 +3812,6 @@ def planes_send_email():
     except Exception:
         return jsonify({'error': 'Error al generar PDF en el servidor.'}), 500
     try:
-        import smtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.base import MIMEBase
-        from email.mime.text import MIMEText
-        from email import encoders
         msg = MIMEMultipart()
         msg['Subject'] = f'Planes SmartPost - {get_config("business_name", "SmartPost")}'
         msg['From'] = get_config('smtp_user', '')
@@ -4181,7 +4170,8 @@ def init_app():
             set_timezone(tz_cfg.value)
 
 
-init_app()
+if not os.environ.get('TESTING'):
+    init_app()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

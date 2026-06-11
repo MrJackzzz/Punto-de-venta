@@ -335,7 +335,7 @@ function filterProducts() {
             const bVal = parseFloat(b.cells[8].textContent.replace(/[^0-9.,]/g, '').replace(',', '')) || 0;
             return aVal - bVal;
         });
-        visible.forEach(r => tbody.appendChild(r));
+        visible.forEach(r => document.getElementById('productsBody').appendChild(r));
     } else {
         restoreOriginalOrder();
     }
