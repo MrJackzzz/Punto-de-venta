@@ -2,39 +2,105 @@
 {% block title %}Iniciar Sesión{% endblock %}
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
-<div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #3d5a80, #293241); z-index: 50;">
-    <div class="card shadow w-100 login-form" style="max-width: 420px;">
-        <div class="card-body p-4">
-            <div class="text-center mb-4">
-                {% if logo_src %}
-                <img src="{{ logo_src }}" class="mb-3" style="max-height:120px;max-width:100%;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,0.25);">
-                {% endif %}
-                <h4 class="mb-0" style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:1.6rem;letter-spacing:2px;background:linear-gradient(135deg,#3d5a80,#ee6c4d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{{ business_name }}</h4>
-                <p style="font-family:'Orbitron',sans-serif;font-weight:400;font-size:0.75rem;letter-spacing:1px;color:#e0fbfc;margin-top:2px;">Soluciones integrales de comercio</p>
-            </div>
-            <p class="text-center text-muted mb-4">Ingresá tus credenciales</p>
-            <form method="POST" action="{{ url_for('login') }}">
-                <div class="form-floating mb-3">
-                    <input type="text" id="username" name="username" class="form-control" placeholder="Usuario" required autofocus>
-                    <label for="username">Usuario</label>
-                </div>
-                <div class="form-floating mb-3">
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Contraseña" required>
-                    <label for="password">Contraseña</label>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 py-2">Ingresar</button>
-            </form>
-            {% if configs.get('demo_mode') == 'on' %}
-            <div class="text-center mt-3">
-                <button class="btn btn-outline-danger w-100 py-2" onclick="loginResetDemo()"><i class="bi bi-arrow-repeat"></i> Iniciar Demo — Probar ahora</button>
-                <small class="text-muted d-block mt-1">Los datos se borran cada {{ configs.get('demo_reset_interval', '24') }}h. Sin registro.</small>
-            </div>
-            {% endif %}
-            <div class="text-center mt-4 pt-3 border-top small text-muted">
-                <i class="bi bi-shield-lock"></i> SmartPost se compromete a mantener absoluta confidencialidad sobre toda la información almacenada por el cliente y no utilizará dichos datos para fines distintos a la prestación del servicio.
-            </div>
-        </div>
+<style>
+.login-page {
+  position:fixed; top:0; left:0; width:100%; height:100%; z-index:50;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, #1a2a3a 0%, #3d5a80 50%, #2c4a6e 100%);
+  overflow:hidden;
+}
+.login-bg-shapes { position:absolute; width:100%; height:100%; top:0; left:0; pointer-events:none; }
+.login-bg-shapes .shape {
+  position:absolute; border-radius:50%;
+  background:rgba(255,255,255,0.04);
+}
+.login-bg-shapes .s1 { width:500px; height:500px; top:-120px; right:-80px; }
+.login-bg-shapes .s2 { width:350px; height:350px; bottom:-60px; left:-100px; }
+.login-bg-shapes .s3 { width:200px; height:200px; top:40%; left:15%; }
+.login-bg-shapes .s4 { width:150px; height:150px; bottom:20%; right:25%;
+  background:rgba(238,108,77,0.06); }
+.login-card {
+  position:relative; z-index:2;
+  width:100%; max-width:420px; margin:1rem;
+  background:#fff; border-radius:20px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+  padding:2.5rem 2rem;
+}
+body.dark-mode .login-card { background:#1e2433; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+.login-card .logo-area { text-align:center; margin-bottom:1.8rem; }
+.login-card .logo-area img { max-height:90px; max-width:100%; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+.login-card .logo-area h4 {
+  font-family:'Orbitron',sans-serif; font-weight:800; font-size:1.3rem; letter-spacing:2px; margin-top:0.8rem;
+  background:linear-gradient(135deg,#3d5a80,#ee6c4d); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.login-card .logo-area .tagline { font-family:'Orbitron',sans-serif; font-weight:400; font-size:0.6rem; letter-spacing:1px; color:#adb5bd; margin-top:2px; }
+.login-card .divider { height:1px; background:linear-gradient(90deg,transparent,#dee2e6,transparent); margin:1.2rem 0; }
+body.dark-mode .login-card .divider { background:linear-gradient(90deg,transparent,#3a4055,transparent); }
+.form-floating>.form-control:focus~label,
+.form-floating>.form-control:not(:placeholder-shown)~label { color:#3d5a80; opacity:0.8; }
+body.dark-mode .form-floating>.form-control:focus~label,
+body.dark-mode .form-floating>.form-control:not(:placeholder-shown)~label { color:#98c1d9; }
+.form-floating>.form-control:focus { border-color:#3d5a80; box-shadow:0 0 0 3px rgba(61,90,128,0.15); }
+body.dark-mode .form-floating>.form-control { background:#2a3045; border-color:#3a4055; color:#e0e0e0; }
+body.dark-mode .form-floating>.form-control:focus { background:#2a3045; border-color:#3d5a80; box-shadow:0 0 0 3px rgba(61,90,128,0.2); }
+body.dark-mode .form-floating label { color:#9aa0ac; }
+.login-card .btn-ingresar {
+  background:linear-gradient(135deg,#3d5a80,#2c4a6e); border:none;
+  padding:0.75rem; font-weight:600; letter-spacing:0.5px; border-radius:10px;
+  transition:all 0.3s; position:relative; overflow:hidden;
+}
+.login-card .btn-ingresar:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(61,90,128,0.4); }
+.login-card .btn-ingresar:active { transform:translateY(0); }
+.login-card .btn-demo {
+  border:2px dashed #dc3545; color:#dc3545; background:transparent;
+  border-radius:10px; padding:0.6rem; font-weight:500; font-size:0.9rem;
+  transition:all 0.3s;
+}
+.login-card .btn-demo:hover { background:#dc3545; color:#fff; }
+.login-card .footer-text {
+  text-align:center; margin-top:1.2rem; padding-top:1rem;
+  border-top:1px solid #f0f0f0;
+  font-size:0.7rem; color:#adb5bd; line-height:1.5;
+}
+body.dark-mode .login-card .footer-text { border-top-color:#2a3045; }
+</style>
+<div class="login-page">
+  <div class="login-bg-shapes">
+    <div class="shape s1"></div>
+    <div class="shape s2"></div>
+    <div class="shape s3"></div>
+    <div class="shape s4"></div>
+  </div>
+  <div class="login-card">
+    <div class="logo-area">
+      {% if logo_src %}
+      <img src="{{ logo_src }}" alt="Logo">
+      {% endif %}
+      <h4>{{ business_name }}</h4>
+      <div class="tagline">Soluciones integrales de comercio</div>
     </div>
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-floating mb-3">
+        <input type="text" id="username" name="username" class="form-control" placeholder="Usuario" required autofocus>
+        <label for="username"><i class="bi bi-person me-1"></i>Usuario</label>
+      </div>
+      <div class="form-floating mb-3">
+        <input type="password" id="password" name="password" class="form-control" placeholder="Contraseña" required>
+        <label for="password"><i class="bi bi-lock me-1"></i>Contraseña</label>
+      </div>
+      <button type="submit" class="btn btn-ingresar w-100"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+    </form>
+    {% if configs.get('demo_mode') == 'on' %}
+    <div class="divider"></div>
+    <div class="text-center">
+      <button class="btn btn-demo w-100" onclick="loginResetDemo()"><i class="bi bi-arrow-repeat me-1"></i> Probar Demo — Sin registro</button>
+      <small class="d-block mt-1" style="color:#adb5bd;font-size:0.65rem;">Los datos se borran cada {{ configs.get('demo_reset_interval', '24') }}h</small>
+    </div>
+    {% endif %}
+    <div class="footer-text">
+      <i class="bi bi-shield-lock"></i> SmartPost se compromete a mantener absoluta confidencialidad sobre toda la información almacenada por el cliente y no utilizará dichos datos para fines distintos a la prestación del servicio.
+    </div>
+  </div>
 </div>
 
 <script>
