@@ -353,6 +353,12 @@ def demo_reset():
             admin = User(username='admin', role='admin')
             admin.set_password('admin123')
             db.session.add(admin)
+        demo = User.query.filter_by(username='demo').first()
+        if not demo:
+            demo = User(username='demo', role='supervisor')
+            demo.set_password('demo123')
+            db.session.add(demo)
+            db.session.flush()
         db.session.commit()
         categories_data = ['Bebidas', 'Lácteos', 'Almacén', 'Limpieza', 'Snacks']
         cat_ids = {}
@@ -389,7 +395,7 @@ def demo_reset():
         else:
             db.session.add(Config(key='demo_last_reset', value=datetime.now(timezone.utc).isoformat()))
         db.session.commit()
-        login_user(admin)
+        login_user(demo)
         return jsonify({'success': True, 'message': 'Demo lista. Bienvenido.'})
     except Exception as e:
         db.session.rollback()
