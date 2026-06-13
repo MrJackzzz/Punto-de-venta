@@ -111,7 +111,7 @@ function loginResetDemo() {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '/login';
+            window.location.href = '/';
         } else {
             btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Error - intentá de nuevo';
         }

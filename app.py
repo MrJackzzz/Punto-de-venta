@@ -389,7 +389,8 @@ def demo_reset():
         else:
             db.session.add(Config(key='demo_last_reset', value=datetime.now(timezone.utc).isoformat()))
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Demo reseteada. Productos y datos de ejemplo cargados.'})
+        login_user(admin)
+        return jsonify({'success': True, 'message': 'Demo lista. Bienvenido.'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
