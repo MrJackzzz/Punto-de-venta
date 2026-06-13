@@ -3495,14 +3495,9 @@ def backup_download(name):
 
 
 @app.route('/backups/restore/<name>', methods=['POST'])
-@login_required
 def backup_restore(name):
-    if current_user.role != 'admin':
-        flash('Solo Admin.', 'danger')
-        return redirect(url_for('dashboard'))
-    fpath = os.path.join(BACKUP_DIR, name)
-    if not os.path.exists(fpath):
-        flash('Archivo no encontrado.', 'danger')
+    if not current_user.can_view_backups():
+        flash('No tienes permiso.', 'danger')
         return redirect(url_for('backups'))
     db_url = app.config['SQLALCHEMY_DATABASE_URI']
     try:
@@ -3531,13 +3526,9 @@ def backup_restore(name):
 
 
 @app.route('/backups/upload', methods=['POST'])
-@login_required
 def backup_upload():
-    if current_user.role != 'admin':
-        flash('Solo Admin.', 'danger')
-        return redirect(url_for('dashboard'))
-    if 'backup_file' not in request.files:
-        flash('No se seleccionó ningún archivo.', 'danger')
+    if not current_user.can_view_backups():
+        flash('No tienes permiso.', 'danger')
         return redirect(url_for('backups'))
     f = request.files['backup_file']
     if f.filename == '' or not f.filename.endswith('.zip'):
