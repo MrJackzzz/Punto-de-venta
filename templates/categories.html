@@ -10,12 +10,15 @@
 
 <div class="card shadow-sm">
     <div class="card-body">
+        <div class="mb-3">
+            <input type="text" id="catSearch" class="form-control" placeholder="Buscar categoría..." oninput="filterCategories()">
+        </div>
         <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="thead-primary">
                 <tr><th>Nombre</th><th>Productos</th><th>Acciones</th></tr>
             </thead>
-            <tbody>
+            <tbody id="catTableBody">
                 {% for c in categories %}
                 <tr>
                     <td><strong>{{ c.name }}</strong></td>
@@ -83,5 +86,14 @@ document.getElementById('catModal').addEventListener('hidden.bs.modal', function
     document.getElementById('catForm').action = '{{ url_for("category_add") }}';
     document.getElementById('catModalTitle').textContent = 'Nueva Categoría';
 });
+
+function filterCategories() {
+    var input = document.getElementById('catSearch').value.toLowerCase();
+    var rows = document.getElementById('catTableBody').getElementsByTagName('tr');
+    for (var i = 0; i < rows.length; i++) {
+        var name = rows[i].cells[0].textContent.toLowerCase();
+        rows[i].style.display = name.indexOf(input) > -1 ? '' : 'none';
+    }
+}
 </script>
 {% endblock %}
