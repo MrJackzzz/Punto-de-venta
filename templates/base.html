@@ -84,6 +84,7 @@
             {% if current_user.can_view_barcodes() %}
             <a href="{{ url_for('barcodes') }}" class="sidebar-link"><span class="si"><i class="bi bi-upc-scan"></i></span><span class="st">Códigos</span></a>
             {% endif %}
+            <a href="{{ url_for('scanner_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-phone"></i></span><span class="st">Scanner remoto</span></a>
             <a href="{{ url_for('admin_systems') }}" class="sidebar-link"><span class="si"><i class="bi bi-grid-3x3-gap-fill"></i></span><span class="st">Sistemas</span></a>
             {% endif %}
             {% if current_user.can_view_backups() %}
@@ -146,6 +147,7 @@
                 <a href="{{ url_for('purchase_orders') }}">Órdenes Compra</a>
                 {% endif %}
                 {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>{% endif %}
+                <a href="{{ url_for('scanner_page') }}">Scanner remoto</a>
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('admin_systems') }}">Sistemas</a>
                 {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}

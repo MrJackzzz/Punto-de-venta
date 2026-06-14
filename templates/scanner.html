@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Scanner remoto{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:600px;">
+    <h4 class="mb-3"><i class="bi bi-phone"></i> Scanner remoto</h4>
+    <p class="text-muted small">Usá una app de scanner de código de barras en tu celular para enviar los códigos a la app automáticamente.</p>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="card-title">Paso 1: Instalá una app scanner</h6>
+            <p class="card-text small mb-1">Descargá una de estas apps gratuitas:</p>
+            <ul class="small mb-0">
+                <li><strong>Android:</strong> <a href="https://play.google.com/store/apps/details?id=com.google.zxing.client.android" target="_blank">Barcode Scanner (ZXing)</a> o <a href="https://play.google.com/store/apps/details?id=com.gamma.scan" target="_blank">QR &amp; Bar Code Scanner</a></li>
+                <li><strong>iOS:</strong> <a href="https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304" target="_blank">QR Code Reader by Scan</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="card-title">Paso 2: Configurá la app</h6>
+            <p class="card-text small">En la app, buscá la opción <strong>"Enviar a URL"</strong> o <strong>"HTTP Request"</strong> y configurá esta URL:</p>
+            <div class="input-group mb-2">
+                <input type="text" class="form-control form-control-sm" id="scanUrl" value="{{ scan_url }}" readonly>
+                <button class="btn btn-outline-secondary btn-sm" onclick="copyUrl()">Copiar</button>
+            </div>
+            <p class="text-muted small mb-0">La app reemplazará automáticamente <code>{CODE}</code> o el texto escaneado en la URL.</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body text-center">
+            <h6 class="card-title">O escaneá este QR desde la app</h6>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ scan_url | urlencode }}" alt="QR" class="img-fluid" style="max-width:200px;">
+            <p class="text-muted small mt-2">Escaneá este QR con la app scanner para configurar la URL automáticamente.</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info small">
+        <i class="bi bi-info-circle"></i> Los códigos escaneados aparecerán automáticamente en la pantalla de <strong>Vender</strong>, <strong>Productos</strong> y <strong>Pedidos</strong>.
+    </div>
+</div>
+
+<script>
+function copyUrl() {
+    const input = document.getElementById('scanUrl');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(function() {
+        alert('URL copiada');
+    }).catch(function() {
+        alert('Copiado manual: ' + input.value);
+    });
+}
+</script>
+{% endblock %}

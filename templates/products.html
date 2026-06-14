@@ -363,6 +363,18 @@ function startScanner() {
     });
 }
 
+setInterval(function() {
+    fetch('/api/remote-scan/next')
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.code) {
+                document.getElementById('code').value = data.code;
+                if (typeof playBeep === 'function') playBeep();
+            }
+        })
+        .catch(function() {});
+}, 800);
+
 document.addEventListener('DOMContentLoaded', saveOriginalOrder);
 </script>
 

@@ -345,6 +345,19 @@ function startScanner() {
     });
 }
 
+setInterval(function() {
+    fetch('/api/remote-scan/next')
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.code) {
+                document.getElementById('manualCode').value = data.code;
+                if (typeof playBeep === 'function') playBeep();
+                addByCode();
+            }
+        })
+        .catch(function() {});
+}, 800);
+
 document.getElementById('manualCode').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); addByCode(); }
 });

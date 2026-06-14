@@ -579,5 +579,19 @@ function startScanner() {
         container.innerHTML = '<p class="text-danger small">Error al acceder a la cámara: ' + err + '</p>';
     });
 }
+
+// Remote scanner polling (external scanner app sends codes via API)
+setInterval(function() {
+    fetch('/api/remote-scan/next')
+        .then(r => r.json())
+        .then(data => {
+            if (data.code) {
+                document.getElementById('manualCode').value = data.code;
+                playSuccessSound();
+                addByCode();
+            }
+        })
+        .catch(function() {});
+}, 800);
 </script>
 {% endblock %}

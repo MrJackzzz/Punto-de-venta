@@ -1014,6 +1014,39 @@ def sell():
     return render_template('sell.html', products=products_list, unit_types=unit_types)
 
 
+@app.route('/scanner')
+@login_required
+def scanner_page():
+    base_url = request.host_url.rstrip('/')
+    scan_url = base_url + url_for('api_remote_scan') + '?code='
+    return render_template('scanner.html', scan_url=scan_url, base_url=base_url)
+
+
+# In-memory queue for remote barcode scans (keyed by user_id)
+_remote_scans = {}
+
+@app.route('/api/remote-scan', methods=['GET', 'POST'])
+@login_required
+def api_remote_scan():
+    code = (request.args.get('code') or request.form.get('code') or '').strip()
+    if not code:
+        return jsonify({'error': 'Falta código'}), 400
+    uid = str(current_user.id)
+    if uid not in _remote_scans:
+        _remote_scans[uid] = []
+    _remote_scans[uid].append(code)
+    return jsonify({'ok': True, 'code': code})
+
+@app.route('/api/remote-scan/next')
+@login_required
+def api_remote_scan_next():
+    uid = str(current_user.id)
+    if uid in _remote_scans and _remote_scans[uid]:
+        code = _remote_scans[uid].pop(0)
+        return jsonify({'code': code})
+    return jsonify({'code': None})
+
+
 @app.route('/api/product/<code>')
 @login_required
 def api_product_by_code(code):
@@ -4207,7 +4240,7 @@ def init_app():
                          'can_view_backups','can_manage_purchases']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
-            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_barcodes','can_view_trash','can_void_cash_close','can_confirm_payment') for k in all_perm_keys},
+            'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_trash','can_void_cash_close','can_confirm_payment') for k in all_perm_keys},
             'user': {k: k in ('can_view_products','can_add_products','can_sell','can_view_charts',
                               'can_view_suppliers','can_view_categories','can_pay_membership') for k in all_perm_keys}
         }
