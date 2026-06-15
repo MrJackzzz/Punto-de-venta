@@ -17,6 +17,7 @@
             <a class="btn btn-sm btn-outline-secondary" target="_blank" id="emailShare" href="#"><i class="bi bi-envelope"></i> Email</a>
             <button class="btn btn-sm btn-outline-dark" onclick="toggleQR()"><i class="bi bi-qr-code"></i> QR</button>
             <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#configModal"><i class="bi bi-gear"></i> Configurar formulario</button>
+            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#fieldsModal"><i class="bi bi-pencil"></i> Editar campos</button>
         </div>
         <div id="qrContainer" class="mt-2 text-center" style="display:none;">
             <div id="qrcode"></div>
@@ -98,6 +99,36 @@ function toggleQR() {
           <label class="form-check-label" for="sec_{{ sid }}">{{ sname }}</label>
         </div>
         {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar campos -->
+<div class="modal fade" id="fieldsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin_onboarding_field_config') }}">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar etiquetas de campos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted">Editá las etiquetas, placeholders y visibilidad de cada campo. Dejá <code>visible: false</code> para ocultar un campo.</p>
+        {% set field_cfg = config.get('onboarding_fields_config', {}) %}
+        <textarea name="config" class="form-control font-monospace" rows="20" id="fieldsConfigArea">{% if field_cfg %}{{ field_cfg | tojson(indent=2) }}{% else %}{
+  "roles_title": {"label": "Roles y permisos"},
+  "roles_desc": {"label": "¿Qué roles necesitás en el sistema?"},
+  "roles_role_admin": {"label": "Admin (acceso total)", "visible": true},
+  "roles_role_supervisor": {"label": "Supervisor (casi todo excepto config)", "visible": true},
+  "roles_role_vendedor": {"label": "Vendedor (solo vender y ver stock)", "visible": true},
+  "roles_extra_users": {"label": "Usuarios adicionales", "placeholder": "Ej: Juan Pérez - vendedor - juan@email.com", "visible": true, "help": "Un usuario por línea: nombre - rol - email - teléfono."}
+}{% endif %}</textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

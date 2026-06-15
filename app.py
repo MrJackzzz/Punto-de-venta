@@ -1785,7 +1785,15 @@ def onboarding():
         except (json.JSONDecodeError, TypeError):
             vis = []
         app.config['ONBOARDING_VISIBLE_SECTIONS'] = vis
-    return render_template('onboarding.html', visible_sections=vis)
+    fc = app.config.get('ONBOARDING_FIELDS_CONFIG')
+    if fc is None:
+        raw_fc = get_config('onboarding_fields_config', '')
+        try:
+            fc = json.loads(raw_fc) if raw_fc else {}
+        except (json.JSONDecodeError, TypeError):
+            fc = {}
+        app.config['ONBOARDING_FIELDS_CONFIG'] = fc
+    return render_template('onboarding.html', visible_sections=vis, field_config=fc)
 
 
 @app.route('/onboarding/submit', methods=['POST'])
@@ -1929,6 +1937,28 @@ def admin_onboarding_config():
         db.session.add(Config(key='onboarding_visible_sections', value=val))
     app.config.pop('ONBOARDING_VISIBLE_SECTIONS', None)
     flash('Formulario actualizado.', 'success')
+    return redirect(url_for('admin_onboarding'))
+
+
+@app.route('/admin/onboarding/field-config', methods=['POST'])
+@login_required
+def admin_onboarding_field_config():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    raw = request.form.get('config', '{}')
+    try:
+        val = json.dumps(json.loads(raw), ensure_ascii=False)
+    except (json.JSONDecodeError, TypeError):
+        flash('JSON inválido.', 'danger')
+        return redirect(url_for('admin_onboarding'))
+    c = Config.query.filter_by(key='onboarding_fields_config').first()
+    if c:
+        c.value = val
+    else:
+        db.session.add(Config(key='onboarding_fields_config', value=val))
+    app.config.pop('ONBOARDING_FIELDS_CONFIG', None)
+    app.config.pop('ONBOARDING_VISIBLE_SECTIONS', None)
+    flash('Campos actualizados.', 'success')
     return redirect(url_for('admin_onboarding'))
 
 

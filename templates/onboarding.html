@@ -286,35 +286,48 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
 
         <!-- 7. Roles y permisos -->
         {% if show or 'roles' in vs %}
+        {% set _fc = field_config if field_config is defined and field_config else {} %}
+        {% set _r_admin = _fc.get('roles_role_admin', {}) %}
+        {% set _r_super = _fc.get('roles_role_supervisor', {}) %}
+        {% set _r_vende = _fc.get('roles_role_vendedor', {}) %}
+        {% set _r_extra = _fc.get('roles_extra_users', {}) %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#6f42c1;"><i class="bi bi-people"></i></span> Roles y permisos</div>
+            <div class="card-header"><span class="section-icon" style="background:#6f42c1;"><i class="bi bi-people"></i></span> {{ _fc.get('roles_title', {}).get('label') or 'Roles y permisos' }}</div>
             <div class="card-body">
-                <p class="text-muted small mb-2">¿Qué roles necesitás en el sistema?</p>
+                <p class="text-muted small mb-2">{{ _fc.get('roles_desc', {}).get('label') or '¿Qué roles necesitás en el sistema?' }}</p>
                 <div class="row g-2">
+                    {% if _r_admin.get('visible', true) %}
                     <div class="col-md-4">
                         <div class="form-check">
                             <input type="checkbox" name="role_admin" id="role_admin" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="role_admin">Admin (acceso total)</label>
+                            <label class="form-check-label" for="role_admin">{{ _r_admin.get('label', 'Admin (acceso total)') }}</label>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if _r_super.get('visible', true) %}
                     <div class="col-md-4">
                         <div class="form-check">
                             <input type="checkbox" name="role_supervisor" id="role_supervisor" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="role_supervisor">Supervisor (casi todo excepto config)</label>
+                            <label class="form-check-label" for="role_supervisor">{{ _r_super.get('label', 'Supervisor (casi todo excepto config)') }}</label>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if _r_vende.get('visible', true) %}
                     <div class="col-md-4">
                         <div class="form-check">
                             <input type="checkbox" name="role_vendedor" id="role_vendedor" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="role_vendedor">Vendedor (solo vender y ver stock)</label>
+                            <label class="form-check-label" for="role_vendedor">{{ _r_vende.get('label', 'Vendedor (solo vender y ver stock)') }}</label>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
+                {% if _r_extra.get('visible', true) %}
                 <div class="mt-2">
-                    <label class="form-label">Usuarios adicionales</label>
-                    <textarea name="extra_users" class="form-control" rows="2" placeholder="Ej: Juan Pérez - vendedor - juan@email.com - 1122334455&#10;María López - supervisor - maria@email.com - 1166778899"></textarea>
-                    <div class="form-text">Un usuario por línea: nombre - rol - email - teléfono.</div>
+                    <label class="form-label">{{ _r_extra.get('label', 'Usuarios adicionales') }}</label>
+                    <textarea name="extra_users" class="form-control" rows="2" placeholder="{{ _r_extra.get('placeholder', 'Ej: Juan Pérez - vendedor - juan@email.com - 1122334455\nMaría López - supervisor - maria@email.com - 1166778899') }}"></textarea>
+                    <div class="form-text">{{ _r_extra.get('help', 'Un usuario por línea: nombre - rol - email - teléfono.') }}</div>
                 </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}
