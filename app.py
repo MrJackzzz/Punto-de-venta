@@ -1033,8 +1033,8 @@ def scan_mobile():
 def scanner_app_redirect():
     ua = (request.headers.get('User-Agent') or '').lower()
     if 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
-        return redirect('https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304')
-    return redirect('https://play.google.com/store/apps/details?id=com.qr.barcode.scanner.post.create')
+        return redirect('https://itunes.apple.com/app/id1180168368')
+    return redirect('https://play.google.com/store/apps/details?id=com.barcodetopc')
 
 
 # Global queue for remote barcode scans (phone → browser)

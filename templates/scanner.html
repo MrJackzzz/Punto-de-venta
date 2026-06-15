@@ -4,77 +4,77 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <div class="container py-4" style="max-width:600px;">
     <h4 class="mb-3"><i class="bi bi-phone"></i> Scanner remoto</h4>
-    <p class="text-muted small">Usá una app de scanner de código de barras en tu celular para enviar los códigos a la app automáticamente.</p>
+    <p class="text-muted small">Usá <strong>Barcode to PC</strong> para escanear códigos con tu celular y que aparezcan al instante en la app.</p>
 
     <div class="card mb-3">
         <div class="card-body">
-            <h6 class="card-title">Paso 1: Instalá una app scanner</h6>
-            <p class="card-text small mb-1">Escaneá este QR con tu celular para ir a la tienda según tu sistema operativo:</p>
-            <div class="text-center mb-3">
-                <div id="qrcode-app"></div>
-                <p class="text-muted small mt-1">Android → Google Play &nbsp;|&nbsp; iOS → App Store</p>
+            <h6 class="card-title">Paso 1: Instalá el servidor en la computadora</h6>
+            <p class="card-text small mb-1">Descargá e instalá el programa <strong>Barcode to PC Server</strong> en esta computadora:</p>
+            <div class="d-flex gap-2 flex-wrap justify-content-center mb-2">
+                <a href="https://barcodetopc.com/download/windows" target="_blank" class="btn btn-outline-primary btn-sm"><i class="bi bi-windows"></i> Windows</a>
+                <a href="https://barcodetopc.com/download/mac-apple-silicon" target="_blank" class="btn btn-outline-primary btn-sm"><i class="bi bi-apple"></i> macOS</a>
+                <a href="https://barcodetopc.com/download/linux" target="_blank" class="btn btn-outline-primary btn-sm"><i class="bi bi-ubuntu"></i> Linux</a>
             </div>
+            <p class="text-muted small mb-0">Gratis por 300 escaneos/mes. Suficiente para empezar.</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body text-center">
+            <h6 class="card-title">Paso 2: Instalá la app en tu celular</h6>
+            <p class="card-text small mb-1">Escaneá este QR según tu sistema operativo:</p>
+            <div class="text-center mb-2">
+                <div id="qrcode-app" style="display:inline-block;"></div>
+            </div>
+            <p class="text-muted small mb-2">Android <i class="bi bi-google-play"></i> | iOS <i class="bi bi-apple"></i></p>
             <p class="card-text small mb-0">O descargá manualmente:</p>
-            <ul class="small mb-0">
-                <li><strong>Android:</strong> <a href="https://play.google.com/store/apps/details?id=com.qr.barcode.scanner.post.create" target="_blank">QR Barcode Scan to Post Create</a> (tiene Auto Enviar a Servidor)</li>
-                <li><strong>iOS:</strong> <a href="https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304" target="_blank">QR Code Reader by Scan</a></li>
+            <ul class="small mb-0 list-unstyled">
+                <li><a href="https://play.google.com/store/apps/details?id=com.barcodetopc" target="_blank">Android — Barcode to PC</a></li>
+                <li><a href="https://itunes.apple.com/app/id1180168368" target="_blank">iOS — Barcode to PC</a></li>
             </ul>
         </div>
     </div>
 
     <div class="card mb-3">
         <div class="card-body">
-            <h6 class="card-title">Paso 2: Configurá la app en el celular</h6>
-            <p class="card-text small">Abrí la app <strong>"QR Barcode Scan to Post Create"</strong>, andá a <strong>Configuración / Settings</strong> y buscá <strong>"Auto Send Data to Server"</strong>. Pegá esta URL y activá la opción:</p>
-            <div class="input-group mb-2">
-                <input type="text" class="form-control form-control-sm" id="scanUrl" value="{{ scan_url }}" readonly>
-                <button class="btn btn-outline-secondary btn-sm" onclick="copyUrl()">Copiar</button>
-            </div>
-            <p class="text-muted small mb-0">La app reemplazará automáticamente el código escaneado al final de la URL.</p>
+            <h6 class="card-title">Paso 3: Conectá el celular a la PC</h6>
+            <ol class="small mb-0">
+                <li>Abrí el <strong>Barcode to PC Server</strong> en la computadora</li>
+                <li>Te va a mostrar un <strong>código QR</strong> en la pantalla</li>
+                <li>Abrí la app <strong>Barcode to PC</strong> en tu celular</li>
+                <li>Escaneá ese QR que muestra el servidor</li>
+                <li class="fw-bold text-success">¡Ya están conectados!</li>
+            </ol>
         </div>
     </div>
 
     <div class="card mb-3">
-        <div class="card-body text-center">
-            <h6 class="card-title">Paso 3: Escaneá códigos de productos</h6>
-            <p class="card-text small">Una vez configurada la URL, escaneá cualquier código de barras con la app. El código se envía automáticamente y aparece al instante en la pantalla de <strong>Vender</strong>.</p>
-            <div id="qrcode-config"></div>
-            <p class="text-muted small mt-2">Este QR es para <strong>configurar la URL</strong> en la app. Escanealo desde la app scanner para cargar la URL automáticamente.</p>
+        <div class="card-body">
+            <h6 class="card-title">Paso 4: Escaneá productos</h6>
+            <ol class="small mb-0">
+                <li>Abrí la app web en la computadora (ej: <strong>Vender</strong>, <strong>Productos</strong> o <strong>Pedidos</strong>)</li>
+                <li>Hacé clic en el campo de código para que tenga el <strong>foco</strong> (cursor parpadeando)</li>
+                <li>Escaneá cualquier código de barras con la app del celular</li>
+                <li class="fw-bold text-success">El código aparece escrito automáticamente en el campo</li>
+            </ol>
+            <div class="alert alert-info mt-2 small mb-0">
+                <i class="bi bi-info-circle"></i> No importa en qué sección estés — Vender, Productos, Pedidos, Ordenes Compra — funciona en <strong>cualquier campo de texto</strong> que tenga el foco.
+            </div>
         </div>
     </div>
 
-    <div class="alert alert-info small">
-        <i class="bi bi-info-circle"></i> Los códigos escaneados aparecerán automáticamente en la pantalla de <strong>Vender</strong>, <strong>Productos</strong> y <strong>Pedidos</strong>.
-    </div>
-    <div class="alert alert-warning small">
-        <i class="bi bi-exclamation-triangle"></i> <strong>¿No funciona la app?</strong> Usá la <a href="{{ url_for('scan_mobile') }}" class="alert-link">página manual de escaneo</a> — abrila en tu celular, escaneá con la app que ya tenés instalada, copiá el código y pegalo ahí.
+    <div class="alert alert-success small">
+        <i class="bi bi-check-circle"></i> <strong>Ventajas de Barcode to PC:</strong> No necesita configuración de URL, no depende de HTTPS, funciona en cualquier sección, y el código se escribe solo sin que tocás el teclado.
     </div>
 </div>
 
 <script>
-function copyUrl() {
-    const input = document.getElementById('scanUrl');
-    input.select();
-    navigator.clipboard.writeText(input.value).then(function() {
-        alert('URL copiada');
-    }).catch(function() {
-        alert('Copiado manual: ' + input.value);
-    });
-}
 window.addEventListener('DOMContentLoaded', function() {
     if (typeof QRCode !== 'undefined') {
         new QRCode(document.getElementById('qrcode-app'), {
-            text: '{{ app_url }}',
-            width: 160,
-            height: 160,
-            colorDark: '#3d5a80',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-        });
-        new QRCode(document.getElementById('qrcode-config'), {
-            text: '{{ scan_url }}',
-            width: 200,
-            height: 200,
+            text: 'https://barcodetopc.com/download',
+            width: 180,
+            height: 180,
             colorDark: '#3d5a80',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.H
