@@ -1,14 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Formularios de clientes{% endblock %}
 {% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <h2 class="text-primary mb-3"><i class="bi bi-file-text"></i> Formularios de clientes</h2>
 
 <div class="card shadow-sm mb-4 border-primary">
-    <div class="card-body d-flex align-items-center gap-3 py-2">
-        <span class="text-muted small">Link del formulario:</span>
-        <code id="onboardingLink" style="background:#f0f4f8;padding:4px 12px;border-radius:6px;font-size:.9rem;">{{ url_for('onboarding', _external=True) }}</code>
-        <button class="btn btn-sm btn-outline-primary" onclick="copyOnboardingLink()"><i class="bi bi-clipboard"></i> Copiar</button>
-        <span id="copyMsg" class="small text-success" style="display:none;"><i class="bi bi-check-circle"></i> Copiado</span>
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="text-muted small">Link del formulario:</span>
+            <code id="onboardingLink" style="background:#f0f4f8;padding:4px 12px;border-radius:6px;font-size:.9rem;">{{ url_for('onboarding', _external=True) }}</code>
+            <button class="btn btn-sm btn-outline-primary" onclick="copyOnboardingLink()"><i class="bi bi-clipboard"></i> Copiar</button>
+            <span id="copyMsg" class="small text-success" style="display:none;"><i class="bi bi-check-circle"></i> Copiado</span>
+        </div>
+        <div class="d-flex gap-2 mt-2 flex-wrap">
+            <a class="btn btn-sm btn-success" target="_blank" id="whatsappShare" href="#"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+            <a class="btn btn-sm btn-outline-secondary" target="_blank" id="emailShare" href="#"><i class="bi bi-envelope"></i> Email</a>
+            <button class="btn btn-sm btn-outline-dark" onclick="toggleQR()"><i class="bi bi-qr-code"></i> QR</button>
+        </div>
+        <div id="qrContainer" class="mt-2 text-center" style="display:none;">
+            <div id="qrcode"></div>
+            <small class="text-muted">Escaneá con el celular para abrir el formulario</small>
+        </div>
     </div>
 </div>
 
@@ -26,6 +38,30 @@ function copyOnboardingLink() {
         sel.removeAllRanges();
         sel.addRange(range);
     });
+}
+
+(function() {
+    var url = document.getElementById('onboardingLink').textContent.trim();
+    document.getElementById('whatsappShare').href = 'https://wa.me/?text=' + encodeURIComponent('Completá el formulario de configuración: ' + url);
+    document.getElementById('emailShare').href = 'mailto:?subject=Formulario%20de%20configuraci%C3%B3n&body=Complet%C3%A1%20el%20formulario%20de%20configuraci%C3%B3n%3A%20' + encodeURIComponent(url);
+})();
+
+var qrShown = false;
+function toggleQR() {
+    var el = document.getElementById('qrContainer');
+    if (qrShown) { el.style.display = 'none'; qrShown = false; return; }
+    el.style.display = 'block';
+    qrShown = true;
+    if (typeof QRCode !== 'undefined' && !document.getElementById('qrcode').innerHTML) {
+        new QRCode(document.getElementById('qrcode'), {
+            text: document.getElementById('onboardingLink').textContent.trim(),
+            width: 160,
+            height: 160,
+            colorDark: '#3d5a80',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
 }
 </script>
 
