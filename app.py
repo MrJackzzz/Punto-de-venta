@@ -1019,7 +1019,16 @@ def sell():
 def scanner_page():
     base_url = request.host_url.rstrip('/')
     scan_url = base_url + url_for('api_remote_scan') + '?code='
-    return render_template('scanner.html', scan_url=scan_url, base_url=base_url)
+    app_url = base_url + url_for('scanner_app_redirect')
+    return render_template('scanner.html', scan_url=scan_url, base_url=base_url, app_url=app_url)
+
+
+@app.route('/scanner-app')
+def scanner_app_redirect():
+    ua = (request.headers.get('User-Agent') or '').lower()
+    if 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
+        return redirect('https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304')
+    return redirect('https://play.google.com/store/apps/details?id=com.google.zxing.client.android')
 
 
 # In-memory queue for remote barcode scans (keyed by user_id)

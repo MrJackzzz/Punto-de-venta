@@ -8,9 +8,16 @@
     <div class="card mb-3">
         <div class="card-body">
             <h6 class="card-title">Paso 1: Instalá una app scanner</h6>
-            <p class="card-text small mb-1">Descargá una de estas apps gratuitas:</p>
+            <p class="card-text small mb-1">Escaneá este QR con tu celular para ir a la tienda según tu sistema operativo:</p>
+            <div class="text-center mb-3">
+                <a href="{{ app_url }}" target="_blank">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ app_url | urlencode }}" alt="QR descargar app" class="img-fluid" style="max-width:160px;">
+                </a>
+                <p class="text-muted small mt-1">Android → Google Play &nbsp;|&nbsp; iOS → App Store</p>
+            </div>
+            <p class="card-text small mb-0">O descargá manualmente:</p>
             <ul class="small mb-0">
-                <li><strong>Android:</strong> <a href="https://play.google.com/store/apps/details?id=com.google.zxing.client.android" target="_blank">Barcode Scanner (ZXing)</a> o <a href="https://play.google.com/store/apps/details?id=com.gamma.scan" target="_blank">QR &amp; Bar Code Scanner</a></li>
+                <li><strong>Android:</strong> <a href="https://play.google.com/store/apps/details?id=com.google.zxing.client.android" target="_blank">Barcode Scanner (ZXing)</a></li>
                 <li><strong>iOS:</strong> <a href="https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304" target="_blank">QR Code Reader by Scan</a></li>
             </ul>
         </div>
