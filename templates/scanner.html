@@ -24,21 +24,22 @@
 
     <div class="card mb-3">
         <div class="card-body">
-            <h6 class="card-title">Paso 2: Configurá la app</h6>
-            <p class="card-text small">En la app, buscá la opción <strong>"Enviar a URL"</strong> o <strong>"HTTP Request"</strong> y configurá esta URL:</p>
+            <h6 class="card-title">Paso 2: Configurá la app en el celular</h6>
+            <p class="card-text small">Abrí la app instalada, andá a <strong>Configuración</strong> (engranaje ⚙️) y buscá la opción <strong>"Enviar a URL"</strong> o <strong>"HTTP Request"</strong>. Pegá esta URL y guardá:</p>
             <div class="input-group mb-2">
                 <input type="text" class="form-control form-control-sm" id="scanUrl" value="{{ scan_url }}" readonly>
                 <button class="btn btn-outline-secondary btn-sm" onclick="copyUrl()">Copiar</button>
             </div>
-            <p class="text-muted small mb-0">La app reemplazará automáticamente <code>{CODE}</code> o el texto escaneado en la URL.</p>
+            <p class="text-muted small mb-0">La app reemplazará automáticamente el código escaneado al final de la URL.</p>
         </div>
     </div>
 
     <div class="card mb-3">
         <div class="card-body text-center">
-            <h6 class="card-title">Paso 3: Escaneá este QR desde la app scanner</h6>
+            <h6 class="card-title">Paso 3: Escaneá códigos de productos</h6>
+            <p class="card-text small">Una vez configurada la URL, escaneá cualquier código de barras con la app. El código se envía automáticamente y aparece al instante en la pantalla de <strong>Vender</strong>.</p>
             <div id="qrcode-config"></div>
-            <p class="text-muted small mt-2">Abrí la app scanner y usá la opción <strong>"Escanear QR de configuración"</strong> para cargar la URL automáticamente.</p>
+            <p class="text-muted small mt-2">Este QR es para <strong>configurar la URL</strong> en la app. Escanealo desde la app scanner para cargar la URL automáticamente.</p>
         </div>
     </div>
 

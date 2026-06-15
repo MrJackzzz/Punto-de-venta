@@ -1031,28 +1031,22 @@ def scanner_app_redirect():
     return redirect('https://play.google.com/store/apps/details?id=com.gamma.scan')
 
 
-# In-memory queue for remote barcode scans (keyed by user_id)
-_remote_scans = {}
+# Global queue for remote barcode scans (phone → browser)
+_remote_scans = []
 
 @app.route('/api/remote-scan', methods=['GET', 'POST'])
-@login_required
 def api_remote_scan():
     code = (request.args.get('code') or request.form.get('code') or '').strip()
     if not code:
         return jsonify({'error': 'Falta código'}), 400
-    uid = str(current_user.id)
-    if uid not in _remote_scans:
-        _remote_scans[uid] = []
-    _remote_scans[uid].append(code)
+    _remote_scans.append(code)
     return jsonify({'ok': True, 'code': code})
 
 @app.route('/api/remote-scan/next')
 @login_required
 def api_remote_scan_next():
-    uid = str(current_user.id)
-    if uid in _remote_scans and _remote_scans[uid]:
-        code = _remote_scans[uid].pop(0)
-        return jsonify({'code': code})
+    if _remote_scans:
+        return jsonify({'code': _remote_scans.pop(0)})
     return jsonify({'code': None})
 
 
