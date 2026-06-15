@@ -88,6 +88,7 @@
             {% endif %}
             {% if current_user.is_authenticated %}
             <a href="{{ url_for('scanner_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-phone"></i></span><span class="st">Scanner remoto</span></a>
+            <a href="{{ url_for('inventory_scan') }}" class="sidebar-link"><span class="si"><i class="bi bi-upc-scan"></i></span><span class="st">Scanner inventario</span></a>
             <a href="{{ url_for('scan_mobile') }}" class="sidebar-link"><span class="si"><i class="bi bi-hand-index-thumb"></i></span><span class="st">Escanear manual</span></a>
             {% endif %}
             {% if current_user.can_view_backups() %}
@@ -151,6 +152,7 @@
                 {% endif %}
                 {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>{% endif %}
                 <a href="{{ url_for('scanner_page') }}">Scanner remoto</a>
+                <a href="{{ url_for('inventory_scan') }}">Scanner inventario</a>
                 <a href="{{ url_for('scan_mobile') }}">Escanear manual</a>
                 {% if current_user.role == 'admin' %}
                 <a href="{{ url_for('admin_systems') }}">Sistemas</a>

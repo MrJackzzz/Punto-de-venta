@@ -20,7 +20,7 @@ def to_ar(dt):
     return dt.astimezone(AR_TZ)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func, or_
-import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading, re, time
+import os, csv, io, json, smtplib, shutil, zipfile, subprocess, uuid, threading, re, time, queue
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -1037,8 +1037,10 @@ def scanner_app_redirect():
     return redirect('https://play.google.com/store/apps/details?id=com.barcodetopc')
 
 
-# Global queue for remote barcode scans (phone → browser)
+# Global queue + SSE for remote barcode scans (phone → browser)
 _remote_scans = []
+_sse_clients = []
+_sse_lock = threading.Lock()
 
 @app.route('/api/remote-scan', methods=['GET', 'POST'])
 def api_remote_scan():
@@ -1046,6 +1048,15 @@ def api_remote_scan():
     if not code:
         return jsonify({'error': 'Falta código'}), 400
     _remote_scans.append(code)
+    with _sse_lock:
+        dead = []
+        for q in _sse_clients:
+            try:
+                q.put_nowait(code)
+            except Exception:
+                dead.append(q)
+        for q in dead:
+            _sse_clients.remove(q)
     return jsonify({'ok': True, 'code': code})
 
 @app.route('/api/remote-scan/next')
@@ -1054,6 +1065,29 @@ def api_remote_scan_next():
     if _remote_scans:
         return jsonify({'code': _remote_scans.pop(0)})
     return jsonify({'code': None})
+
+@app.route('/api/events')
+@login_required
+def sse_events():
+    q = queue.Queue()
+    with _sse_lock:
+        _sse_clients.append(q)
+    def stream():
+        try:
+            while True:
+                code = q.get()
+                yield f"data: {json.dumps({'code': code})}\n\n"
+        except GeneratorExit:
+            with _sse_lock:
+                if q in _sse_clients:
+                    _sse_clients.remove(q)
+    return Response(stream(), mimetype='text/event-stream')
+
+
+@app.route('/inventory-scan')
+@login_required
+def inventory_scan():
+    return render_template('inventory_scan.html')
 
 
 @app.route('/api/product/<code>')
@@ -1071,6 +1105,25 @@ def api_product_by_code(code):
         'stock': product.stock,
         'unit_type': product.unit_type
     })
+
+
+@app.route('/api/product/<int:product_id>/stock', methods=['POST'])
+@login_required
+def api_product_stock(product_id):
+    data = request.get_json()
+    if not data or 'stock' not in data:
+        return jsonify({'error': 'Falta stock'}), 400
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({'error': 'Producto no encontrado'}), 404
+    new_stock = float(data['stock'])
+    product.stock = new_stock
+    db.session.commit()
+    log = MovementLog(user_id=current_user.id, action='stock_update',
+                      description=f'Ajuste manual: {product.name} → {new_stock}')
+    db.session.add(log)
+    db.session.commit()
+    return jsonify({'ok': True, 'stock': new_stock})
 
 
 @app.route('/api/products/search')

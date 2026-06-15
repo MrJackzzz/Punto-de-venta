@@ -580,8 +580,16 @@ function startScanner() {
     });
 }
 
-// Remote scanner polling (external scanner app sends codes via API)
-setInterval(function() {
+// Remote scanner: SSE (instant) + polling fallback
+var sseSource = new EventSource('/api/events');
+sseSource.onmessage = function(e) {
+    var data = JSON.parse(e.data);
+    if (data.code) {
+        pollRemoteScan();
+    }
+};
+
+function pollRemoteScan() {
     fetch('/api/remote-scan/next')
         .then(r => r.json())
         .then(data => {
@@ -592,6 +600,8 @@ setInterval(function() {
             }
         })
         .catch(function() {});
-}, 800);
+}
+
+setInterval(pollRemoteScan, 1200);
 </script>
 {% endblock %}
