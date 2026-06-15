@@ -1779,8 +1779,11 @@ os.makedirs(ONBOARDING_DIR, exist_ok=True)
 def onboarding():
     vis = app.config.get('ONBOARDING_VISIBLE_SECTIONS')
     if vis is None:
-        raw = get_config('onboarding_visible_sections')
-        vis = json.loads(raw) if raw else []
+        raw = get_config('onboarding_visible_sections', '')
+        try:
+            vis = json.loads(raw) if raw else []
+        except (json.JSONDecodeError, TypeError):
+            vis = []
         app.config['ONBOARDING_VISIBLE_SECTIONS'] = vis
     return render_template('onboarding.html', visible_sections=vis)
 
@@ -1867,7 +1870,10 @@ def admin_onboarding():
             data['_ts'] = f.replace('onboarding_', '').replace('.json', '')
             submissions.append(data)
     raw_config = Config.query.filter_by(key='onboarding_visible_sections').first()
-    current_sections = json.loads(raw_config.value) if raw_config and raw_config.value else []
+    try:
+        current_sections = json.loads(raw_config.value) if raw_config and raw_config.value else []
+    except (json.JSONDecodeError, TypeError):
+        current_sections = []
     return render_template('onboarding_list.html', submissions=submissions, config={'onboarding_visible_sections': current_sections})
 
 

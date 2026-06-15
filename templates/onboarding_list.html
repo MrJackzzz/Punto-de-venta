@@ -28,17 +28,18 @@
 <script>
 function copyOnboardingLink() {
     const link = document.getElementById('onboardingLink');
-    navigator.clipboard.writeText(link.textContent.trim()).then(function() {
-        const msg = document.getElementById('copyMsg');
-        msg.style.display = 'inline';
-        setTimeout(function() { msg.style.display = 'none'; }, 2000);
-    }).catch(function() {
-        const range = document.createRange();
-        range.selectNodeContents(link);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-    });
+    const text = link.textContent.trim();
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    const msg = document.getElementById('copyMsg');
+    msg.style.display = 'inline';
+    setTimeout(function() { msg.style.display = 'none'; }, 2000);
 }
 
 (function() {
