@@ -1792,6 +1792,13 @@ def onboarding():
             fc = json.loads(raw_fc) if raw_fc else {}
         except (json.JSONDecodeError, TypeError):
             fc = {}
+        # Auto-migrate old config keys (roles_role_admin etc) -> reset to empty so new defaults show
+        if any(k.startswith('roles_role_') for k in fc):
+            fc = {}
+            cfg = Config.query.filter_by(key='onboarding_fields_config').first()
+            if cfg:
+                db.session.delete(cfg)
+                db.session.commit()
         app.config['ONBOARDING_FIELDS_CONFIG'] = fc
     return render_template('onboarding.html', visible_sections=vis, field_config=fc)
 
