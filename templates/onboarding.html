@@ -40,7 +40,7 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
 </div>
 
 <div class="container py-4">
-    <form method="POST" action="/onboarding/submit" id="onboardingForm">
+    <form method="POST" action="/onboarding/submit" id="onboardingForm" enctype="multipart/form-data">
 
         <!-- 1. Datos del negocio -->
         <div class="card form-card">
@@ -76,6 +76,19 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                     <div class="col-md-3">
                         <label class="form-label">Email de contacto</label>
                         <input type="email" name="email" class="form-control" placeholder="info@tunegocio.com">
+                    </div>
+                </div>
+                <hr class="mt-3 mb-2">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Logo del negocio</label>
+                        <input type="file" name="logo" class="form-control" accept="image/png,image/jpeg,image/gif,image/webp">
+                        <div class="form-text">PNG, JPG o WebP. Se mostrará en tickets y encabezados.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Favicon (ícono de pestaña)</label>
+                        <input type="file" name="favicon" class="form-control" accept="image/png,image/x-icon">
+                        <div class="form-text">PNG o ICO. Ideal 32x32px.</div>
                     </div>
                 </div>
             </div>
@@ -127,10 +140,70 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                         <div class="form-text">Cuando llegar a este número, se envía alerta por email.</div>
                     </div>
                 </div>
+                <hr class="mt-3 mb-2">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Encabezado del ticket</label>
+                        <input type="text" name="ticket_header" class="form-control" placeholder="Ej: Gracias por tu compra!">
+                        <div class="form-text">Texto opcional que aparece arriba en el ticket.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Pie del ticket</label>
+                        <input type="text" name="ticket_footer" class="form-control" placeholder="Ej: Válido como factura simplificada">
+                        <div class="form-text">Texto opcional que aparece al final del ticket.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" name="ticket_show_logo" id="ticket_show_logo" class="form-check-input" value="on" checked>
+                            <label class="form-check-label" for="ticket_show_logo">Mostrar logo en ticket</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" name="ticket_show_cuit" id="ticket_show_cuit" class="form-check-input" value="on" checked>
+                            <label class="form-check-label" for="ticket_show_cuit">Mostrar CUIT en ticket</label>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 3. Email (SMTP) -->
+        <!-- 3. Configuración técnica -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-hdd-stack"></i></span> Configuración técnica</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Usuario administrador</label>
+                        <input type="text" name="admin_user" class="form-control" value="admin" placeholder="admin">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" name="admin_password" class="form-control" placeholder="Mín. 6 caracteres">
+                        <div class="form-text">Si no se completa, se genera una automática.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Puerto deseado</label>
+                        <input type="number" name="port" class="form-control" placeholder="Ej: 8082">
+                        <div class="form-text">Dejalo vacío para que asignemos uno disponible.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dominio</label>
+                        <select name="domain_option" class="form-select">
+                            <option value="subdominio">Subdominio nexoraapps.com.ar</option>
+                            <option value="propio">Dominio propio (ya registrado)</option>
+                        </select>
+                        <div class="form-text">Requerís tener el dominio registrado y apuntando a nuestro servidor.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del dominio (si aplica)</label>
+                        <input type="text" name="custom_domain" class="form-control" placeholder="Ej: mitienda.com.ar">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Email (SMTP) -->
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#98c1d9;color:#293241;"><i class="bi bi-envelope"></i></span> Configuración de Email (SMTP)</div>
             <div class="card-body">
@@ -178,11 +251,82 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                     <input type="checkbox" name="drive_enabled" id="drive_enabled" class="form-check-input" value="on">
                     <label class="form-check-label" for="drive_enabled">Habilitar backup automático a Google Drive</label>
                 </div>
-                <div class="form-text">Si activás esta opción, necesitás proporcionar el archivo JSON de cuenta de servicio de Google Cloud.</div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">Frecuencia de backup</label>
+                        <select name="backup_frequency" class="form-select">
+                            <option value="daily">Diario</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="manual">Manual (solo cuando lo pida)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Archivo JSON de cuenta de servicio</label>
+                        <input type="file" name="drive_json" class="form-control" accept=".json">
+                        <div class="form-text">Descargalo desde Google Cloud Console → IAM → Cuentas de servicio.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 6. Notas -->
+        <!-- 6. Roles y permisos -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#6f42c1;"><i class="bi bi-people"></i></span> Roles y permisos</div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">¿Qué roles necesitás en el sistema?</p>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="role_admin" id="role_admin" class="form-check-input" value="on" checked>
+                            <label class="form-check-label" for="role_admin">Admin (acceso total)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="role_supervisor" id="role_supervisor" class="form-check-input" value="on" checked>
+                            <label class="form-check-label" for="role_supervisor">Supervisor (casi todo excepto config)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="role_vendedor" id="role_vendedor" class="form-check-input" value="on" checked>
+                            <label class="form-check-label" for="role_vendedor">Vendedor (solo vender y ver stock)</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label class="form-label">Usuarios adicionales</label>
+                    <textarea name="extra_users" class="form-control" rows="2" placeholder="Ej: Juan Pérez - vendedor - juan@email.com - 1122334455&#10;María López - supervisor - maria@email.com - 1166778899"></textarea>
+                    <div class="form-text">Un usuario por línea: nombre - rol - email - teléfono.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Productos iniciales -->
+        <div class="card form-card">
+            <div class="card-header"><span class="section-icon" style="background:#e67e22;"><i class="bi bi-box-seam"></i></span> Productos iniciales</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label">Subir listado de productos (Excel)</label>
+                        <input type="file" name="products_file" class="form-control" accept=".xlsx,.xls,.csv">
+                        <div class="form-text">Columnas: código, nombre, costo, precio, stock, categoría. También podés enviarlo después por email.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">¿Tenés categorías definidas?</label>
+                        <textarea name="categories" class="form-control" rows="2" placeholder="Ej: Bebidas, Limpieza, Lácteos, Snacks"></textarea>
+                        <div class="form-text">Separadas por coma.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">¿Tenés proveedores?</label>
+                        <textarea name="suppliers" class="form-control" rows="2" placeholder="Ej: Distribuidora Norte (11-1234-5678)&#10;Coca-Cola (4321-8765)"></textarea>
+                        <div class="form-text">Un proveedor por línea: nombre - teléfono.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Notas -->
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-chat-dots"></i></span> Notas adicionales</div>
             <div class="card-body">

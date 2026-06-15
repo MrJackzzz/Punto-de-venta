@@ -65,6 +65,10 @@ function copyOnboardingLink() {
                             <tr><td class="text-muted">Margen %</td><td>{{ s.default_markup or '—' }}</td></tr>
                             <tr><td class="text-muted">Stock bajo</td><td>{{ s.low_stock_threshold or '—' }}</td></tr>
                             <tr><td class="text-muted">Stock crítico</td><td>{{ s.critical_stock_threshold or '—' }}</td></tr>
+                            <tr><td class="text-muted">Ticket header</td><td>{{ s.ticket_header or '—' }}</td></tr>
+                            <tr><td class="text-muted">Ticket footer</td><td>{{ s.ticket_footer or '—' }}</td></tr>
+                            <tr><td class="text-muted">Puerto</td><td>{{ s.port or 'auto' }}</td></tr>
+                            <tr><td class="text-muted">Dominio</td><td>{{ 'Propio: ' + s.custom_domain if s.domain_option == 'propio' and s.custom_domain else 'Subdominio' }}</td></tr>
                         </table>
                     </div>
                     <div class="col-12">
@@ -84,7 +88,31 @@ function copyOnboardingLink() {
                     {% if s.drive_enabled %}
                     <div class="col-12">
                         <h6 class="text-primary"><i class="bi bi-google"></i> Google Drive</h6>
-                        <p class="small text-muted">Habilitado</p>
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Frecuencia</td><td>{{ s.backup_frequency or 'daily' }}</td></tr>
+                            {% if s.drive_json_file %}<tr><td class="text-muted">JSON</td><td><a href="/onboarding/files/{{ s.drive_json_file }}" target="_blank" class="small">Descargar</a></td></tr>{% endif %}
+                        </table>
+                    </div>
+                    {% endif %}
+                    {% if s.role_admin or s.role_supervisor or s.role_vendedor or s.extra_users %}
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-people"></i> Roles</h6>
+                        <p class="small">{% if s.role_admin %}Admin ✓ {% endif %}{% if s.role_supervisor %}Supervisor ✓ {% endif %}{% if s.role_vendedor %}Vendedor ✓ {% endif %}</p>
+                        {% if s.extra_users %}<pre class="small mb-0" style="white-space:pre-wrap;">{{ s.extra_users }}</pre>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if s.categories or s.suppliers %}
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-box-seam"></i> Productos</h6>
+                        {% if s.categories %}<p class="small mb-1"><strong>Categorías:</strong> {{ s.categories }}</p>{% endif %}
+                        {% if s.suppliers %}<p class="small mb-0"><strong>Proveedores:</strong><br>{{ s.suppliers|replace('\n', '<br>')|safe }}</p>{% endif %}
+                        {% if s.products_file %}<p class="small mt-1"><a href="/onboarding/files/{{ s.products_file }}" target="_blank">📎 Descargar Excel</a></p>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if s.logo_file or s.favicon_file %}
+                    <div class="col-12">
+                        <h6 class="text-primary"><i class="bi bi-images"></i> Archivos</h6>
+                        <p class="small">{% if s.logo_file %}<a href="/onboarding/files/{{ s.logo_file }}" target="_blank">🖼 Logo</a> {% endif %}{% if s.favicon_file %}<a href="/onboarding/files/{{ s.favicon_file }}" target="_blank">🔖 Favicon</a>{% endif %}</p>
                     </div>
                     {% endif %}
                     {% if s.confidencialidad_aceptado %}

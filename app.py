@@ -1797,20 +1797,52 @@ def onboarding_submit():
         'default_markup': request.form.get('default_markup', '30'),
         'low_stock_threshold': request.form.get('low_stock_threshold', '10'),
         'critical_stock_threshold': request.form.get('critical_stock_threshold', '5'),
+        'ticket_header': request.form.get('ticket_header', '').strip(),
+        'ticket_footer': request.form.get('ticket_footer', '').strip(),
+        'ticket_show_logo': True if request.form.get('ticket_show_logo') else False,
+        'ticket_show_cuit': True if request.form.get('ticket_show_cuit') else False,
+        'admin_user': request.form.get('admin_user', 'admin').strip(),
+        'admin_password': request.form.get('admin_password', '').strip(),
+        'port': request.form.get('port', '').strip(),
+        'domain_option': request.form.get('domain_option', 'subdominio'),
+        'custom_domain': request.form.get('custom_domain', '').strip(),
         'smtp_host': request.form.get('smtp_host', ''),
         'smtp_port': request.form.get('smtp_port', '587'),
         'smtp_user': request.form.get('smtp_user', ''),
         'smtp_password': request.form.get('smtp_password', ''),
         'mp_access_token': request.form.get('mp_access_token', ''),
-        'drive_enabled': 'on' if request.form.get('drive_enabled') else '',
+        'drive_enabled': True if request.form.get('drive_enabled') else False,
+        'backup_frequency': request.form.get('backup_frequency', 'daily'),
+        'role_admin': True if request.form.get('role_admin') else False,
+        'role_supervisor': True if request.form.get('role_supervisor') else False,
+        'role_vendedor': True if request.form.get('role_vendedor') else False,
+        'extra_users': request.form.get('extra_users', '').strip(),
+        'categories': request.form.get('categories', '').strip(),
+        'suppliers': request.form.get('suppliers', '').strip(),
         'notes': request.form.get('notes', ''),
         'confidencialidad_aceptado': True if request.form.get('confidencialidad_aceptado') else False,
         'confidencialidad_fecha': datetime.now().strftime('%Y-%m-%d %H:%M:%S') if request.form.get('confidencialidad_aceptado') else '',
     }
-    filename = f'onboarding_{ts}.json'
-    filepath = os.path.join(ONBOARDING_DIR, filename)
+    filename = f'onboarding_{ts}'
+    filepath = os.path.join(ONBOARDING_DIR, filename + '.json')
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+    # Save uploaded files
+    allowed_images = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'}
+    for field in ['logo', 'favicon', 'drive_json', 'products_file']:
+        f = request.files.get(field)
+        if f and f.filename:
+            ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+            save_name = f'{filename}_{field}.{ext}' if ext else f'{filename}_{field}'
+            save_path = os.path.join(ONBOARDING_DIR, save_name)
+            f.save(save_path)
+            data[f'{field}_file'] = save_name
+
+    # Update JSON with file refs
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
     return render_template('onboarding_thanks.html', name=data['business_name'] or data['owner_name'] or 'Cliente')
 
 
@@ -1840,7 +1872,14 @@ def admin_onboarding_delete(filename):
         return redirect(url_for('dashboard'))
     fpath = os.path.join(ONBOARDING_DIR, filename)
     if os.path.exists(fpath):
+        with open(fpath, 'r', encoding='utf-8') as fh:
+            data = json.load(fh)
         os.remove(fpath)
+        for key in list(data.keys()):
+            if key.endswith('_file') and data[key]:
+                fdel = os.path.join(ONBOARDING_DIR, data[key])
+                if os.path.exists(fdel):
+                    os.remove(fdel)
         flash('Eliminado.', 'success')
     return redirect(url_for('admin_onboarding'))
 
@@ -1851,7 +1890,16 @@ def confidencialidad():
     configs = {c.key: c.value for c in cfg}
     return render_template('confidencialidad.html',
                            business_name=configs.get('business_name', 'SmartPost'),
-                           now=lambda: datetime.now(AR_TZ))
+                            now=lambda: datetime.now(AR_TZ))
+
+
+@app.route('/onboarding/files/<filename>')
+@login_required
+def onboarding_file(filename):
+    fpath = os.path.join(ONBOARDING_DIR, filename)
+    if not os.path.exists(fpath):
+        abort(404)
+    return send_file(fpath)
 
 
 @app.route('/onboarding/confidencialidad/pdf')
