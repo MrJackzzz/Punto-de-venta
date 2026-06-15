@@ -84,8 +84,10 @@
             {% if current_user.can_view_barcodes() %}
             <a href="{{ url_for('barcodes') }}" class="sidebar-link"><span class="si"><i class="bi bi-upc-scan"></i></span><span class="st">Códigos</span></a>
             {% endif %}
-            <a href="{{ url_for('scanner_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-phone"></i></span><span class="st">Scanner remoto</span></a>
             <a href="{{ url_for('admin_systems') }}" class="sidebar-link"><span class="si"><i class="bi bi-grid-3x3-gap-fill"></i></span><span class="st">Sistemas</span></a>
+            {% endif %}
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('scanner_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-phone"></i></span><span class="st">Scanner remoto</span></a>
             {% endif %}
             {% if current_user.can_view_backups() %}
             <a href="{{ url_for('backups') }}" class="sidebar-link"><span class="si"><i class="bi bi-database"></i></span><span class="st">Backups</span></a>
