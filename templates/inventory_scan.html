@@ -16,6 +16,7 @@
         <h5 class="mb-0"><i class="bi bi-upc-scan"></i> Scanner inventario</h5>
         <div class="d-flex gap-1">
             <span id="mode-badge" class="badge bg-info">Continuo</span>
+            <button class="btn btn-sm btn-outline-warning" id="suspend-btn" onclick="toggleSuspend()" title="Pausar/Reanudar"><i class="bi bi-pause-fill"></i></button>
             <button class="btn btn-sm btn-outline-secondary" onclick="clearHistory()" title="Limpiar historia"><i class="bi bi-trash3"></i></button>
         </div>
     </div>
@@ -26,6 +27,10 @@
             <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i></button>
         </div>
     </form>
+
+    <div id="suspend-banner" class="alert alert-warning text-center fw-bold d-none py-2 mb-2">
+        <i class="bi bi-pause-circle"></i> SUSPENDIDO — Los escaneos no se procesan. Presioná <button class="btn btn-sm btn-warning" onclick="toggleSuspend()">Reanudar</button> para continuar.
+    </div>
 
     <div id="status" class="small mb-2"></div>
 
@@ -79,9 +84,17 @@ let currentProduct = null;
 let massMode = false;
 let massCode = '';
 let massItems = [];
+let suspended = false;
+
+const STORAGE_KEY = 'invscan_history';
+
+document.addEventListener('DOMContentLoaded', function() {
+    restoreHistory();
+});
 
 document.getElementById('scan-form').addEventListener('submit', function(e) {
     e.preventDefault();
+    if (suspended) return;
     const input = document.getElementById('scan-input');
     const code = input.value.trim();
     if (!code) return;
@@ -89,6 +102,27 @@ document.getElementById('scan-form').addEventListener('submit', function(e) {
     input.focus();
     processCode(code);
 });
+
+function toggleSuspend() {
+    suspended = !suspended;
+    const btn = document.getElementById('suspend-btn');
+    const banner = document.getElementById('suspend-banner');
+    const input = document.getElementById('scan-input');
+    if (suspended) {
+        btn.innerHTML = '<i class="bi bi-play-fill"></i>';
+        btn.title = 'Reanudar';
+        banner.classList.remove('d-none');
+        input.disabled = true;
+        input.classList.add('text-muted');
+    } else {
+        btn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+        btn.title = 'Pausar';
+        banner.classList.add('d-none');
+        input.disabled = false;
+        input.classList.remove('text-muted');
+        input.focus();
+    }
+}
 
 function processCode(code) {
     const status = document.getElementById('status');
@@ -120,6 +154,7 @@ function processCode(code) {
             status.innerHTML = '';
             showProduct(product);
             addHistory(product);
+            saveHistory();
         })
         .catch(function() {
             status.innerHTML = '<span class="text-danger">Producto no encontrado: ' + code + '</span>';
@@ -137,8 +172,8 @@ function showProduct(p) {
 function addHistory(p) {
     const list = document.getElementById('last-list');
     const item = document.createElement('li');
-    item.className = 'list-group-item d-flex justify-content-between align-items-center';
-    item.innerHTML = '<span><strong>' + p.name + '</strong><br><small class="text-muted">' + p.code + '</small></span><span class="badge bg-primary badge-qty">Stock: ' + fmt(p.stock) + '</span>';
+    item.className = 'list-group-item d-flex justify-content-between align-items-center scan-result-enter';
+    item.innerHTML = '<span><strong>' + escapeHtml(p.name) + '</strong><br><small class="text-muted">' + escapeHtml(p.code) + '</small></span><span class="badge bg-primary badge-qty">Stock: ' + fmt(p.stock) + '</span>';
     list.insertBefore(item, list.firstChild);
     while (list.children.length > 20) { list.removeChild(list.lastChild); }
 }
@@ -230,9 +265,43 @@ function updateStock(productId, newStock) {
 }
 
 function clearHistory() {
+    if (!confirm('¿Limpiar todo el historial escaneado?')) return;
     document.getElementById('last-list').innerHTML = '';
     document.getElementById('product-result').classList.add('d-none');
     currentProduct = null;
+    localStorage.removeItem(STORAGE_KEY);
+}
+
+function saveHistory() {
+    const items = [];
+    document.querySelectorAll('#last-list .list-group-item').forEach(function(li) {
+        var name = li.querySelector('strong').textContent;
+        var code = li.querySelector('small').textContent;
+        var stock = li.querySelector('.badge').textContent.replace('Stock: ', '');
+        items.push({name: name, code: code, stock: stock});
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function restoreHistory() {
+    var data = localStorage.getItem(STORAGE_KEY);
+    if (!data) return;
+    try {
+        var items = JSON.parse(data);
+        var list = document.getElementById('last-list');
+        items.reverse().forEach(function(item) {
+            var li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = '<span><strong>' + escapeHtml(item.name) + '</strong><br><small class="text-muted">' + escapeHtml(item.code) + '</small></span><span class="badge bg-primary badge-qty">Stock: ' + item.stock + '</span>';
+            list.insertBefore(li, list.firstChild);
+        });
+    } catch(e) {}
+}
+
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
 }
 
 function fmt(n) {
