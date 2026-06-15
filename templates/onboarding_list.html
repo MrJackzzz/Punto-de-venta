@@ -18,6 +18,7 @@
             <button class="btn btn-sm btn-outline-dark" onclick="toggleQR()"><i class="bi bi-qr-code"></i> QR</button>
             <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#configModal"><i class="bi bi-gear"></i> Configurar formulario</button>
             <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#fieldsModal"><i class="bi bi-pencil"></i> Editar campos</button>
+            <a href="{{ url_for('admin_onboarding_field_editor') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-table"></i> Editor visual</a>
         </div>
         <div id="qrContainer" class="mt-2 text-center" style="display:none;">
             <div id="qrcode"></div>

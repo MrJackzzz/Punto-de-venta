@@ -1967,6 +1967,58 @@ def admin_onboarding_field_config():
     return redirect(url_for('admin_onboarding'))
 
 
+@app.route('/admin/onboarding/field-config/editor', methods=['GET', 'POST'])
+@login_required
+def admin_onboarding_field_editor():
+    if current_user.role != 'admin':
+        flash('Solo admin.', 'danger')
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        config = {}
+        raw_keys = request.form.getlist('key[]')
+        raw_labels = request.form.getlist('label[]')
+        raw_placeholder = request.form.getlist('placeholder[]')
+        raw_help = request.form.getlist('help[]')
+        raw_default = request.form.getlist('default[]')
+        raw_visible = request.form.getlist('visible[]')
+        for i, k in enumerate(raw_keys):
+            if not k.strip():
+                continue
+            entry = {}
+            lbl = raw_labels[i].strip() if i < len(raw_labels) else ''
+            if lbl:
+                entry['label'] = lbl
+            ph = raw_placeholder[i].strip() if i < len(raw_placeholder) else ''
+            if ph:
+                entry['placeholder'] = ph
+            hp = raw_help[i].strip() if i < len(raw_help) else ''
+            if hp:
+                entry['help'] = hp
+            df = raw_default[i].strip() if i < len(raw_default) else ''
+            if df:
+                entry['default'] = df
+            entry['visible'] = k in raw_visible
+            config[k] = entry
+        val = json.dumps(config, ensure_ascii=False)
+        c = Config.query.filter_by(key='onboarding_fields_config').first()
+        if c:
+            c.value = val
+        else:
+            db.session.add(Config(key='onboarding_fields_config', value=val))
+        app.config.pop('ONBOARDING_FIELDS_CONFIG', None)
+        app.config.pop('ONBOARDING_VISIBLE_SECTIONS', None)
+        flash('Campos actualizados.', 'success')
+        return redirect(url_for('admin_onboarding'))
+
+    # GET - load current config
+    raw_fc = get_config('onboarding_fields_config', '')
+    try:
+        fc = json.loads(raw_fc) if raw_fc else {}
+    except (json.JSONDecodeError, TypeError):
+        fc = {}
+    return render_template('onboarding_field_editor.html', field_config=fc)
+
+
 @app.route('/onboarding/confidencialidad/pdf')
 def confidencialidad_pdf():
     cfg = Config.query.all()

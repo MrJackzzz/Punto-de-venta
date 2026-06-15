@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3 px-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editor visual de campos del formulario</h4>
+        <a href="{{ url_for('admin_onboarding') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+    <p class="text-muted small mb-3">Cambiá las etiquetas, visibilidad, placeholders y textos de ayuda de cada campo del formulario de onboarding.</p>
+
+    <form method="POST">
+    {% set sections = [
+        ('Datos del negocio', 'section_business_data', ['business_name','local_name','owner_name','cuit','address','phone','email','logo','favicon']),
+        ('Preferencias del sistema', 'section_preferences', ['timezone','currency','default_markup','low_stock_threshold','critical_stock_threshold','ticket_header','ticket_footer','ticket_show_logo','ticket_show_cuit']),
+        ('Configuraci\u00f3n t\u00e9cnica', 'section_technical', ['admin_user','admin_password','port','domain_option','custom_domain']),
+        ('Email (SMTP)', 'section_smtp', ['smtp_host','smtp_port','smtp_user','smtp_password']),
+        ('Mercado Pago', 'section_mercadopago', ['mp_access_token']),
+        ('Google Drive', 'section_drive', ['drive_enabled','backup_frequency','drive_json']),
+        ('Permisos del usuario', 'section_roles', ['roles_title','roles_desc','perm_can_view_products','perm_can_add_products','perm_can_edit_products','perm_can_manage_products','perm_can_view_suppliers','perm_can_add_suppliers','perm_can_edit_suppliers','perm_can_delete_suppliers','perm_can_view_categories','perm_can_add_categories','perm_can_edit_categories','perm_can_delete_categories','perm_can_sell','perm_can_refund_sales','perm_can_view_pending_sales','perm_can_confirm_payment','perm_can_take_orders','perm_can_close_cash','perm_can_void_cash_close','perm_can_view_history','perm_can_view_charts','perm_can_view_barcodes','perm_can_manage_purchases','roles_extra_users']),
+        ('Productos iniciales', 'section_products', ['products_file','categories','suppliers']),
+        ('Notas adicionales', 'section_notes', ['notes']),
+        ('Acuerdo de Confidencialidad', 'section_confidencialidad', ['confidencialidad_summary','confidencialidad_accept_label']),
+    ] %}
+
+    {% for sname, skey, fields in sections %}
+    {% set sec_cfg = field_config.get(skey, {}) %}
+    {% if sec_cfg.get('visible', true) %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header py-2 d-flex align-items-center justify-content-between">
+            <strong class="small">{{ sname }}</strong>
+            <div class="form-check form-check-inline mb-0">
+                <input type="hidden" name="key[]" value="{{ skey }}">
+                <input type="text" name="label[]" class="form-control form-control-sm d-inline-block" style="width:auto;min-width:150px" value="{{ sec_cfg.get('label', sname) }}" placeholder="Título de sección">
+                <input type="hidden" name="placeholder[]" value="{{ sec_cfg.get('placeholder', '') }}">
+                <input type="hidden" name="help[]" value="{{ sec_cfg.get('help', '') }}">
+                <input type="hidden" name="default[]" value="{{ sec_cfg.get('default', '') }}">
+                <input type="checkbox" name="visible[]" value="{{ skey }}" class="form-check-input ms-2" id="vis_{{ skey }}" checked>
+                <label class="form-check-label small text-muted" for="vis_{{ skey }}">Visible</label>
+            </div>
+        </div>
+        <div class="card-body p-2">
+            <div class="table-responsive">
+                <table class="table table-sm table-borderless mb-0 align-middle">
+                    <thead>
+                        <tr class="small text-muted">
+                            <th style="width:28%">Campo</th>
+                            <th style="width:auto">Etiqueta</th>
+                            <th style="width:80px" class="text-center">Visible</th>
+                            <th style="width:22%">Placeholder</th>
+                            <th style="width:28%">Texto de ayuda</th>
+                            <th style="width:100px">Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fk in fields %}
+                        {% set fcfg = field_config.get(fk, {}) %}
+                        <tr>
+                            <td><code class="small text-muted">{{ fk }}</code></td>
+                            <td><input type="text" name="label[]" class="form-control form-control-sm" value="{{ fcfg.get('label', '') }}" placeholder="(usar nombre técnico)"></td>
+                            <td class="text-center">
+                                <input type="checkbox" name="visible[]" value="{{ fk }}" class="form-check-input" id="vis_{{ fk }}" {% if fcfg.get('visible', true) %}checked{% endif %}>
+                            </td>
+                            <td><input type="text" name="placeholder[]" class="form-control form-control-sm" value="{{ fcfg.get('placeholder', '') }}" placeholder="(sin placeholder)"></td>
+                            <td><input type="text" name="help[]" class="form-control form-control-sm" value="{{ fcfg.get('help', '') }}" placeholder="(sin ayuda)"></td>
+                            <td><input type="text" name="default[]" class="form-control form-control-sm" value="{{ fcfg.get('default', '') }}" placeholder="(sin default)"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="text-center mb-4">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-floppy"></i> Guardar cambios</button>
+        <a href="{{ url_for('admin_onboarding') }}" class="btn btn-outline-secondary btn-lg ms-2">Cancelar</a>
+    </div>
+    </form>
+</div>
+{% endblock %}
