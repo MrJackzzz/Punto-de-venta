@@ -42,7 +42,11 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
 <div class="container py-4">
     <form method="POST" action="/onboarding/submit" id="onboardingForm" enctype="multipart/form-data">
 
+        {% set vs = visible_sections if visible_sections is defined and visible_sections else [] %}
+        {% set show = true if not vs else false %}
+
         <!-- 1. Datos del negocio -->
+        {% if show or 'business_data' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#3d5a80;"><i class="bi bi-shop"></i></span> Datos del negocio</div>
             <div class="card-body">
@@ -95,6 +99,7 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         </div>
 
         <!-- 2. Preferencias del sistema -->
+        {% if show or 'preferences' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#ee6c4d;"><i class="bi bi-sliders2"></i></span> Preferencias del sistema</div>
             <div class="card-body">
@@ -167,8 +172,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- 3. Configuración técnica -->
+        {% if show or 'technical' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-hdd-stack"></i></span> Configuración técnica</div>
             <div class="card-body">
@@ -202,8 +209,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- 4. Email (SMTP) -->
+        {% if show or 'smtp' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#98c1d9;color:#293241;"><i class="bi bi-envelope"></i></span> Configuración de Email (SMTP)</div>
             <div class="card-body">
@@ -228,8 +237,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- 4. Mercado Pago -->
+        <!-- 5. Mercado Pago -->
+        {% if show or 'mercadopago' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#009ee3;"><i class="bi bi-credit-card"></i></span> Mercado Pago (opcional)</div>
             <div class="card-body">
@@ -242,8 +253,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- 5. Google Drive -->
+        <!-- 6. Google Drive -->
+        {% if show or 'drive' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#34a853;"><i class="bi bi-google"></i></span> Google Drive (opcional)</div>
             <div class="card-body">
@@ -268,8 +281,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- 6. Roles y permisos -->
+        <!-- 7. Roles y permisos -->
+        {% if show or 'roles' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#6f42c1;"><i class="bi bi-people"></i></span> Roles y permisos</div>
             <div class="card-body">
@@ -301,8 +316,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- 7. Productos iniciales -->
+        <!-- 8. Productos iniciales -->
+        {% if show or 'products' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#e67e22;"><i class="bi bi-box-seam"></i></span> Productos iniciales</div>
             <div class="card-body">
@@ -325,16 +342,20 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- 8. Notas -->
+        <!-- 9. Notas -->
+        {% if show or 'notes' in vs %}
         <div class="card form-card">
             <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-chat-dots"></i></span> Notas adicionales</div>
             <div class="card-body">
                 <textarea name="notes" class="form-control" rows="4" placeholder="Cualquier requerimiento especial, horarios, productos específicos, etc."></textarea>
             </div>
         </div>
+        {% endif %}
 
-        <!-- 7. Acuerdo de Confidencialidad -->
+        <!-- 10. Acuerdo de Confidencialidad -->
+        {% if show or 'confidencialidad' in vs %}
         <div class="card form-card border-{{ 'danger' if error_confidencialidad else 'primary' }}">
             <div class="card-header"><span class="section-icon" style="background:#000;"><i class="bi bi-shield-lock"></i></span> Acuerdo de Confidencialidad</div>
             <div class="card-body">
@@ -358,6 +379,7 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="text-center mb-5">
             <button type="submit" class="btn btn-submit btn-lg text-white"><i class="bi bi-send-check"></i> Enviar formulario</button>

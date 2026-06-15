@@ -1777,7 +1777,12 @@ os.makedirs(ONBOARDING_DIR, exist_ok=True)
 
 @app.route('/onboarding')
 def onboarding():
-    return render_template('onboarding.html')
+    vis = app.config.get('ONBOARDING_VISIBLE_SECTIONS')
+    if vis is None:
+        raw = get_config('onboarding_visible_sections')
+        vis = json.loads(raw) if raw else []
+        app.config['ONBOARDING_VISIBLE_SECTIONS'] = vis
+    return render_template('onboarding.html', visible_sections=vis)
 
 
 @app.route('/onboarding/submit', methods=['POST'])
@@ -1861,7 +1866,9 @@ def admin_onboarding():
             data['_file'] = f
             data['_ts'] = f.replace('onboarding_', '').replace('.json', '')
             submissions.append(data)
-    return render_template('onboarding_list.html', submissions=submissions)
+    raw_config = Config.query.filter_by(key='onboarding_visible_sections').first()
+    current_sections = json.loads(raw_config.value) if raw_config and raw_config.value else []
+    return render_template('onboarding_list.html', submissions=submissions, config={'onboarding_visible_sections': current_sections})
 
 
 @app.route('/admin/onboarding/<filename>/delete', methods=['POST'])
@@ -1900,6 +1907,23 @@ def onboarding_file(filename):
     if not os.path.exists(fpath):
         abort(404)
     return send_file(fpath)
+
+
+@app.route('/admin/onboarding/config', methods=['POST'])
+@login_required
+def admin_onboarding_config():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Solo admin'}), 403
+    sections = request.form.getlist('sections')
+    val = json.dumps(sections)
+    c = Config.query.filter_by(key='onboarding_visible_sections').first()
+    if c:
+        c.value = val
+    else:
+        db.session.add(Config(key='onboarding_visible_sections', value=val))
+    app.config.pop('ONBOARDING_VISIBLE_SECTIONS', None)
+    flash('Formulario actualizado.', 'success')
+    return redirect(url_for('admin_onboarding'))
 
 
 @app.route('/onboarding/confidencialidad/pdf')

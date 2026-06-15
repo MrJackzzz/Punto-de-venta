@@ -16,6 +16,7 @@
             <a class="btn btn-sm btn-success" target="_blank" id="whatsappShare" href="#"><i class="bi bi-whatsapp"></i> WhatsApp</a>
             <a class="btn btn-sm btn-outline-secondary" target="_blank" id="emailShare" href="#"><i class="bi bi-envelope"></i> Email</a>
             <button class="btn btn-sm btn-outline-dark" onclick="toggleQR()"><i class="bi bi-qr-code"></i> QR</button>
+            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#configModal"><i class="bi bi-gear"></i> Configurar formulario</button>
         </div>
         <div id="qrContainer" class="mt-2 text-center" style="display:none;">
             <div id="qrcode"></div>
@@ -64,6 +65,47 @@ function toggleQR() {
     }
 }
 </script>
+
+<!-- Modal configurar formulario -->
+<div class="modal fade" id="configModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin_onboarding_config') }}">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-gear"></i> Configurar formulario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted">Seleccioná las secciones que querés mostrar en el formulario. Las desmarcadas se ocultan.</p>
+        {% set current = config.get('onboarding_visible_sections', '') %}
+        {% set sections = [
+          ('business_data', 'Datos del negocio'),
+          ('preferences', 'Preferencias del sistema'),
+          ('technical', 'Configuración técnica'),
+          ('smtp', 'Email (SMTP)'),
+          ('mercadopago', 'Mercado Pago'),
+          ('drive', 'Google Drive'),
+          ('roles', 'Roles y permisos'),
+          ('products', 'Productos iniciales'),
+          ('notes', 'Notas'),
+          ('confidencialidad', 'Acuerdo de Confidencialidad'),
+        ] %}
+        {% for sid, sname in sections %}
+        <div class="form-check mb-1">
+          <input type="checkbox" name="sections" class="form-check-input" value="{{ sid }}" id="sec_{{ sid }}"
+            {% if not current %}checked{% elif sid in current %}checked{% endif %}>
+          <label class="form-check-label" for="sec_{{ sid }}">{{ sname }}</label>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 {% if submissions %}
 <div class="accordion" id="onboardingAccordion">
