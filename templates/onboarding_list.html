@@ -87,7 +87,7 @@ function toggleQR() {
           ('smtp', 'Email (SMTP)'),
           ('mercadopago', 'Mercado Pago'),
           ('drive', 'Google Drive'),
-          ('roles', 'Roles y permisos'),
+          ('roles', 'Permisos del usuario'),
           ('products', 'Productos iniciales'),
           ('notes', 'Notas'),
           ('confidencialidad', 'Acuerdo de Confidencialidad'),
@@ -122,12 +122,32 @@ function toggleQR() {
         <p class="small text-muted">Editá las etiquetas, placeholders y visibilidad de cada campo. Dejá <code>visible: false</code> para ocultar un campo.</p>
         {% set field_cfg = config.get('onboarding_fields_config', {}) %}
         <textarea name="config" class="form-control font-monospace" rows="20" id="fieldsConfigArea">{% if field_cfg %}{{ field_cfg | tojson(indent=2) }}{% else %}{
-  "roles_title": {"label": "Roles y permisos"},
-  "roles_desc": {"label": "¿Qué roles necesitás en el sistema?"},
-  "roles_role_admin": {"label": "Admin (acceso total)", "visible": true},
-  "roles_role_supervisor": {"label": "Supervisor (casi todo excepto config)", "visible": true},
-  "roles_role_vendedor": {"label": "Vendedor (solo vender y ver stock)", "visible": true},
-  "roles_extra_users": {"label": "Usuarios adicionales", "placeholder": "Ej: Juan Pérez - vendedor - juan@email.com", "visible": true, "help": "Un usuario por línea: nombre - rol - email - teléfono."}
+  "roles_title": {"label": "Permisos del usuario"},
+  "roles_desc": {"label": "Seleccioná lo que puede hacer un usuario del sistema (vendedor/cajero). Usted como dueño siempre tiene acceso completo."},
+  "perm_can_view_products": {"label": "Ver productos y stock", "default": true},
+  "perm_can_add_products": {"label": "Agregar productos"},
+  "perm_can_edit_products": {"label": "Editar productos"},
+  "perm_can_manage_products": {"label": "Eliminar productos"},
+  "perm_can_view_suppliers": {"label": "Ver proveedores", "default": true},
+  "perm_can_add_suppliers": {"label": "Agregar proveedores"},
+  "perm_can_edit_suppliers": {"label": "Editar proveedores"},
+  "perm_can_delete_suppliers": {"label": "Eliminar proveedores"},
+  "perm_can_view_categories": {"label": "Ver categorías", "default": true},
+  "perm_can_add_categories": {"label": "Agregar categorías"},
+  "perm_can_edit_categories": {"label": "Editar categorías"},
+  "perm_can_delete_categories": {"label": "Eliminar categorías"},
+  "perm_can_sell": {"label": "Vender / hacer tickets", "default": true},
+  "perm_can_refund_sales": {"label": "Hacer devoluciones"},
+  "perm_can_view_pending_sales": {"label": "Ver ventas pendientes"},
+  "perm_can_confirm_payment": {"label": "Confirmar cobros"},
+  "perm_can_take_orders": {"label": "Tomar pedidos"},
+  "perm_can_close_cash": {"label": "Cerrar caja"},
+  "perm_can_void_cash_close": {"label": "Anular cierre de caja"},
+  "perm_can_view_history": {"label": "Ver historial de ventas", "default": true},
+  "perm_can_view_charts": {"label": "Ver gráficos y dashboard", "default": true},
+  "perm_can_view_barcodes": {"label": "Ver códigos de barra", "default": true},
+  "perm_can_manage_purchases": {"label": "Gestionar órdenes de compra"},
+  "roles_extra_users": {"label": "Usuarios adicionales (opcional)", "placeholder": "Nombre - email - teléfono (un usuario por línea)", "visible": true, "help": "Datos de empleados que van a usar el sistema, además de usted."}
 }{% endif %}</textarea>
       </div>
       <div class="modal-footer">
@@ -204,10 +224,41 @@ function toggleQR() {
                         </table>
                     </div>
                     {% endif %}
-                    {% if s.role_admin or s.role_supervisor or s.role_vendedor or s.extra_users %}
+                    {% if s.permissions or s.extra_users %}
                     <div class="col-12">
-                        <h6 class="text-primary"><i class="bi bi-people"></i> Roles</h6>
-                        <p class="small">{% if s.role_admin %}Admin ✓ {% endif %}{% if s.role_supervisor %}Supervisor ✓ {% endif %}{% if s.role_vendedor %}Vendedor ✓ {% endif %}</p>
+                        <h6 class="text-primary"><i class="bi bi-people"></i> Permisos del usuario</h6>
+                        {% if s.permissions %}
+                        {% set perm_labels = {
+                          'can_view_products': 'Ver productos',
+                          'can_add_products': 'Agregar productos',
+                          'can_edit_products': 'Editar productos',
+                          'can_manage_products': 'Eliminar productos',
+                          'can_view_suppliers': 'Ver proveedores',
+                          'can_add_suppliers': 'Agregar proveedores',
+                          'can_edit_suppliers': 'Editar proveedores',
+                          'can_delete_suppliers': 'Eliminar proveedores',
+                          'can_view_categories': 'Ver categorías',
+                          'can_add_categories': 'Agregar categorías',
+                          'can_edit_categories': 'Editar categorías',
+                          'can_delete_categories': 'Eliminar categorías',
+                          'can_sell': 'Vender',
+                          'can_refund_sales': 'Devoluciones',
+                          'can_view_pending_sales': 'Ver pendientes',
+                          'can_confirm_payment': 'Confirmar cobros',
+                          'can_take_orders': 'Pedidos',
+                          'can_close_cash': 'Cerrar caja',
+                          'can_void_cash_close': 'Anular cierre',
+                          'can_view_history': 'Historial',
+                          'can_view_charts': 'Gráficos',
+                          'can_view_barcodes': 'Códigos de barra',
+                          'can_manage_purchases': 'Compras',
+                        } %}
+                        <p class="small">
+                        {% for pk, pv in s.permissions.items() if pv %}
+                        <span class="badge bg-secondary me-1">{{ perm_labels.get(pk, pk) }}</span>
+                        {% endfor %}
+                        </p>
+                        {% endif %}
                         {% if s.extra_users %}<pre class="small mb-0" style="white-space:pre-wrap;">{{ s.extra_users }}</pre>{% endif %}
                     </div>
                     {% endif %}

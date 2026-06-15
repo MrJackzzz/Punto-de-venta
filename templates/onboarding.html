@@ -284,50 +284,82 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         </div>
         {% endif %}
 
-        <!-- 7. Roles y permisos -->
+        <!-- 7. Permisos del usuario -->
         {% if show or 'roles' in vs %}
         {% set _fc = field_config if field_config is defined and field_config else {} %}
-        {% set _r_admin = _fc.get('roles_role_admin', {}) %}
-        {% set _r_super = _fc.get('roles_role_supervisor', {}) %}
-        {% set _r_vende = _fc.get('roles_role_vendedor', {}) %}
-        {% set _r_extra = _fc.get('roles_extra_users', {}) %}
+        {% set _perm_title = _fc.get('roles_title', {}).get('label', 'Permisos del usuario') %}
+        {% set _perm_desc = _fc.get('roles_desc', {}).get('label', 'Seleccioná lo que puede hacer un usuario del sistema (vendedor/cajero). Usted como dueño siempre tiene acceso completo.') %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#6f42c1;"><i class="bi bi-people"></i></span> {{ _fc.get('roles_title', {}).get('label') or 'Roles y permisos' }}</div>
+            <div class="card-header"><span class="section-icon" style="background:#6f42c1;"><i class="bi bi-people"></i></span> {{ _perm_title }}</div>
             <div class="card-body">
-                <p class="text-muted small mb-2">{{ _fc.get('roles_desc', {}).get('label') or '¿Qué roles necesitás en el sistema?' }}</p>
-                <div class="row g-2">
-                    {% if _r_admin.get('visible', true) %}
-                    <div class="col-md-4">
-                        <div class="form-check">
-                            <input type="checkbox" name="role_admin" id="role_admin" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="role_admin">{{ _r_admin.get('label', 'Admin (acceso total)') }}</label>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if _r_super.get('visible', true) %}
-                    <div class="col-md-4">
-                        <div class="form-check">
-                            <input type="checkbox" name="role_supervisor" id="role_supervisor" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="role_supervisor">{{ _r_super.get('label', 'Supervisor (casi todo excepto config)') }}</label>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if _r_vende.get('visible', true) %}
-                    <div class="col-md-4">
-                        <div class="form-check">
-                            <input type="checkbox" name="role_vendedor" id="role_vendedor" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="role_vendedor">{{ _r_vende.get('label', 'Vendedor (solo vender y ver stock)') }}</label>
-                        </div>
-                    </div>
-                    {% endif %}
+                <p class="text-muted small mb-3">{{ _perm_desc }}</p>
+                {% set perm_groups = [
+                    ('Productos', [
+                        ('can_view_products', 'Ver productos y stock'),
+                        ('can_add_products', 'Agregar productos'),
+                        ('can_edit_products', 'Editar productos'),
+                        ('can_manage_products', 'Eliminar productos'),
+                    ]),
+                    ('Proveedores', [
+                        ('can_view_suppliers', 'Ver proveedores'),
+                        ('can_add_suppliers', 'Agregar proveedores'),
+                        ('can_edit_suppliers', 'Editar proveedores'),
+                        ('can_delete_suppliers', 'Eliminar proveedores'),
+                    ]),
+                    ('Categorías', [
+                        ('can_view_categories', 'Ver categorías'),
+                        ('can_add_categories', 'Agregar categorías'),
+                        ('can_edit_categories', 'Editar categorías'),
+                        ('can_delete_categories', 'Eliminar categorías'),
+                    ]),
+                    ('Ventas', [
+                        ('can_sell', 'Vender / hacer tickets'),
+                        ('can_refund_sales', 'Hacer devoluciones'),
+                        ('can_view_pending_sales', 'Ver ventas pendientes'),
+                        ('can_confirm_payment', 'Confirmar cobros'),
+                        ('can_take_orders', 'Tomar pedidos'),
+                    ]),
+                    ('Caja', [
+                        ('can_close_cash', 'Cerrar caja'),
+                        ('can_void_cash_close', 'Anular cierre de caja'),
+                    ]),
+                    ('Consultas', [
+                        ('can_view_history', 'Ver historial de ventas'),
+                        ('can_view_charts', 'Ver gráficos y dashboard'),
+                        ('can_view_barcodes', 'Ver códigos de barra'),
+                    ]),
+                    ('Compras', [
+                        ('can_manage_purchases', 'Gestionar órdenes de compra'),
+                    ]),
+                ] %}
+                {% for group_name, perms in perm_groups %}
+                <div class="mb-2">
+                    <strong class="small text-muted">{{ group_name }}</strong>
                 </div>
-                {% if _r_extra.get('visible', true) %}
+                <div class="row g-1 mb-3">
+                    {% for key, label in perms %}
+                    {% set _pk = _fc.get('perm_' + key, {}) %}
+                    {% if _pk.get('visible', true) %}
+                    <div class="col-md-4 col-6">
+                        <div class="form-check">
+                            <input type="checkbox" name="perm_{{ key }}" id="perm_{{ key }}" class="form-check-input" value="on"
+                                {% if _pk.get('default', false) %}checked{% endif %}>
+                            <label class="form-check-label small" for="perm_{{ key }}">{{ _pk.get('label', label) }}</label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                <hr class="my-2">
                 <div class="mt-2">
-                    <label class="form-label">{{ _r_extra.get('label', 'Usuarios adicionales') }}</label>
-                    <textarea name="extra_users" class="form-control" rows="2" placeholder="{{ _r_extra.get('placeholder', 'Ej: Juan Pérez - vendedor - juan@email.com - 1122334455\nMaría López - supervisor - maria@email.com - 1166778899') }}"></textarea>
-                    <div class="form-text">{{ _r_extra.get('help', 'Un usuario por línea: nombre - rol - email - teléfono.') }}</div>
+                    {% set _r_extra = _fc.get('roles_extra_users', {}) %}
+                    {% if _r_extra.get('visible', true) %}
+                    <label class="form-label">{{ _r_extra.get('label', 'Usuarios adicionales (opcional)') }}</label>
+                    <textarea name="extra_users" class="form-control" rows="2" placeholder="{{ _r_extra.get('placeholder', 'Nombre - email - teléfono (un usuario por línea)') }}"></textarea>
+                    <div class="form-text">{{ _r_extra.get('help', 'Datos de empleados que van a usar el sistema, además de usted.') }}</div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
         {% endif %}
