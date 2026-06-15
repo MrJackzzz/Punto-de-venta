@@ -1028,7 +1028,7 @@ def scanner_app_redirect():
     ua = (request.headers.get('User-Agent') or '').lower()
     if 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
         return redirect('https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304')
-    return redirect('https://play.google.com/store/apps/details?id=com.google.zxing.client.android')
+    return redirect('https://play.google.com/store/apps/details?id=com.gamma.scan')
 
 
 # In-memory queue for remote barcode scans (keyed by user_id)
