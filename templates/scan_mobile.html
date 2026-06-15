@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Escanear{% endblock %}
+{% block content %}
+<style>
+#scanInput { font-size:1.4rem; height:3.5rem; text-align:center; letter-spacing:2px; }
+#scanInput:focus { border-color:#3d5a80; box-shadow:0 0 0 0.2rem rgba(61,90,128,0.25); }
+</style>
+<div class="container py-4" style="max-width:500px;">
+    <div class="card">
+        <div class="card-body text-center">
+            <h5 class="mb-2"><i class="bi bi-upc-scan"></i> Escanear código</h5>
+            <p class="text-muted small mb-3">Escaneá con la app del celular o escribí el código manualmente</p>
+            <form id="scanForm" autocomplete="off">
+                <div class="mb-3">
+                    <input type="text" id="scanInput" class="form-control" placeholder="Código..." autofocus>
+                </div>
+                <div id="status" class="mb-2 small"></div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Enviar</button>
+            </form>
+            <div class="mt-3">
+                <small class="text-muted">El código aparecerá automáticamente en <strong>Vender</strong>, <strong>Productos</strong> y <strong>Pedidos</strong>.</small>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-3">
+        <a href="{{ url_for('scanner_page') }}" class="text-muted small">Configurar scanner remoto</a>
+    </div>
+</div>
+<script>
+let lastCode = '';
+document.getElementById('scanForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('scanInput');
+    const code = input.value.trim();
+    if (!code) return;
+    const status = document.getElementById('status');
+    status.innerHTML = '<span class="text-muted">Enviando...</span>';
+    fetch('/api/remote-scan?code=' + encodeURIComponent(code))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                status.innerHTML = '<span class="text-success fw-bold">✔ ' + code + ' enviado</span>';
+                input.value = '';
+                input.focus();
+            } else {
+                status.innerHTML = '<span class="text-danger">Error: ' + (data.error || '') + '</span>';
+            }
+        })
+        .catch(function() {
+            status.innerHTML = '<span class="text-danger">Error de conexión</span>';
+        });
+});
+</script>
+{% endblock %}

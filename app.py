@@ -1023,12 +1023,18 @@ def scanner_page():
     return render_template('scanner.html', scan_url=scan_url, base_url=base_url, app_url=app_url)
 
 
+@app.route('/scan-mobile')
+@login_required
+def scan_mobile():
+    return render_template('scan_mobile.html')
+
+
 @app.route('/scanner-app')
 def scanner_app_redirect():
     ua = (request.headers.get('User-Agent') or '').lower()
     if 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
         return redirect('https://apps.apple.com/app/qr-code-reader-barcode-scanner/id388175304')
-    return redirect('https://play.google.com/store/apps/details?id=com.gamma.scan')
+    return redirect('https://play.google.com/store/apps/details?id=com.qr.barcode.scanner.post.create')
 
 
 # Global queue for remote barcode scans (phone → browser)
