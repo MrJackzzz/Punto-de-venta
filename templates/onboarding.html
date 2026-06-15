@@ -44,56 +44,75 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
 
         {% set vs = visible_sections if visible_sections is defined and visible_sections else [] %}
         {% set show = true if not vs else false %}
+        {% set _fc = field_config if field_config is defined and field_config else {} %}
 
         <!-- 1. Datos del negocio -->
         {% if show or 'business_data' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#3d5a80;"><i class="bi bi-shop"></i></span> Datos del negocio</div>
+            <div class="card-header"><span class="section-icon" style="background:#3d5a80;"><i class="bi bi-shop"></i></span> {{ _fc.get('section_business_data', {}).get('label', 'Datos del negocio') }}</div>
             <div class="card-body">
                 <div class="row g-3">
+                    {% if _fc.get('business_name', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Nombre del negocio <span class="text-danger">*</span></label>
-                        <input type="text" name="business_name" class="form-control" required placeholder="Ej: SmartPost">
-                        <div class="form-text">Va a figurar en tickets, emails y encabezados.</div>
+                        <label class="form-label">{{ _fc.get('business_name', {}).get('label', 'Nombre del negocio') }} <span class="text-danger">*</span></label>
+                        <input type="text" name="business_name" class="form-control" required placeholder="{{ _fc.get('business_name', {}).get('placeholder', 'Ej: SmartPost') }}">
+                        <div class="form-text">{{ _fc.get('business_name', {}).get('help', 'Va a figurar en tickets, emails y encabezados.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('local_name', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Nombre del local / sucursal</label>
-                        <input type="text" name="local_name" class="form-control" placeholder="Ej: Sucursal Centro">
-                        <div class="form-text">Opcional. Si tenés más de un local.</div>
+                        <label class="form-label">{{ _fc.get('local_name', {}).get('label', 'Nombre del local / sucursal') }}</label>
+                        <input type="text" name="local_name" class="form-control" placeholder="{{ _fc.get('local_name', {}).get('placeholder', 'Ej: Sucursal Centro') }}">
+                        <div class="form-text">{{ _fc.get('local_name', {}).get('help', 'Opcional. Si tenés más de un local.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('owner_name', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Nombre del titular / dueño</label>
-                        <input type="text" name="owner_name" class="form-control" placeholder="Nombre y apellido">
+                        <label class="form-label">{{ _fc.get('owner_name', {}).get('label', 'Nombre del titular / dueño') }}</label>
+                        <input type="text" name="owner_name" class="form-control" placeholder="{{ _fc.get('owner_name', {}).get('placeholder', 'Nombre y apellido') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('cuit', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">CUIT / CUIL</label>
-                        <input type="text" name="cuit" class="form-control" placeholder="XX-XXXXXXXX-X">
+                        <label class="form-label">{{ _fc.get('cuit', {}).get('label', 'CUIT / CUIL') }}</label>
+                        <input type="text" name="cuit" class="form-control" placeholder="{{ _fc.get('cuit', {}).get('placeholder', 'XX-XXXXXXXX-X') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('address', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Dirección</label>
-                        <input type="text" name="address" class="form-control" placeholder="Calle, número, ciudad">
+                        <label class="form-label">{{ _fc.get('address', {}).get('label', 'Dirección') }}</label>
+                        <input type="text" name="address" class="form-control" placeholder="{{ _fc.get('address', {}).get('placeholder', 'Calle, número, ciudad') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('phone', {}).get('visible', true) %}
                     <div class="col-md-3">
-                        <label class="form-label">Teléfono</label>
-                        <input type="tel" name="phone" class="form-control" placeholder="+54 11 ...">
+                        <label class="form-label">{{ _fc.get('phone', {}).get('label', 'Teléfono') }}</label>
+                        <input type="tel" name="phone" class="form-control" placeholder="{{ _fc.get('phone', {}).get('placeholder', '+54 11 ...') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('email', {}).get('visible', true) %}
                     <div class="col-md-3">
-                        <label class="form-label">Email de contacto</label>
-                        <input type="email" name="email" class="form-control" placeholder="info@tunegocio.com">
+                        <label class="form-label">{{ _fc.get('email', {}).get('label', 'Email de contacto') }}</label>
+                        <input type="email" name="email" class="form-control" placeholder="{{ _fc.get('email', {}).get('placeholder', 'info@tunegocio.com') }}">
                     </div>
+                    {% endif %}
                 </div>
                 <hr class="mt-3 mb-2">
                 <div class="row g-3">
+                    {% if _fc.get('logo', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Logo del negocio</label>
+                        <label class="form-label">{{ _fc.get('logo', {}).get('label', 'Logo del negocio') }}</label>
                         <input type="file" name="logo" class="form-control" accept="image/png,image/jpeg,image/gif,image/webp">
-                        <div class="form-text">PNG, JPG o WebP. Se mostrará en tickets y encabezados.</div>
+                        <div class="form-text">{{ _fc.get('logo', {}).get('help', 'PNG, JPG o WebP. Se mostrará en tickets y encabezados.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('favicon', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Favicon (ícono de pestaña)</label>
+                        <label class="form-label">{{ _fc.get('favicon', {}).get('label', 'Favicon (ícono de pestaña)') }}</label>
                         <input type="file" name="favicon" class="form-control" accept="image/png,image/x-icon">
-                        <div class="form-text">PNG o ICO. Ideal 32x32px.</div>
+                        <div class="form-text">{{ _fc.get('favicon', {}).get('help', 'PNG o ICO. Ideal 32x32px.') }}</div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -102,11 +121,12 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 2. Preferencias del sistema -->
         {% if show or 'preferences' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#ee6c4d;"><i class="bi bi-sliders2"></i></span> Preferencias del sistema</div>
+            <div class="card-header"><span class="section-icon" style="background:#ee6c4d;"><i class="bi bi-sliders2"></i></span> {{ _fc.get('section_preferences', {}).get('label', 'Preferencias del sistema') }}</div>
             <div class="card-body">
                 <div class="row g-3">
+                    {% if _fc.get('timezone', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Zona horaria</label>
+                        <label class="form-label">{{ _fc.get('timezone', {}).get('label', 'Zona horaria') }}</label>
                         <select name="timezone" class="form-select">
                             <option value="America/Argentina/Buenos_Aires">Argentina (BA)</option>
                             <option value="America/Argentina/Cordoba">Argentina (Córdoba)</option>
@@ -118,8 +138,10 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                             <option value="Europe/Madrid">España</option>
                         </select>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('currency', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Moneda predeterminada</label>
+                        <label class="form-label">{{ _fc.get('currency', {}).get('label', 'Moneda predeterminada') }}</label>
                         <select name="currency" class="form-select">
                             <option value="ARS">ARS ($)</option>
                             <option value="USD">USD (US$)</option>
@@ -130,46 +152,61 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
                             <option value="UYU">UYU ($)</option>
                         </select>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('default_markup', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Margen de ganancia %</label>
-                        <input type="number" name="default_markup" class="form-control" value="30" min="0" step="1">
-                        <div class="form-text">Porcentaje que se aplica al costo por defecto.</div>
+                        <label class="form-label">{{ _fc.get('default_markup', {}).get('label', 'Margen de ganancia %') }}</label>
+                        <input type="number" name="default_markup" class="form-control" value="{{ _fc.get('default_markup', {}).get('default', '30') }}" min="0" step="1">
+                        <div class="form-text">{{ _fc.get('default_markup', {}).get('help', 'Porcentaje que se aplica al costo por defecto.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('low_stock_threshold', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Stock bajo (umbral)</label>
-                        <input type="number" name="low_stock_threshold" class="form-control" value="10" min="1">
-                        <div class="form-text">Cantidad mínima antes de mostrar alerta.</div>
+                        <label class="form-label">{{ _fc.get('low_stock_threshold', {}).get('label', 'Stock bajo (umbral)') }}</label>
+                        <input type="number" name="low_stock_threshold" class="form-control" value="{{ _fc.get('low_stock_threshold', {}).get('default', '10') }}" min="1">
+                        <div class="form-text">{{ _fc.get('low_stock_threshold', {}).get('help', 'Cantidad mínima antes de mostrar alerta.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('critical_stock_threshold', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Stock crítico (umbral)</label>
-                        <input type="number" name="critical_stock_threshold" class="form-control" value="5" min="1">
-                        <div class="form-text">Cuando llegar a este número, se envía alerta por email.</div>
+                        <label class="form-label">{{ _fc.get('critical_stock_threshold', {}).get('label', 'Stock crítico (umbral)') }}</label>
+                        <input type="number" name="critical_stock_threshold" class="form-control" value="{{ _fc.get('critical_stock_threshold', {}).get('default', '5') }}" min="1">
+                        <div class="form-text">{{ _fc.get('critical_stock_threshold', {}).get('help', 'Cuando llegar a este número, se envía alerta por email.') }}</div>
                     </div>
+                    {% endif %}
                 </div>
                 <hr class="mt-3 mb-2">
                 <div class="row g-3">
+                    {% if _fc.get('ticket_header', {}).get('visible', true) %}
                     <div class="col-12">
-                        <label class="form-label">Encabezado del ticket</label>
-                        <input type="text" name="ticket_header" class="form-control" placeholder="Ej: Gracias por tu compra!">
-                        <div class="form-text">Texto opcional que aparece arriba en el ticket.</div>
+                        <label class="form-label">{{ _fc.get('ticket_header', {}).get('label', 'Encabezado del ticket') }}</label>
+                        <input type="text" name="ticket_header" class="form-control" placeholder="{{ _fc.get('ticket_header', {}).get('placeholder', 'Ej: Gracias por tu compra!') }}">
+                        <div class="form-text">{{ _fc.get('ticket_header', {}).get('help', 'Texto opcional que aparece arriba en el ticket.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('ticket_footer', {}).get('visible', true) %}
                     <div class="col-12">
-                        <label class="form-label">Pie del ticket</label>
-                        <input type="text" name="ticket_footer" class="form-control" placeholder="Ej: Válido como factura simplificada">
-                        <div class="form-text">Texto opcional que aparece al final del ticket.</div>
+                        <label class="form-label">{{ _fc.get('ticket_footer', {}).get('label', 'Pie del ticket') }}</label>
+                        <input type="text" name="ticket_footer" class="form-control" placeholder="{{ _fc.get('ticket_footer', {}).get('placeholder', 'Ej: Válido como factura simplificada') }}">
+                        <div class="form-text">{{ _fc.get('ticket_footer', {}).get('help', 'Texto opcional que aparece al final del ticket.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('ticket_show_logo', {}).get('visible', true) %}
                     <div class="col-md-6">
                         <div class="form-check">
                             <input type="checkbox" name="ticket_show_logo" id="ticket_show_logo" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="ticket_show_logo">Mostrar logo en ticket</label>
+                            <label class="form-check-label" for="ticket_show_logo">{{ _fc.get('ticket_show_logo', {}).get('label', 'Mostrar logo en ticket') }}</label>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('ticket_show_cuit', {}).get('visible', true) %}
                     <div class="col-md-6">
                         <div class="form-check">
                             <input type="checkbox" name="ticket_show_cuit" id="ticket_show_cuit" class="form-check-input" value="on" checked>
-                            <label class="form-check-label" for="ticket_show_cuit">Mostrar CUIT en ticket</label>
+                            <label class="form-check-label" for="ticket_show_cuit">{{ _fc.get('ticket_show_cuit', {}).get('label', 'Mostrar CUIT en ticket') }}</label>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -178,35 +215,45 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 3. Configuración técnica -->
         {% if show or 'technical' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-hdd-stack"></i></span> Configuración técnica</div>
+            <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-hdd-stack"></i></span> {{ _fc.get('section_technical', {}).get('label', 'Configuración técnica') }}</div>
             <div class="card-body">
                 <div class="row g-3">
+                    {% if _fc.get('admin_user', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Usuario administrador</label>
-                        <input type="text" name="admin_user" class="form-control" value="admin" placeholder="admin">
+                        <label class="form-label">{{ _fc.get('admin_user', {}).get('label', 'Usuario administrador') }}</label>
+                        <input type="text" name="admin_user" class="form-control" value="{{ _fc.get('admin_user', {}).get('default', 'admin') }}" placeholder="{{ _fc.get('admin_user', {}).get('placeholder', 'admin') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('admin_password', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" name="admin_password" class="form-control" placeholder="Mín. 6 caracteres">
-                        <div class="form-text">Si no se completa, se genera una automática.</div>
+                        <label class="form-label">{{ _fc.get('admin_password', {}).get('label', 'Contraseña') }}</label>
+                        <input type="password" name="admin_password" class="form-control" placeholder="{{ _fc.get('admin_password', {}).get('placeholder', 'Mín. 6 caracteres') }}">
+                        <div class="form-text">{{ _fc.get('admin_password', {}).get('help', 'Si no se completa, se genera una automática.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('port', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Puerto deseado</label>
-                        <input type="number" name="port" class="form-control" placeholder="Ej: 8082">
-                        <div class="form-text">Dejalo vacío para que asignemos uno disponible.</div>
+                        <label class="form-label">{{ _fc.get('port', {}).get('label', 'Puerto deseado') }}</label>
+                        <input type="number" name="port" class="form-control" placeholder="{{ _fc.get('port', {}).get('placeholder', 'Ej: 8082') }}">
+                        <div class="form-text">{{ _fc.get('port', {}).get('help', 'Dejalo vacío para que asignemos uno disponible.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('domain_option', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Dominio</label>
+                        <label class="form-label">{{ _fc.get('domain_option', {}).get('label', 'Dominio') }}</label>
                         <select name="domain_option" class="form-select">
                             <option value="subdominio">Subdominio nexoraapps.com.ar</option>
                             <option value="propio">Dominio propio (ya registrado)</option>
                         </select>
-                        <div class="form-text">Requerís tener el dominio registrado y apuntando a nuestro servidor.</div>
+                        <div class="form-text">{{ _fc.get('domain_option', {}).get('help', 'Requerís tener el dominio registrado y apuntando a nuestro servidor.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('custom_domain', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Nombre del dominio (si aplica)</label>
-                        <input type="text" name="custom_domain" class="form-control" placeholder="Ej: mitienda.com.ar">
+                        <label class="form-label">{{ _fc.get('custom_domain', {}).get('label', 'Nombre del dominio (si aplica)') }}</label>
+                        <input type="text" name="custom_domain" class="form-control" placeholder="{{ _fc.get('custom_domain', {}).get('placeholder', 'Ej: mitienda.com.ar') }}">
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -215,26 +262,35 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 4. Email (SMTP) -->
         {% if show or 'smtp' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#98c1d9;color:#293241;"><i class="bi bi-envelope"></i></span> Configuración de Email (SMTP)</div>
+            <div class="card-header"><span class="section-icon" style="background:#98c1d9;color:#293241;"><i class="bi bi-envelope"></i></span> {{ _fc.get('section_smtp', {}).get('label', 'Configuración de Email (SMTP)') }}</div>
             <div class="card-body">
-                <p class="text-muted small mb-3">Necesario para enviar tickets y links de pago a los clientes. Podés usar una cuenta de Gmail con contraseña de aplicación.</p>
+                {% set _smtp_desc = _fc.get('section_smtp', {}).get('help', 'Necesario para enviar tickets y links de pago a los clientes. Podés usar una cuenta de Gmail con contraseña de aplicación.') %}
+                <p class="text-muted small mb-3">{{ _smtp_desc }}</p>
                 <div class="row g-3">
+                    {% if _fc.get('smtp_host', {}).get('visible', true) %}
                     <div class="col-md-4">
-                        <label class="form-label">Servidor SMTP</label>
-                        <input type="text" name="smtp_host" class="form-control" placeholder="smtp.gmail.com">
+                        <label class="form-label">{{ _fc.get('smtp_host', {}).get('label', 'Servidor SMTP') }}</label>
+                        <input type="text" name="smtp_host" class="form-control" placeholder="{{ _fc.get('smtp_host', {}).get('placeholder', 'smtp.gmail.com') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('smtp_port', {}).get('visible', true) %}
                     <div class="col-md-2">
-                        <label class="form-label">Puerto</label>
-                        <input type="number" name="smtp_port" class="form-control" value="587">
+                        <label class="form-label">{{ _fc.get('smtp_port', {}).get('label', 'Puerto') }}</label>
+                        <input type="number" name="smtp_port" class="form-control" value="{{ _fc.get('smtp_port', {}).get('default', '587') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('smtp_user', {}).get('visible', true) %}
                     <div class="col-md-3">
-                        <label class="form-label">Usuario / Email</label>
-                        <input type="text" name="smtp_user" class="form-control" placeholder="tucuenta@gmail.com">
+                        <label class="form-label">{{ _fc.get('smtp_user', {}).get('label', 'Usuario / Email') }}</label>
+                        <input type="text" name="smtp_user" class="form-control" placeholder="{{ _fc.get('smtp_user', {}).get('placeholder', 'tucuenta@gmail.com') }}">
                     </div>
+                    {% endif %}
+                    {% if _fc.get('smtp_password', {}).get('visible', true) %}
                     <div class="col-md-3">
-                        <label class="form-label">Contraseña de aplicación</label>
-                        <input type="password" name="smtp_password" class="form-control" placeholder="••••••••">
+                        <label class="form-label">{{ _fc.get('smtp_password', {}).get('label', 'Contraseña de aplicación') }}</label>
+                        <input type="password" name="smtp_password" class="form-control" placeholder="{{ _fc.get('smtp_password', {}).get('placeholder', '••••••••') }}">
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -243,14 +299,16 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 5. Mercado Pago -->
         {% if show or 'mercadopago' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#009ee3;"><i class="bi bi-credit-card"></i></span> Mercado Pago (opcional)</div>
+            <div class="card-header"><span class="section-icon" style="background:#009ee3;"><i class="bi bi-credit-card"></i></span> {{ _fc.get('section_mercadopago', {}).get('label', 'Mercado Pago (opcional)') }}</div>
             <div class="card-body">
                 <div class="row g-3">
+                    {% if _fc.get('mp_access_token', {}).get('visible', true) %}
                     <div class="col-md-12">
-                        <label class="form-label">Access Token (producción)</label>
-                        <input type="text" name="mp_access_token" class="form-control" placeholder="APP_USR-...">
-                        <div class="form-text">Lo obtenés desde <a href="https://www.mercadopago.com.ar/developers" target="_blank">Mercado Pago Developers</a> → Credenciales → Access Token.</div>
+                        <label class="form-label">{{ _fc.get('mp_access_token', {}).get('label', 'Access Token (producción)') }}</label>
+                        <input type="text" name="mp_access_token" class="form-control" placeholder="{{ _fc.get('mp_access_token', {}).get('placeholder', 'APP_USR-...') }}">
+                        <div class="form-text">{{ _fc.get('mp_access_token', {}).get('help', 'Lo obtenés desde Mercado Pago Developers → Credenciales → Access Token.') }}</div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -259,26 +317,32 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 6. Google Drive -->
         {% if show or 'drive' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#34a853;"><i class="bi bi-google"></i></span> Google Drive (opcional)</div>
+            <div class="card-header"><span class="section-icon" style="background:#34a853;"><i class="bi bi-google"></i></span> {{ _fc.get('section_drive', {}).get('label', 'Google Drive (opcional)') }}</div>
             <div class="card-body">
+                {% if _fc.get('drive_enabled', {}).get('visible', true) %}
                 <div class="form-check mb-2">
                     <input type="checkbox" name="drive_enabled" id="drive_enabled" class="form-check-input" value="on">
-                    <label class="form-check-label" for="drive_enabled">Habilitar backup automático a Google Drive</label>
+                    <label class="form-check-label" for="drive_enabled">{{ _fc.get('drive_enabled', {}).get('label', 'Habilitar backup automático a Google Drive') }}</label>
                 </div>
+                {% endif %}
                 <div class="row g-3 mt-1">
+                    {% if _fc.get('backup_frequency', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Frecuencia de backup</label>
+                        <label class="form-label">{{ _fc.get('backup_frequency', {}).get('label', 'Frecuencia de backup') }}</label>
                         <select name="backup_frequency" class="form-select">
                             <option value="daily">Diario</option>
                             <option value="weekly">Semanal</option>
                             <option value="manual">Manual (solo cuando lo pida)</option>
                         </select>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('drive_json', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">Archivo JSON de cuenta de servicio</label>
+                        <label class="form-label">{{ _fc.get('drive_json', {}).get('label', 'Archivo JSON de cuenta de servicio') }}</label>
                         <input type="file" name="drive_json" class="form-control" accept=".json">
-                        <div class="form-text">Descargalo desde Google Cloud Console → IAM → Cuentas de servicio.</div>
+                        <div class="form-text">{{ _fc.get('drive_json', {}).get('help', 'Descargalo desde Google Cloud Console → IAM → Cuentas de servicio.') }}</div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -286,7 +350,6 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
 
         <!-- 7. Permisos del usuario -->
         {% if show or 'roles' in vs %}
-        {% set _fc = field_config if field_config is defined and field_config else {} %}
         {% set _perm_title = _fc.get('roles_title', {}).get('label', 'Permisos del usuario') %}
         {% set _perm_desc = _fc.get('roles_desc', {}).get('label', 'Seleccioná lo que puede hacer un usuario del sistema (vendedor/cajero). Usted como dueño siempre tiene acceso completo.') %}
         <div class="card form-card">
@@ -367,24 +430,30 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 8. Productos iniciales -->
         {% if show or 'products' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#e67e22;"><i class="bi bi-box-seam"></i></span> Productos iniciales</div>
+            <div class="card-header"><span class="section-icon" style="background:#e67e22;"><i class="bi bi-box-seam"></i></span> {{ _fc.get('section_products', {}).get('label', 'Productos iniciales') }}</div>
             <div class="card-body">
                 <div class="row g-3">
+                    {% if _fc.get('products_file', {}).get('visible', true) %}
                     <div class="col-md-12">
-                        <label class="form-label">Subir listado de productos (Excel)</label>
+                        <label class="form-label">{{ _fc.get('products_file', {}).get('label', 'Subir listado de productos (Excel)') }}</label>
                         <input type="file" name="products_file" class="form-control" accept=".xlsx,.xls,.csv">
-                        <div class="form-text">Columnas: código, nombre, costo, precio, stock, categoría. También podés enviarlo después por email.</div>
+                        <div class="form-text">{{ _fc.get('products_file', {}).get('help', 'Columnas: código, nombre, costo, precio, stock, categoría. También podés enviarlo después por email.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('categories', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">¿Tenés categorías definidas?</label>
-                        <textarea name="categories" class="form-control" rows="2" placeholder="Ej: Bebidas, Limpieza, Lácteos, Snacks"></textarea>
-                        <div class="form-text">Separadas por coma.</div>
+                        <label class="form-label">{{ _fc.get('categories', {}).get('label', '¿Tenés categorías definidas?') }}</label>
+                        <textarea name="categories" class="form-control" rows="2" placeholder="{{ _fc.get('categories', {}).get('placeholder', 'Ej: Bebidas, Limpieza, Lácteos, Snacks') }}"></textarea>
+                        <div class="form-text">{{ _fc.get('categories', {}).get('help', 'Separadas por coma.') }}</div>
                     </div>
+                    {% endif %}
+                    {% if _fc.get('suppliers', {}).get('visible', true) %}
                     <div class="col-md-6">
-                        <label class="form-label">¿Tenés proveedores?</label>
-                        <textarea name="suppliers" class="form-control" rows="2" placeholder="Ej: Distribuidora Norte (11-1234-5678)&#10;Coca-Cola (4321-8765)"></textarea>
-                        <div class="form-text">Un proveedor por línea: nombre - teléfono.</div>
+                        <label class="form-label">{{ _fc.get('suppliers', {}).get('label', '¿Tenés proveedores?') }}</label>
+                        <textarea name="suppliers" class="form-control" rows="2" placeholder="{{ _fc.get('suppliers', {}).get('placeholder', 'Ej: Distribuidora Norte (11-1234-5678)') }}"></textarea>
+                        <div class="form-text">{{ _fc.get('suppliers', {}).get('help', 'Un proveedor por línea: nombre - teléfono.') }}</div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -393,9 +462,11 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 9. Notas -->
         {% if show or 'notes' in vs %}
         <div class="card form-card">
-            <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-chat-dots"></i></span> Notas adicionales</div>
+            <div class="card-header"><span class="section-icon" style="background:#293241;"><i class="bi bi-chat-dots"></i></span> {{ _fc.get('section_notes', {}).get('label', 'Notas adicionales') }}</div>
             <div class="card-body">
-                <textarea name="notes" class="form-control" rows="4" placeholder="Cualquier requerimiento especial, horarios, productos específicos, etc."></textarea>
+                {% if _fc.get('notes', {}).get('visible', true) %}
+                <textarea name="notes" class="form-control" rows="4" placeholder="{{ _fc.get('notes', {}).get('placeholder', 'Cualquier requerimiento especial, horarios, productos específicos, etc.') }}"></textarea>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -403,25 +474,28 @@ footer { text-align: center; padding: 24px 0; color: #868e96; font-size: .8rem; 
         <!-- 10. Acuerdo de Confidencialidad -->
         {% if show or 'confidencialidad' in vs %}
         <div class="card form-card border-{{ 'danger' if error_confidencialidad else 'primary' }}">
-            <div class="card-header"><span class="section-icon" style="background:#000;"><i class="bi bi-shield-lock"></i></span> Acuerdo de Confidencialidad</div>
+            <div class="card-header"><span class="section-icon" style="background:#000;"><i class="bi bi-shield-lock"></i></span> {{ _fc.get('section_confidencialidad', {}).get('label', 'Acuerdo de Confidencialidad') }}</div>
             <div class="card-body">
+                {% if _fc.get('confidencialidad_summary', {}).get('visible', true) %}
                 <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;max-height:220px;overflow-y:auto;font-size:.82rem;line-height:1.5;color:#495057;margin-bottom:12px;">
-                    <p class="fw-semibold mb-2" style="color:#293241;">Resumen del Acuerdo:</p>
-                    <p>Los datos proporcionados en este formulario son de carácter confidencial. El proveedor se compromete a:</p>
+                    <p class="fw-semibold mb-2" style="color:#293241;">{{ _fc.get('confidencialidad_summary', {}).get('label', 'Resumen del Acuerdo:') }}</p>
+                    <p>{{ _fc.get('confidencialidad_summary', {}).get('help', 'Al aceptar, el Cliente reconoce y acepta los siguientes términos:') }}</p>
                     <ul class="mb-0" style="padding-left:18px;">
-                        <li>Utilizar la información <strong>exclusivamente</strong> para configurar y operar el sistema contratado.</li>
-                        <li><strong>No divulgar</strong> los datos a terceros sin autorización expresa del cliente.</li>
-                        <li>Implementar <strong>medidas de seguridad</strong> para proteger la información contra accesos no autorizados.</li>
-                        <li>Permitir al cliente <strong>acceder, rectificar y eliminar</strong> sus datos en cualquier momento.</li>
+                        <li>El sistema, código fuente y componentes desarrollados por el Proveedor son de su <strong>propiedad exclusiva</strong>. La contratación del servicio no transfiere derechos de propiedad intelectual.</li>
+                        <li>El Cliente es <strong>responsable de sus credenciales</strong> y del uso que se haga de ellas.</li>
+                        <li>El Proveedor <strong>no será responsable</strong> por pérdidas económicas indirectas, lucro cesante o daños derivados de servicios externos (internet, hosting, Mercado Pago, etc.).</li>
+                        <li>Los datos se utilizarán exclusivamente para configurar y operar el sistema contratado, y no se divulgarán a terceros sin autorización.</li>
+                        <li>El Cliente puede <strong>acceder, rectificar y eliminar</strong> sus datos en cualquier momento.</li>
                     </ul>
                     <p class="mb-0 mt-2"><a href="/onboarding/confidencialidad" target="_blank" class="text-decoration-none"><i class="bi bi-file-text"></i> Ver acuerdo completo &rarr;</a></p>
                 </div>
+                {% endif %}
                 <div class="form-check">
                     <input type="checkbox" name="confidencialidad_aceptado" id="confidencialidad_aceptado" class="form-check-input" value="on" required>
                     <label class="form-check-label fw-medium" for="confidencialidad_aceptado" style="font-size:.85rem;">
-                        He leído y acepto el <a href="/onboarding/confidencialidad" target="_blank">Acuerdo de Confidencialidad</a>
+                        {{ _fc.get('confidencialidad_accept_label', {}).get('label', 'He leído y acepto el Acuerdo de Confidencialidad') }}
                     </label>
-                    <div class="form-text">Es necesario aceptar para enviar el formulario.</div>
+                    <div class="form-text">{{ _fc.get('confidencialidad_accept_label', {}).get('help', 'Es necesario aceptar para enviar el formulario.') }}</div>
                 </div>
             </div>
         </div>

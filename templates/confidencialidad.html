@@ -41,10 +41,10 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
 </div>
 <div class="paper">
     <h1>Acuerdo de Confidencialidad</h1>
-    <p class="subtitle">Protección de datos del cliente — {{ business_name or 'SmartPost' }}</p>
+    <p class="subtitle">Protección de datos del cliente — {{ business_name or 'NEXORA CORE' }}</p>
     <div class="fecha">Fecha: {{ now().strftime('%d/%m/%Y') if now else '' }}</div>
 
-    <p>El presente Acuerdo de Confidencialidad (en adelante, el "Acuerdo") es suscrito entre <strong>{{ business_name or 'SmartPost' }}</strong> (en adelante, el "Proveedor") y <strong>{{ cliente or 'el cliente' }}</strong>{% if cliente_titular %} representado por <strong>{{ cliente_titular }}</strong>{% endif %} (en adelante, el "Cliente"), con el objeto de establecer los términos y condiciones bajo los cuales se protegerá la información compartida entre las partes.</p>
+    <p>El presente Acuerdo de Confidencialidad (en adelante, el "Acuerdo") es suscrito entre <strong>{{ business_name or 'NEXORA CORE' }}</strong> (en adelante, el "Proveedor") y <strong>{{ cliente or 'el cliente' }}</strong>{% if cliente_titular %} representado por <strong>{{ cliente_titular }}</strong>{% endif %} (en adelante, el "Cliente"), con el objeto de establecer los términos y condiciones bajo los cuales se protegerá la información compartida entre las partes.</p>
 
     <table class="table table-sm table-borderless" style="font-size:.85rem;margin-bottom:18px;">
         {% if cliente %}<tr><td class="text-muted" style="width:120px;">Cliente</td><td class="fw-medium">{{ cliente }}</td></tr>{% endif %}
@@ -57,7 +57,10 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
     <h2>1. Definición de Información Confidencial</h2>
     <p>Se considera Información Confidencial toda aquella información proporcionada por el Cliente al Proveedor a través del formulario de configuración, incluyendo pero no limitándose a: datos del negocio, nombres de titulares, direcciones, números de contacto, correos electrónicos, CUIT/CUIL, credenciales de acceso a servicios de terceros (SMTP, Mercado Pago, Google Drive), preferencias del sistema, y cualquier otro dato que el Cliente proporcione durante la vigencia de la relación comercial.</p>
 
-    <h2>2. Obligaciones del Proveedor</h2>
+    <h2>2. Propiedad del Software</h2>
+    <p>El software, código fuente, diseño, estructura de bases de datos, documentación, interfaces, módulos y demás componentes desarrollados por <strong>{{ business_name or 'NEXORA CORE' }}</strong> son propiedad exclusiva del Proveedor. La contratación del servicio no implica cesión de derechos de propiedad intelectual al Cliente. El Cliente recibe una licencia de uso limitada al servicio contratado, no pudiendo reproducir, modificar, distribuir ni realizar ingeniería inversa sobre el sistema.</p>
+
+    <h2>3. Obligaciones del Proveedor</h2>
     <ul>
         <li><strong>Uso limitado:</strong> La Información Confidencial será utilizada exclusivamente para los fines de configurar, operar y mantener el sistema de gestión contratado por el Cliente.</li>
         <li><strong>No divulgación:</strong> El Proveedor se obliga a no divulgar, publicar, ceder, transferir o de cualquier otra forma poner a disposición de terceros la Información Confidencial del Cliente, salvo autorización expresa por escrito del Cliente o requerimiento judicial.</li>
@@ -66,7 +69,19 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
         <li><strong>Almacenamiento:</strong> Los datos se almacenan en servidores seguros con acceso restringido por autenticación y contraseña.</li>
     </ul>
 
-    <h2>3. Excepciones</h2>
+    <h2>4. Responsabilidad sobre Credenciales</h2>
+    <p>El Cliente es responsable de proporcionar credenciales válidas y mantener actualizados los accesos a servicios de terceros (SMTP, Mercado Pago, Google Drive, dominio, etc.). El Proveedor no será responsable por daños derivados de credenciales incorrectas, comprometidas, vencidas o compartidas por el Cliente con personal no autorizado. El Cliente se compromete a notificar al Proveedor de forma inmediata ante cualquier uso no autorizado de sus credenciales.</p>
+
+    <h2>5. Confidencialidad Recíproca</h2>
+    <p>El Cliente se compromete a no divulgar documentación técnica, configuraciones internas, metodologías de trabajo, presupuestos, códigos de acceso, contraseñas de administración, ni cualquier otra información confidencial perteneciente a <strong>{{ business_name or 'NEXORA CORE' }}</strong> de la que tenga conocimiento como consecuencia de la relación comercial.</p>
+
+    <h2>6. Backups y Responsabilidad sobre los Datos</h2>
+    <p>El Proveedor realizará copias de seguridad periódicas de acuerdo con sus políticas internas. Sin perjuicio de ello, el Cliente reconoce que es responsable de conservar respaldos propios de la información crítica de su negocio. El Proveedor no garantiza la disponibilidad ininterrumpida del servicio ni la integridad absoluta de los datos frente a eventos de fuerza mayor, fallos de hardware, ataques cibernéticos o errores humanos no atribuibles al Proveedor.</p>
+
+    <h2>7. Limitación de Responsabilidad</h2>
+    <p>El Proveedor no será responsable por pérdidas económicas indirectas, lucro cesante, interrupciones de negocio, pérdida de oportunidades comerciales, daños a la reputación, ni por daños derivados de fallas, retardos o indisponibilidad de servicios externos ajenos a su control, incluyendo pero no limitándose a: servicios de internet, hosting, infraestructura cloud, WhatsApp, Mercado Pago, servicios SMTP, Google Drive, servicios de dominio DNS, o cualquier otro proveedor tecnológico externo. La responsabilidad máxima del Proveedor en ningún caso excederá el valor del último mes del servicio contratado.</p>
+
+    <h2>8. Excepciones</h2>
     <p>No se considerará Información Confidencial aquella que:</p>
     <ul>
         <li>Sea o se vuelva de dominio público sin que medie incumplimiento del Proveedor.</li>
@@ -74,10 +89,10 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
         <li>Haya sido desarrollada de forma independiente por el Proveedor sin uso de la Información Confidencial del Cliente.</li>
     </ul>
 
-    <h2>4. Vigencia</h2>
-    <p>Este Acuerdo entra en vigor en la fecha de aceptación por parte del Cliente y permanecerá vigente durante la relación comercial entre las partes, e incluso después de su terminación, manteniéndose las obligaciones de confidencialidad por un período adicional de dos (2) años.</p>
+    <h2>9. Vigencia</h2>
+    <p>Este Acuerdo entra en vigor en la fecha de aceptación por parte del Cliente y permanecerá vigente durante toda la relación comercial entre las partes, y por un período de cinco (5) años posteriores a su finalización, manteniéndose las obligaciones de confidencialidad durante dicho plazo.</p>
 
-    <h2>5. Derechos del Cliente</h2>
+    <h2>10. Derechos del Cliente sobre sus Datos</h2>
     <ul>
         <li><strong>Acceso:</strong> El Cliente puede solicitar en cualquier momento una copia de los datos almacenados.</li>
         <li><strong>Rectificación:</strong> El Cliente puede solicitar la corrección de datos inexactos.</li>
@@ -85,12 +100,12 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
         <li><strong>Portabilidad:</strong> El Cliente puede solicitar la exportación de sus datos en formato estándar.</li>
     </ul>
 
-    <h2>6. Legislación Aplicable</h2>
+    <h2>11. Legislación Aplicable</h2>
     <p>Este Acuerdo se rige por las leyes de la República Argentina. Para cualquier controversia derivada del mismo, las partes se someten a la jurisdicción de los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.</p>
 
     <div class="firmas">
         <div class="firma-box">
-            <div class="fw-semibold mb-2" style="font-size:.85rem;">{{ business_name or 'SmartPost' }}</div>
+            <div class="fw-semibold mb-2" style="font-size:.85rem;">{{ business_name or 'NEXORA CORE' }}</div>
             <div style="margin-top:44px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">Firma</div>
             <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">Aclaración</div>
             <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">DNI</div>
@@ -102,11 +117,6 @@ footer { text-align: center; padding: 20px; color: #868e96; font-size: .78rem; }
             <div style="margin-top:8px;border-top:1px solid #495057;padding-top:6px;font-size:.8rem;text-align:center;color:#868e96;">DNI</div>
         </div>
     </div>
-    {% if not pdf_mode %}
-    <div style="margin-top:30px;padding-top:16px;border-top:1px solid #dee2e6;font-size:.82rem;color:#868e96;">
-        <p class="mb-1"><i class="bi bi-info-circle"></i> Imprimí este documento, firmalo a mano y entregale una copia al cliente. El cliente también debe firmar.</p>
-    </div>
-    {% endif %}
 </div>
 <footer>
     <i class="bi bi-shield-lock"></i> Documento generado electrónicamente &mdash; {{ now().strftime('%d/%m/%Y %H:%M') if now else '' }}
