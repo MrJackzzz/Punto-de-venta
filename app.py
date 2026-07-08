@@ -138,7 +138,6 @@ def inject_globals():
         'logo_src': logo_src,
         'favicon_data': fav,
         'now': lambda: datetime.now(AR_TZ),
-        'membership_warning': getattr(g, 'membership_warning', ''),
         'configs': cfg,
     }
 
@@ -427,28 +426,21 @@ def get_critical_stock_threshold():
 @login_required
 def dashboard():
     threshold = get_low_stock_threshold()
-    critical = get_critical_stock_threshold()
     today = datetime.now(AR_TZ).date()
     from sqlalchemy import func as sa_func
 
     total_products = Product.query.count()
-    categories = Category.query.count()
     low_stock = Product.query.filter(Product.stock < threshold).count()
-    critical_stock = Product.query.filter(Product.stock < critical).count()
     today_sales = Sale.query.filter(sa_func.date(Sale.created_at) == today).count()
     today_revenue = float(db.session.query(sa_func.coalesce(sa_func.sum(Sale.total), 0)).filter(
         sa_func.date(Sale.created_at) == today
     ).scalar() or 0)
-    pending_orders = PendingOrder.query.filter_by(status='pending').count()
 
     cat_list = Category.query.order_by(Category.name).all()
     return render_template('dashboard.html', total_products=total_products,
                            low_stock=low_stock, today_sales=today_sales,
                            today_revenue=today_revenue,
-                           pending_orders=pending_orders,
-                           critical_stock=critical_stock,
-                           low_stock_threshold=threshold, categories_count=categories,
-                           cat_list=cat_list)
+                           low_stock_threshold=threshold, cat_list=cat_list)
 
 
 @app.route('/products')
@@ -2688,7 +2680,6 @@ def api_log_detail(id):
 @login_required
 def api_stats():
     threshold = get_low_stock_threshold()
-    critical = get_critical_stock_threshold()
     today = datetime.now(AR_TZ).date()
     today_sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today
@@ -4086,40 +4077,6 @@ def api_register_payment():
     cfg.value = new_expiry.strftime('%Y-%m-%d')
     db.session.commit()
     return jsonify({'success': True, 'new_expiry': cfg.value})
-
-
-@app.before_request
-def check_membership():
-    if request.endpoint in ('login', 'logout', 'static', 'membership', 'membership_blocked', 'mp_membership_success'):
-        return
-    if current_user.is_authenticated and current_user.role == 'admin':
-        return
-    enabled = get_config('membership_enabled') == 'true'
-    if not enabled:
-        return
-    expiry_str = get_config('membership_expiry')
-    if not expiry_str:
-        return
-    try:
-        expiry = datetime.strptime(expiry_str, '%Y-%m-%d').replace(tzinfo=AR_TZ)
-    except (ValueError, TypeError):
-        return
-    grace = int(get_config('membership_grace_days', '5'))
-    now = datetime.now(AR_TZ)
-    if expiry + timedelta(days=grace) < now:
-        if request.path.startswith('/api/'):
-            if request.path in ('/api/create-mp-membership-payment', '/api/mp-membership-status'):
-                return
-            return jsonify({'error': 'Membresía vencida'}), 403
-        return redirect(url_for('membership_blocked'))
-    if expiry < now:
-        remaining = (expiry + timedelta(days=grace) - now).days
-        pay_info = get_config('membership_payment_info', '')
-        g.membership_warning = f'⚠️ Membresía vencida. Quedan {remaining} días antes del bloqueo.'
-        if pay_info:
-            g.membership_warning += f'\n📌 {pay_info}'
-    elif (expiry - now).days <= 10:
-        g.membership_warning = f'⚠️ Membresía vence en {(expiry - now).days} días.'
 
 
 @app.route('/membership-blocked')

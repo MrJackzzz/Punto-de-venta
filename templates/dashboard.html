@@ -23,27 +23,9 @@
         </div>
     </div>
     <div class="col-md-3 col-6">
-        <div class="stat-card">
-            <div class="number">{{ categories_count }}</div>
-            <div class="label">Categorías</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
         <div class="stat-card warning">
             <div class="number">{{ low_stock }}</div>
             <div class="label">Stock Bajo (&lt;{{ low_stock_threshold }})</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="stat-card danger">
-            <div class="number">{{ critical_stock }}</div>
-            <div class="label">Stock Crítico (0)</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="stat-card primary">
-            <div class="number">{{ pending_orders }}</div>
-            <div class="label">Pedidos Pendientes</div>
         </div>
     </div>
 </div>
@@ -59,29 +41,12 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6 col-12">
-        <div class="card shadow-sm">
-            <div class="card-header">Productos Más Vendidos</div>
-            <div class="card-body">
-                <div class="d-flex gap-2 mb-3">
-                    <select id="topMonth" class="form-select" style="max-width:140px;" onchange="loadTopChart()">
-                        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
-                        <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
-                        <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
-                        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
-                    </select>
-                    <select id="topYear" class="form-select" style="max-width:100px;" onchange="loadTopChart()"></select>
-                </div>
-                <canvas id="topProductsChart" height="180"></canvas>
-                <p id="topEmpty" class="d-none text-center text-muted py-4">Sin ventas en ese período</p>
-            </div>
-        </div>
-    </div>
+
 </div>
 {% endif %}
 
 <div class="row g-3 mt-2">
-    <div class="col-md-4 col-12">
+    <div class="col-md-6 col-12">
         <div class="card shadow-sm">
             <div class="card-header">Acceso Rápido</div>
             <div class="card-body">
@@ -118,46 +83,12 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4 col-12">
-        <div class="card shadow-sm">
-            <div class="card-header">Tu Rol</div>
-            <div class="card-body">
-                <p class="fs-5">
-                    <span class="badge badge-{{ current_user.role }}">{{ current_user.role|upper }}</span>
-                </p>
-                <ul class="mt-2 ps-3 text-muted" style="line-height:1.8;">
-                    {% if current_user.can_sell() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Vender (cobrar)</li>{% endif %}
-                    {% if current_user.can_view_products() or current_user.can_add_products() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gestionar productos</li>{% endif %}
-                    {% if current_user.can_view_suppliers() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Ver proveedores</li>{% endif %}
-                    {% if current_user.can_manage_suppliers() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gestionar proveedores</li>{% endif %}
-                    {% if current_user.can_view_categories() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Ver categorías</li>{% endif %}
-                    {% if current_user.can_view_history() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Historial / Ganancias</li>{% endif %}
-                    {% if current_user.can_close_cash() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Cierre de caja</li>{% endif %}
-                    {% if current_user.can_manage_purchases() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Órdenes de compra</li>{% endif %}
-                    {% if current_user.can_view_backups() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Backups</li>{% endif %}
-                    {% if current_user.can_view_pending_sales() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Ventas pendientes</li>{% endif %}
-                    {% if current_user.can_take_orders() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Pedidos de clientes</li>{% endif %}
-                    {% if current_user.can_manage_users() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gestionar usuarios</li>{% endif %}
-                    {% if current_user.can_view_trash() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Papelera</li>{% endif %}
-                    {% if current_user.can_view_charts() %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Gráficos y reportes</li>{% endif %}
-                    {% if current_user.role == 'admin' %}<li><i class="bi bi-check-circle text-success me-1 small"></i> Configuración del sistema</li>{% endif %}
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 col-12">
-        <div class="card shadow-sm">
-            <div class="card-header"><i class="bi bi-cloud-sun"></i> Clima Actual</div>
-            <div class="card-body text-center" id="weatherWidget">
-                <div class="py-3 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>
-            </div>
-        </div>
-    </div>
+
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-let salesChart, topChart;
+let salesChart;
 
 function loadSalesChart() {
     fetch('/api/chart/sales-week')
@@ -171,146 +102,44 @@ function loadSalesChart() {
             }
             document.getElementById('salesChart').classList.remove('d-none');
             document.getElementById('salesEmpty').classList.add('d-none');
-            salesChart = new Chart(document.getElementById('salesChart'), {
-                type: 'bar',
-                data: { labels: d.labels, datasets: [{
-                    label: 'Total vendido ($)',
-                    data: d.data,
-                    backgroundColor: '#3d5a80',
-                    borderRadius: 6
-                }]},
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } },
-                             x: { grid: { display: false } } }
-                }
-            });
+            // Lazy load Chart.js only when needed
+            if (typeof Chart === 'undefined') {
+                var s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+                s.onload = function() { renderChart(d); };
+                document.head.appendChild(s);
+            } else {
+                renderChart(d);
+            }
         });
 }
 
-function loadTopChart() {
-    const m = document.getElementById('topMonth').value;
-    const y = document.getElementById('topYear').value;
-    fetch('/api/chart/top-products?month=' + m + '&year=' + y)
-        .then(r => r.json())
-        .then(d => {
-            if (topChart) topChart.destroy();
-            if (!d.labels || d.labels.length === 0) {
-                document.getElementById('topProductsChart').classList.add('d-none');
-                document.getElementById('topEmpty').classList.remove('d-none');
-                return;
-            }
-            document.getElementById('topProductsChart').classList.remove('d-none');
-            document.getElementById('topEmpty').classList.add('d-none');
-            topChart = new Chart(document.getElementById('topProductsChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: d.labels,
-                    datasets: [{
-                        data: d.data,
-                        backgroundColor: ['#3d5a80','#98c1d9','#ee6c4d','#293241','#6c757d']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
-                    }
-                }
-            });
-        });
-}
-
-function refreshStats() {
-    fetch('/api/stats')
-        .then(r => r.json())
-        .then(data => {
-            const cards = document.querySelectorAll('.stat-card .number');
-            const labels = document.querySelectorAll('.stat-card .label');
-            if (cards.length >= 7) {
-                cards[0].textContent = '$' + data.today_revenue;
-                cards[1].textContent = data.today_sales;
-                cards[2].textContent = data.total_products;
-                cards[3].textContent = data.categories_count;
-                cards[4].textContent = data.low_stock;
-                cards[5].textContent = data.critical_stock;
-                cards[6].textContent = data.pending_orders;
-            }
-            if (labels.length >= 5) {
-                labels[4].textContent = 'Stock Bajo (<' + data.low_stock_threshold + ')';
-            }
-        });
+function renderChart(d) {
+    salesChart = new Chart(document.getElementById('salesChart'), {
+        type: 'bar',
+        data: { labels: d.labels, datasets: [{
+            label: 'Total vendido ($)',
+            data: d.data,
+            backgroundColor: '#3d5a80',
+            borderRadius: 6
+        }]},
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+                     x: { grid: { display: false } } }
+        }
+    });
 }
 
 (function initDashboard() {
     {% if current_user.can_view_charts() %}
-    const selYear = document.getElementById('topYear');
-    const now = new Date();
-    for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
-        const opt = document.createElement('option');
-        opt.value = y; opt.textContent = y;
-        if (y === now.getFullYear()) opt.selected = true;
-        selYear.appendChild(opt);
-    }
-    document.getElementById('topMonth').value = now.getMonth() + 1;
-    // Defer chart loading to let page render first
+    // Defer chart loading aggressively - wait for idle + extra delay
     (window.requestIdleCallback || setTimeout)(function() {
-        loadSalesChart();
-        loadTopChart();
-    }, 200);
+        setTimeout(loadSalesChart, 500);
+    }, 500);
     {% endif %}
 })();
-
-setInterval(refreshStats, 30000);
-
-function loadWeather() {
-    const lat = '{{ configs.get("weather_lat", "-34.6037") }}';
-    const lon = '{{ configs.get("weather_lon", "-58.3816") }}';
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current_weather=true&timezone=auto')
-        .then(r => r.json())
-        .then(d => {
-            const w = d.current_weather;
-            if (!w) return;
-            const code = w.weathercode;
-            const temp = w.temperature;
-            const iconMap = {
-                0: 'bi-sun', 1: 'bi-sun', 2: 'bi-cloud-sun', 3: 'bi-cloud',
-                45: 'bi-cloud-fog', 48: 'bi-cloud-fog',
-                51: 'bi-cloud-drizzle', 53: 'bi-cloud-drizzle', 55: 'bi-cloud-drizzle',
-                61: 'bi-cloud-rain', 63: 'bi-cloud-rain', 65: 'bi-cloud-rain-heavy',
-                71: 'bi-snow', 73: 'bi-snow', 75: 'bi-snow',
-                80: 'bi-cloud-rain', 81: 'bi-cloud-rain', 82: 'bi-cloud-rain-heavy',
-                95: 'bi-cloud-lightning-rain', 96: 'bi-cloud-lightning-rain', 99: 'bi-cloud-lightning-rain'
-            };
-            const emojiMap = {
-                0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
-                45: '🌫️', 48: '🌫️',
-                51: '🌦️', 53: '🌦️', 55: '🌦️',
-                61: '🌧️', 63: '🌧️', 65: '🌧️',
-                71: '❄️', 73: '❄️', 75: '❄️',
-                80: '🌦️', 81: '🌧️', 82: '🌧️',
-                95: '⛈️', 96: '⛈️', 99: '⛈️'
-            };
-            const icon = iconMap[code] || 'bi-question-circle';
-            const emoji = emojiMap[code] || '❓';
-            const desc = {0:'Despejado',1:'May. despejado',2:'Parcial nubl.',3:'Nublado',
-                45:'Niebla',48:'Niebla',51:'Lluvia fina',53:'Lluvia fina',55:'Lluvia fina',
-                61:'Lluvia',63:'Lluvia',65:'Lluvia fuerte',
-                71:'Nieve',73:'Nieve',75:'Nieve',
-                80:'Chubascos',81:'Chubascos',82:'Chubascos',
-                95:'Tormenta',96:'Tormenta',99:'Tormenta'}[code] || 'Desconocido';
-            const color = code >= 95 ? '#ee6c4d' : code >= 61 ? '#3d5a80' : '#98c1d9';
-            document.getElementById('weatherWidget').innerHTML =
-                '<div style="font-size:2.5rem;">' + emoji + '</div>' +
-                '<div class="fs-3 fw-bold" style="color:' + color + ';">' + temp + '°C</div>' +
-                '<div class="text-muted small">' + desc + '</div>';
-        })
-        .catch(function() {
-            document.getElementById('weatherWidget').innerHTML = '<div class="text-muted py-3"><i class="bi bi-exclamation-triangle"></i> No disponible</div>';
-        });
-}
-loadWeather();
 </script>
 {% endblock %}
