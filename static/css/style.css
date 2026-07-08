@@ -15,7 +15,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height:
 .sidebar {
     position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh;
     background: var(--dark); z-index: 200; display: flex; flex-direction: column;
-    transition: width 0.3s cubic-bezier(0.4,0,0.2,1); overflow: hidden; box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+    transition: width 0.15s ease; overflow: hidden;
 }
 .sidebar-header {
     display: flex; align-items: center; height: 60px; padding: 0 12px;
@@ -32,7 +32,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height:
 .sidebar-link {
     display: flex; align-items: center; gap: 14px; padding: 10px 16px;
     color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem;
-    white-space: nowrap; transition: all 0.2s; margin: 0 8px; border-radius: 8px;
+    white-space: nowrap; transition: background 0.1s; margin: 0 8px; border-radius: 8px;
 }
 .sidebar-link:hover { background: rgba(255,255,255,0.1); color: var(--white); }
 .sidebar-link .si { font-size: 1.2rem; flex-shrink: 0; width: 24px; text-align: center; }
@@ -60,7 +60,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height:
 .sidebar.collapsed .sidebar-link .si { width: auto; }
 
 /* ===== MAIN ===== */
-.main-area { margin-left: var(--sidebar-width); transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1); min-height: 100vh; display: flex; flex-direction: column; }
+.main-area { margin-left: var(--sidebar-width); transition: margin-left 0.15s ease; min-height: 100vh; display: flex; flex-direction: column; }
 .sidebar.collapsed ~ .main-area { margin-left: var(--sidebar-collapsed); }
 
 /* ===== TOPBAR ===== */
@@ -101,11 +101,11 @@ body.dark-mode .card-header-primary { background: #1e2335 !important; color: #8a
     .mobile-nav {
         position: absolute; top: 60px; left: 0; right: 0; background: var(--primary);
         flex-direction: column; padding: 0 1rem; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.35s ease;
+        max-height: 0; overflow: hidden; transition: max-height 0.15s ease, padding 0.15s ease;
         display: flex;
     }
     .mobile-nav.open { max-height: 500px; padding: 1rem; }
-    .mobile-nav a { color: #fff; text-decoration: none; padding: 0.7rem 1rem; border-radius: 6px; font-size: 0.9rem; opacity: 0; transform: translateX(-20px); transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s; }
+    .mobile-nav a { color: #fff; text-decoration: none; padding: 0.7rem 1rem; border-radius: 6px; font-size: 0.9rem; opacity: 0; transform: translateX(-10px); transition: opacity 0.15s ease, transform 0.15s ease; }
     .mobile-nav a:hover { background: rgba(255,255,255,0.15); }
     .mobile-nav.open a { opacity: 1; transform: translateX(0); }
 }

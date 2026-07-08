@@ -75,6 +75,19 @@ os.makedirs(app.config['BACKUP_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 
+@app.after_request
+def add_cache_headers(response):
+    if response.is_streamed or response.status_code >= 400:
+        return response
+    path = request.path
+    if path.startswith('/static/'):
+        response.cache_control.max_age = 86400 * 365
+        response.cache_control.public = True
+    elif path in ('/', '/login') or path.startswith('/api/'):
+        response.cache_control.no_cache = True
+    return response
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -414,18 +427,20 @@ def get_critical_stock_threshold():
 @login_required
 def dashboard():
     threshold = get_low_stock_threshold()
+    critical = get_critical_stock_threshold()
+    today = datetime.now(AR_TZ).date()
+    from sqlalchemy import func as sa_func
+
     total_products = Product.query.count()
     categories = Category.query.count()
     low_stock = Product.query.filter(Product.stock < threshold).count()
-    today = datetime.now(AR_TZ).date()
-    today_sales = Sale.query.filter(
-        db.func.date(Sale.created_at) == today
-    ).count()
-    today_revenue = db.session.query(db.func.coalesce(db.func.sum(Sale.total), 0)).filter(
-        db.func.date(Sale.created_at) == today
-    ).scalar()
+    critical_stock = Product.query.filter(Product.stock < critical).count()
+    today_sales = Sale.query.filter(sa_func.date(Sale.created_at) == today).count()
+    today_revenue = float(db.session.query(sa_func.coalesce(sa_func.sum(Sale.total), 0)).filter(
+        sa_func.date(Sale.created_at) == today
+    ).scalar() or 0)
     pending_orders = PendingOrder.query.filter_by(status='pending').count()
-    critical_stock = Product.query.filter(Product.stock < get_critical_stock_threshold()).count()
+
     cat_list = Category.query.order_by(Category.name).all()
     return render_template('dashboard.html', total_products=total_products,
                            low_stock=low_stock, today_sales=today_sales,
@@ -628,16 +643,22 @@ def category_edit(id):
 def chart_sales_week():
     dias_es = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
     today = datetime.now(AR_TZ).date()
+    week_ago = today - timedelta(days=6)
+    from sqlalchemy import func as sa_func
+    rows = db.session.query(
+        sa_func.date(Sale.created_at).label('day'),
+        sa_func.coalesce(sa_func.sum(Sale.total), 0).label('total')
+    ).filter(
+        sa_func.date(Sale.created_at) >= week_ago,
+        sa_func.date(Sale.created_at) <= today
+    ).group_by(sa_func.date(Sale.created_at)).order_by(sa_func.date(Sale.created_at)).all()
+    day_map = {str(r.day): float(r.total) for r in rows}
     days = []
     amounts = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        day_sales = Sale.query.filter(
-            db.func.date(Sale.created_at) == day
-        ).all()
-        total = round(sum(s.total for s in day_sales), 2)
-        days.append(dias_es[day.weekday()])
-        amounts.append(total)
+    for i in range(7):
+        d = week_ago + timedelta(days=i)
+        days.append(dias_es[d.weekday()])
+        amounts.append(day_map.get(str(d), 0))
     return jsonify({'labels': days, 'data': amounts})
 
 
@@ -774,7 +795,10 @@ def profits():
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
     product_id = request.args.get('product_id', type=int)
-    query = Sale.query
+    page = request.args.get('page', 1, type=int)
+    per_page = 200
+
+    query = Sale.query.options(db.joinedload(Sale.items).joinedload(SaleItem.product))
     if date_from:
         try:
             dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
@@ -787,15 +811,11 @@ def profits():
             query = query.filter(Sale.created_at <= dt_to)
         except ValueError:
             pass
-    sales = query.order_by(Sale.created_at.desc()).all()
-
-    # Filter sales by product if specified
     if product_id:
-        filtered = []
-        for s in sales:
-            if s.items.filter_by(product_id=product_id).count() > 0:
-                filtered.append(s)
-        sales = filtered
+        query = query.filter(Sale.items.any(SaleItem.product_id == product_id))
+
+    total_count = query.count()
+    sales = query.order_by(Sale.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
 
     total_revenue = 0
     total_cost = 0
@@ -804,33 +824,18 @@ def profits():
     product_totals = {}
 
     for s in sales:
-        if product_id:
-            filtered_items = s.items.filter_by(product_id=product_id).all()
-            if not filtered_items:
-                continue
-            revenue = sum(i.subtotal for i in filtered_items)
-            cost = sum(i.product.cost * i.quantity for i in filtered_items if i.product)
-            for i in filtered_items:
-                pid = i.product_id
-                if pid not in product_totals:
-                    product_totals[pid] = {'name': i.product.name if i.product else f'#{pid}',
-                                           'qty': 0, 'revenue': 0, 'cost': 0}
-                product_totals[pid]['qty'] += i.quantity
-                product_totals[pid]['revenue'] += i.subtotal
-                product_totals[pid]['cost'] += i.product.cost * i.quantity if i.product else 0
-        else:
-            revenue = s.total
-            cost = 0
-            for item in s.items:
-                c = item.product.cost * item.quantity if item.product else 0
-                cost += c
-                pid = item.product_id
-                if pid not in product_totals:
-                    product_totals[pid] = {'name': item.product.name if item.product else f'#{pid}',
-                                           'qty': 0, 'revenue': 0, 'cost': 0}
-                product_totals[pid]['qty'] += item.quantity
-                product_totals[pid]['revenue'] += item.subtotal
-                product_totals[pid]['cost'] += c
+        revenue = s.total
+        cost = 0
+        for item in s.items:
+            c = item.product.cost * item.quantity if item.product else 0
+            cost += c
+            pid = item.product_id
+            if pid not in product_totals:
+                product_totals[pid] = {'name': item.product.name if item.product else f'#{pid}',
+                                       'qty': 0, 'revenue': 0, 'cost': 0}
+            product_totals[pid]['qty'] += item.quantity
+            product_totals[pid]['revenue'] += item.subtotal
+            product_totals[pid]['cost'] += c
 
         profit = revenue - cost
         total_revenue += revenue
@@ -839,8 +844,8 @@ def profits():
         items_detail.append({
             'id': s.id,
             'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
-            'user': s.user.get_full_name(),
-            'items_count': len(filtered_items) if product_id else s.items.count(),
+            'user': s.user.get_full_name() if s.user else '?',
+            'items_count': len(s.items),
             'revenue': revenue,
             'cost': cost,
             'profit': profit,
@@ -862,13 +867,15 @@ def profits():
     product_breakdown.sort(key=lambda x: x['qty'], reverse=True)
 
     margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
     products = Product.query.order_by(Product.name).all()
     return render_template('profits.html', items=items_detail,
                            total_revenue=total_revenue, total_cost=total_cost,
                            total_profit=total_profit, total_margin=margin,
                            date_from=date_from, date_to=date_to,
                            product_id=product_id, products=products,
-                           product_breakdown=product_breakdown)
+                           product_breakdown=product_breakdown,
+                           page=page, total_pages=total_pages)
 
 
 @app.route('/profits/pdf')
@@ -2050,7 +2057,41 @@ def admin_confidencialidad(filename):
                            cliente_email=data.get('email', ''),
                            cliente_direccion=data.get('address', ''),
                            cliente_cuit=data.get('cuit', ''),
-                           now=lambda: datetime.now(AR_TZ))
+                            now=lambda: datetime.now(AR_TZ))
+
+
+@app.route('/api/landing-contact', methods=['POST'])
+def landing_contact():
+    import smtplib
+    from email.mime.text import MIMEText
+    name = request.form.get('name', '').strip()
+    company = request.form.get('company', '').strip()
+    email = request.form.get('email', '').strip()
+    phone = request.form.get('phone', '').strip()
+    message = request.form.get('message', '').strip()
+    if not name or not email or not message:
+        return jsonify({'ok': False, 'error': 'Faltan campos obligatorios'}), 400
+    body = f"""Nuevo contacto desde Nexora Apps Landing
+
+Nombre: {name}
+Empresa: {company or '—'}
+Email: {email}
+Teléfono: {phone or '—'}
+
+Mensaje:
+{message}
+"""
+    try:
+        msg = MIMEText(body, 'plain', 'utf-8')
+        msg['Subject'] = f'Nuevo contacto: {name} - {company or email}'
+        msg['From'] = 'sistemas.nexoraapps@gmail.com'
+        msg['To'] = 'sistemas.nexoraapps@gmail.com'
+        s = smtplib.SMTP('127.0.0.1', 25)
+        s.send_message(msg)
+        s.quit()
+        return jsonify({'ok': True, 'redirect': 'https://www.nexoraapps.com.ar?sent=ok'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 
 @app.route('/suppliers')
@@ -2059,7 +2100,7 @@ def suppliers():
     if not current_user.can_view_suppliers():
         flash('No tienes permiso.', 'danger')
         return redirect(url_for('dashboard'))
-    suppliers_list = Supplier.query.order_by(Supplier.name).all()
+    suppliers_list = Supplier.query.order_by(Supplier.name).limit(500).all()
     return render_template('suppliers.html', suppliers=suppliers_list)
 
 
@@ -2531,10 +2572,15 @@ def api_history():
                 except (IndexError, ValueError):
                     pass
 
+    # Bulk load users and sales to avoid N+1
+    user_ids = list(set(log.user_id for log in logs))
+    users_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()}
+    sale_map = {}
     total_sales_amount = 0
     total_sales_qty = 0
     if sale_ids:
-        sales = Sale.query.filter(Sale.id.in_(sale_ids)).all()
+        sales = Sale.query.filter(Sale.id.in_(sale_ids)).options(db.joinedload(Sale.items)).all()
+        sale_map = {s.id: s for s in sales}
         total_sales_amount = sum(s.total for s in sales)
         total_sales_qty = sum(
             sum(item.quantity for item in s.items) for s in sales
@@ -2561,10 +2607,11 @@ def api_history():
 
     log_list = []
     for log in logs:
+        u = users_map.get(log.user_id)
         entry = {
             'id': log.id,
-            'user': log.user.get_full_name(),
-            'role': log.user.role,
+            'user': u.get_full_name() if u else '?',
+            'role': u.role if u else '',
             'action': action_map.get(log.action, log.action),
             'action_key': log.action,
             'description': log.description,
@@ -2574,9 +2621,9 @@ def api_history():
             try:
                 sid = int(log.description.split('#')[1].split(' ')[0])
                 entry['sale_id'] = sid
-                sale = db.session.get(Sale, sid)
-                if sale and sale.customer_name:
-                    entry['customer_name'] = sale.customer_name
+                s = sale_map.get(sid)
+                if s and s.customer_name:
+                    entry['customer_name'] = s.customer_name
             except (IndexError, ValueError):
                 pass
         log_list.append(entry)
@@ -2641,24 +2688,20 @@ def api_log_detail(id):
 @login_required
 def api_stats():
     threshold = get_low_stock_threshold()
-    total_products = Product.query.count()
-    categories_count = Category.query.count()
-    low_stock = Product.query.filter(Product.stock < threshold).count()
-    critical_stock = Product.query.filter(Product.stock < get_critical_stock_threshold()).count()
-    pending_orders = PendingOrder.query.filter_by(status='pending').count()
+    critical = get_critical_stock_threshold()
     today = datetime.now(AR_TZ).date()
     today_sales = Sale.query.filter(
         db.func.date(Sale.created_at) == today
     ).count()
-    today_revenue = db.session.query(db.func.coalesce(db.func.sum(Sale.total), 0)).filter(
+    today_revenue = float(db.session.query(db.func.coalesce(db.func.sum(Sale.total), 0)).filter(
         db.func.date(Sale.created_at) == today
-    ).scalar()
+    ).scalar() or 0)
     return jsonify({
-        'total_products': total_products,
-        'categories_count': categories_count,
-        'low_stock': low_stock,
-        'critical_stock': critical_stock,
-        'pending_orders': pending_orders,
+        'total_products': Product.query.count(),
+        'categories_count': Category.query.count(),
+        'low_stock': Product.query.filter(Product.stock < threshold).count(),
+        'critical_stock': Product.query.filter(Product.stock < critical).count(),
+        'pending_orders': PendingOrder.query.filter_by(status='pending').count(),
         'today_sales': today_sales,
         'today_revenue': today_revenue,
         'low_stock_threshold': threshold
