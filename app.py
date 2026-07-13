@@ -790,7 +790,7 @@ def profits():
     page = request.args.get('page', 1, type=int)
     per_page = 200
 
-    query = Sale.query.options(db.joinedload(Sale.items).joinedload(SaleItem.product))
+    query = Sale.query.options(db.selectinload(Sale.items).selectinload(SaleItem.product))
     if date_from:
         try:
             dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
