@@ -790,7 +790,7 @@ def profits():
     page = request.args.get('page', 1, type=int)
     per_page = 200
 
-    query = Sale.query.options(db.selectinload(Sale.items).selectinload(SaleItem.product))
+    query = Sale.query
     if date_from:
         try:
             dt_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
@@ -809,6 +809,12 @@ def profits():
     total_count = query.count()
     sales = query.order_by(Sale.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
 
+    sale_ids = [s.id for s in sales]
+    all_items = SaleItem.query.filter(SaleItem.sale_id.in_(sale_ids)).options(db.joinedload(SaleItem.product)).all()
+    items_by_sale = {}
+    for item in all_items:
+        items_by_sale.setdefault(item.sale_id, []).append(item)
+
     total_revenue = 0
     total_cost = 0
     total_profit = 0
@@ -818,7 +824,8 @@ def profits():
     for s in sales:
         revenue = s.total
         cost = 0
-        for item in s.items:
+        sale_items = items_by_sale.get(s.id, [])
+        for item in sale_items:
             c = item.product.cost * item.quantity if item.product else 0
             cost += c
             pid = item.product_id
@@ -837,7 +844,7 @@ def profits():
             'id': s.id,
             'date': to_ar(s.created_at).strftime('%d/%m/%Y %H:%M'),
             'user': s.user.get_full_name() if s.user else '?',
-            'items_count': len(s.items),
+            'items_count': len(sale_items),
             'revenue': revenue,
             'cost': cost,
             'profit': profit,

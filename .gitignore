@@ -6,3 +6,4 @@ instance/
 .vscode/
 app_error.txt
 app_output.txt
+docker-compose.yml
