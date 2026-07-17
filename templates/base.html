@@ -160,6 +160,8 @@
                 <a href="{{ url_for('admin_onboarding') }}">Formularios</a>
                 <a href="{{ url_for('settings') }}">Config</a>
                 {% endif %}
+                <hr class="my-1 border-secondary">
+                <a href="{{ url_for('logout') }}" class="text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
             </nav>
             <div class="user-info desktop-only d-flex align-items-center gap-3 small">
                 <span>{{ current_user.get_full_name() }}</span>
