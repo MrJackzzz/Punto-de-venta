@@ -124,44 +124,55 @@
                 <span class="text-white-50 small ms-1">{{ local_name }}</span>
                 {% endif %}
             </div>
+            <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
             <nav id="mobileNav" class="mobile-nav">
-                <a href="{{ url_for('dashboard') }}">Inicio</a>
-                <a href="{{ url_for('manual') }}">Manual</a>
-                {% if current_user.can_view_products() %}<a href="{{ url_for('products') }}">Productos</a>{% endif %}
-                <a href="{{ url_for('sell') }}">Vender</a>
-                {% if current_user.can_take_orders() %}<a href="{{ url_for('orders') }}">Pedidos</a>{% endif %}
-                {% if current_user.can_view_suppliers() %}<a href="{{ url_for('suppliers') }}">Proveedores</a>{% endif %}
-                {% if current_user.can_view_categories() %}<a href="{{ url_for('categories') }}">Categorías</a>{% endif %}
-                {% if current_user.can_manage_users() %}<a href="{{ url_for('users') }}">Usuarios</a>{% endif %}
-                {% if current_user.can_view_history() %}
-                <a href="{{ url_for('history') }}">Historial</a>
-                <a href="{{ url_for('profits') }}">Ganancias</a>
-                <a href="{{ url_for('top_products') }}">Ranking</a>
-                {% endif %}
-                {% if current_user.can_view_trash() %}
-                <a href="{{ url_for('trash') }}">Papelera</a>
-                {% endif %}
-                {% if current_user.can_view_pending_sales() %}
-                <a href="{{ url_for('pending_sales') }}">Pendientes</a>
-                {% endif %}
-                {% if current_user.can_view_backups() %}
-                <a href="{{ url_for('backups') }}">Backups</a>
-                {% endif %}
-                {% if current_user.can_manage_purchases() %}
-                <a href="{{ url_for('purchase_orders') }}">Órdenes Compra</a>
-                {% endif %}
-                {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}">Cierre Caja</a>{% endif %}
-                <a href="{{ url_for('inventory_scan') }}">Inventario</a>
-                {% if current_user.role == 'admin' %}
-                <a href="{{ url_for('admin_systems') }}">Sistemas</a>
-                {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}">Códigos</a>{% endif %}
-                <a href="{{ url_for('planes') }}">Planes</a>
-                <a href="{{ url_for('membership') }}">Membresía</a>
-                <a href="{{ url_for('admin_onboarding') }}">Formularios</a>
-                <a href="{{ url_for('settings') }}">Config</a>
-                {% endif %}
-                <hr class="my-1 border-secondary">
-                <a href="{{ url_for('logout') }}" class="text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+                <div class="mobile-nav-header">
+                    <span class="brand">{{ business_name }}</span>
+                    <button class="mobile-nav-close" onclick="toggleMobileMenu()">&times;</button>
+                </div>
+                <div class="mobile-nav-links">
+                    <a href="{{ url_for('dashboard') }}"><i class="bi bi-house"></i> Inicio</a>
+                    <a href="{{ url_for('manual') }}"><i class="bi bi-book"></i> Manual</a>
+                    {% if current_user.can_view_products() %}<a href="{{ url_for('products') }}"><i class="bi bi-box"></i> Productos</a>{% endif %}
+                    <a href="{{ url_for('sell') }}"><i class="bi bi-cart"></i> Vender</a>
+                    {% if current_user.can_take_orders() %}<a href="{{ url_for('orders') }}"><i class="bi bi-clipboard"></i> Pedidos</a>{% endif %}
+                    {% if current_user.can_view_suppliers() %}<a href="{{ url_for('suppliers') }}"><i class="bi bi-truck"></i> Proveedores</a>{% endif %}
+                    {% if current_user.can_view_categories() %}<a href="{{ url_for('categories') }}"><i class="bi bi-tags"></i> Categorías</a>{% endif %}
+                    {% if current_user.can_manage_users() %}<a href="{{ url_for('users') }}"><i class="bi bi-people"></i> Usuarios</a>{% endif %}
+                    {% if current_user.can_view_history() %}
+                    <a href="{{ url_for('history') }}"><i class="bi bi-clock-history"></i> Historial</a>
+                    <a href="{{ url_for('profits') }}"><i class="bi bi-graph-up"></i> Ganancias</a>
+                    <a href="{{ url_for('top_products') }}"><i class="bi bi-trophy"></i> Ranking</a>
+                    {% endif %}
+                    {% if current_user.can_view_trash() %}
+                    <a href="{{ url_for('trash') }}"><i class="bi bi-trash"></i> Papelera</a>
+                    {% endif %}
+                    {% if current_user.can_view_pending_sales() %}
+                    <a href="{{ url_for('pending_sales') }}"><i class="bi bi-hourglass"></i> Pendientes</a>
+                    {% endif %}
+                    {% if current_user.can_view_backups() %}
+                    <a href="{{ url_for('backups') }}"><i class="bi bi-cloud"></i> Backups</a>
+                    {% endif %}
+                    {% if current_user.can_manage_purchases() %}
+                    <a href="{{ url_for('purchase_orders') }}"><i class="bi bi-file-text"></i> Órdenes Compra</a>
+                    {% endif %}
+                    {% if current_user.can_close_cash() %}<a href="{{ url_for('cash_close_page') }}"><i class="bi bi-cash-stack"></i> Cierre Caja</a>{% endif %}
+                    <a href="{{ url_for('inventory_scan') }}"><i class="bi bi-upc-scan"></i> Inventario</a>
+                    {% if current_user.role == 'admin' %}
+                    <hr>
+                    <a href="{{ url_for('admin_systems') }}"><i class="bi bi-gear"></i> Sistemas</a>
+                    {% if current_user.can_view_barcodes() %}<a href="{{ url_for('barcodes') }}"><i class="bi bi-qr-code"></i> Códigos</a>{% endif %}
+                    <a href="{{ url_for('planes') }}"><i class="bi bi-journal-text"></i> Planes</a>
+                    <a href="{{ url_for('membership') }}"><i class="bi bi-star"></i> Membresía</a>
+                    <a href="{{ url_for('admin_onboarding') }}"><i class="bi bi-file-earmark"></i> Formularios</a>
+                    <a href="{{ url_for('settings') }}"><i class="bi bi-gear-wide"></i> Config</a>
+                    {% endif %}
+                </div>
+                <div class="mobile-nav-footer">
+                    <span class="user-name">{{ current_user.get_full_name() }}</span>
+                    <span class="user-role">{{ current_user.role }}</span>
+                    <a href="{{ url_for('logout') }}" style="margin-left:auto;color:var(--accent);font-size:1.2rem;" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
+                </div>
             </nav>
             <div class="user-info desktop-only d-flex align-items-center gap-3 small">
                 <span>{{ current_user.get_full_name() }}</span>
@@ -217,9 +228,22 @@
     if (localStorage.getItem('sidebarCollapsed') === 'true') {
         document.getElementById('sidebar').classList.add('collapsed');
     }
+    var currentPath = window.location.pathname;
+    document.querySelectorAll('.sidebar-link, .mobile-nav a').forEach(function(link) {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+        }
+    });
+    function toggleMobileMenu() {
+        document.getElementById('mobileNav').classList.toggle('open');
+        document.getElementById('mobileOverlay').classList.toggle('open');
+        document.body.style.overflow = document.getElementById('mobileNav').classList.contains('open') ? 'hidden' : '';
+    }
     document.querySelectorAll('.mobile-nav a').forEach(function(link) {
         link.addEventListener('click', function() {
             document.getElementById('mobileNav').classList.remove('open');
+            document.getElementById('mobileOverlay').classList.remove('open');
+            document.body.style.overflow = '';
         });
     });
     function playBeep() {
