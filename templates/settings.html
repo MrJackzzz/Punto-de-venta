@@ -44,9 +44,8 @@
             </div>
             <div class="col-md-auto text-center">
                 <label class="form-label d-block">Favicon (pestaña navegador)</label>
-                {% set fav = configs.get('favicon_data', '') %}
-                {% if fav %}
-                <img src="{{ fav }}" class="mb-2 border rounded" style="width:32px;height:32px;object-fit:contain;">
+                {% if favicon_data %}
+                <img src="{{ favicon_data }}" class="mb-2 border rounded" style="width:32px;height:32px;object-fit:contain;">
                 <form method="POST" action="{{ url_for('delete_favicon') }}" class="d-inline">
                     <button type="submit" class="btn btn-danger btn-sm">Eliminar favicon</button>
                 </form>

@@ -5,4 +5,4 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 8000
-CMD gunicorn -w 4 --threads 3 --timeout 120 -b 0.0.0.0:8000 app:app
+CMD gunicorn -w 2 --threads 4 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --access-logfile '-' --error-logfile '-' --log-level warning -b 0.0.0.0:8000 app:app

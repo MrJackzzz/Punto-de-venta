@@ -60,8 +60,16 @@ app.jinja_env.filters['fmt'] = fmt
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambiame-en-produccion')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///sistema.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 5,
+    'pool_recycle': 300,
+    'pool_pre_ping': True,
+    'max_overflow': 2,
+}
 app.config['SESSION_COOKIE_NAME'] = os.environ.get('SESSION_COOKIE_NAME', 'session')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+app.config['LOGO_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'logo')
+app.config['FAVICON_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'favicon')
 app.config['BACKUP_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
@@ -71,8 +79,78 @@ def request_entity_too_large(error):
     return redirect(url_for('settings'))
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['LOGO_FOLDER'], exist_ok=True)
+os.makedirs(app.config['FAVICON_FOLDER'], exist_ok=True)
 os.makedirs(app.config['BACKUP_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+import base64 as _b64lib
+
+def _save_uploaded_file(file, subfolder, config_key):
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'png'
+    filename = f'{config_key}_{uuid.uuid4().hex[:12]}.{ext}'
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], subfolder)
+    os.makedirs(folder, exist_ok=True)
+    filepath = os.path.join(folder, filename)
+    file.save(filepath)
+    cfg = Config.query.filter_by(key=config_key).first()
+    if cfg:
+        old_path = None
+        if cfg.value and not cfg.value.startswith('data:'):
+            old_path = os.path.join(folder, cfg.value)
+        cfg.value = filename
+    else:
+        cfg = Config(key=config_key, value=filename)
+        db.session.add(cfg)
+    db.session.commit()
+    try:
+        if hasattr(g, '_configs_cached'):
+            del g._configs_cached
+    except (RuntimeError, AttributeError):
+        pass
+    if old_path and os.path.exists(old_path) and old_path != filepath:
+        try: os.remove(old_path)
+        except OSError: pass
+    return url_for('static', filename=f'uploads/{subfolder}/{filename}')
+
+def _delete_uploaded_file(config_key, subfolder):
+    cfg = Config.query.filter_by(key=config_key).first()
+    if cfg and cfg.value and not cfg.value.startswith('data:'):
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, cfg.value)
+        if os.path.exists(filepath):
+            try: os.remove(filepath)
+            except OSError: pass
+        cfg.value = ''
+        db.session.commit()
+        try:
+            if hasattr(g, '_configs_cached'):
+                del g._configs_cached
+        except (RuntimeError, AttributeError):
+            pass
+
+def _migrate_base64_to_file(config_key, subfolder):
+    cfg = Config.query.filter_by(key=config_key).first()
+    if not cfg or not cfg.value or not cfg.value.startswith('data:'):
+        return None
+    try:
+        header, b64data = cfg.value.split(',', 1)
+        mime_map = {'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp'}
+        mime = header.replace('data:', '').replace(';base64', '').strip()
+        ext = mime_map.get(mime, 'png')
+        filename = f'{config_key}_{uuid.uuid4().hex[:12]}.{ext}'
+        folder = os.path.join(app.config['UPLOAD_FOLDER'], subfolder)
+        os.makedirs(folder, exist_ok=True)
+        filepath = os.path.join(folder, filename)
+        data = _b64lib.b64decode(b64data)
+        with open(filepath, 'wb') as f:
+            f.write(data)
+        cfg.value = filename
+        db.session.commit()
+        return filename
+    except Exception:
+        return None
+
+
 
 
 @app.after_request
@@ -120,23 +198,32 @@ def inject_globals():
     if not hasattr(g, '_configs_cached'):
         g._configs_cached = {c.key: c.value for c in Config.query.all()}
     cfg = g._configs_cached
-    logo = cfg.get('logo_filename', '')
-    from flask import url_for
-    if logo and logo.startswith('data:'):
-        logo_src = logo
-    elif logo:
-        logo_src = url_for('static', filename=logo)
-    else:
-        logo_src = ''
-    fav = cfg.get('favicon_data', '')
-    if fav and not fav.startswith('data:') and not fav.startswith('http'):
-        fav = ''
+    logo_val = cfg.get('logo_filename', '')
+    logo_src = ''
+    if logo_val:
+        if logo_val.startswith('data:'):
+            fn = _migrate_base64_to_file('logo_filename', 'logo')
+            if fn:
+                g._configs_cached['logo_filename'] = fn
+                logo_src = url_for('static', filename=f'uploads/logo/{fn}')
+        else:
+            logo_src = url_for('static', filename=f'uploads/logo/{logo_val}')
+    fav_val = cfg.get('favicon_data', '')
+    fav_src = ''
+    if fav_val:
+        if fav_val.startswith('data:'):
+            fn = _migrate_base64_to_file('favicon_data', 'favicon')
+            if fn:
+                g._configs_cached['favicon_data'] = fn
+                fav_src = url_for('static', filename=f'uploads/favicon/{fn}')
+        else:
+            fav_src = url_for('static', filename=f'uploads/favicon/{fav_val}')
     return {
         'business_name': cfg.get('business_name', 'NexoControl'),
         'local_name': cfg.get('local_name', ''),
-        'logo_url': cfg.get('logo_filename', ''),
+        'logo_url': logo_src,
         'logo_src': logo_src,
-        'favicon_data': fav,
+        'favicon_data': fav_src,
         'now': lambda: datetime.now(AR_TZ),
         'configs': cfg,
     }
@@ -415,12 +502,16 @@ def demo_reset():
 
 
 def get_low_stock_threshold():
-    c = Config.query.filter_by(key='low_stock_threshold').first()
-    return int(c.value) if c and c.value else 10
+    try:
+        return int(get_config('low_stock_threshold', '10'))
+    except (ValueError, TypeError):
+        return 10
 
 def get_critical_stock_threshold():
-    c = Config.query.filter_by(key='critical_stock_threshold').first()
-    return int(c.value) if c and c.value else 5
+    try:
+        return int(get_config('critical_stock_threshold', '5'))
+    except (ValueError, TypeError):
+        return 5
 
 @app.route('/dashboard')
 @login_required
@@ -3489,17 +3580,7 @@ def upload_logo():
     if file.filename == '' or not allowed_file(file.filename):
         flash('Formato no válido. Usá PNG, JPG o GIF.', 'danger')
         return redirect(url_for('settings'))
-    import base64
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
-    b64 = base64.b64encode(file.read()).decode('ascii')
-    data_url = f'data:{mime};base64,{b64}'
-    cfg = Config.query.filter_by(key='logo_filename').first()
-    if cfg:
-        cfg.value = data_url
-    else:
-        db.session.add(Config(key='logo_filename', value=data_url))
-    db.session.commit()
+    _save_uploaded_file(file, 'logo', 'logo_filename')
     flash('Logo actualizado.', 'success')
     return redirect(url_for('settings'))
 
@@ -3510,10 +3591,7 @@ def delete_logo():
     if current_user.role != 'admin':
         flash('Solo Admin.', 'danger')
         return redirect(url_for('settings'))
-    cfg = Config.query.filter_by(key='logo_filename').first()
-    if cfg and cfg.value:
-        cfg.value = ''
-        db.session.commit()
+    _delete_uploaded_file('logo_filename', 'logo')
     flash('Logo eliminado.', 'success')
     return redirect(url_for('settings'))
 
@@ -3531,17 +3609,7 @@ def upload_favicon():
     if file.filename == '' or not allowed_file(file.filename):
         flash('Formato no válido. Usá PNG, JPG o GIF.', 'danger')
         return redirect(url_for('settings'))
-    import base64
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
-    b64 = base64.b64encode(file.read()).decode('ascii')
-    data_url = f'data:{mime};base64,{b64}'
-    cfg = Config.query.filter_by(key='favicon_data').first()
-    if cfg:
-        cfg.value = data_url
-    else:
-        db.session.add(Config(key='favicon_data', value=data_url))
-    db.session.commit()
+    _save_uploaded_file(file, 'favicon', 'favicon_data')
     flash('Favicon actualizado.', 'success')
     return redirect(url_for('settings'))
 
@@ -3552,10 +3620,7 @@ def delete_favicon():
     if current_user.role != 'admin':
         flash('Solo Admin.', 'danger')
         return redirect(url_for('settings'))
-    cfg = Config.query.filter_by(key='favicon_data').first()
-    if cfg and cfg.value:
-        cfg.value = ''
-        db.session.commit()
+    _delete_uploaded_file('favicon_data', 'favicon')
     flash('Favicon eliminado.', 'success')
     return redirect(url_for('settings'))
 
@@ -3563,15 +3628,19 @@ def delete_favicon():
 @app.route('/favicon.ico')
 def favicon_ico():
     cfg = Config.query.filter_by(key='favicon_data').first()
-    if cfg and cfg.value and cfg.value.startswith('data:'):
-        import base64
-        try:
-            header, b64 = cfg.value.split(',', 1)
-            mime = header.replace('data:', '').replace(';base64', '').strip()
-            data = base64.b64decode(b64)
-            return Response(data, mimetype=mime)
-        except Exception:
-            pass
+    if cfg and cfg.value:
+        if cfg.value.startswith('data:'):
+            try:
+                header, b64 = cfg.value.split(',', 1)
+                mime = header.replace('data:', '').replace(';base64', '').strip()
+                data = _b64lib.b64decode(b64)
+                return Response(data, mimetype=mime)
+            except Exception:
+                pass
+        else:
+            filepath = os.path.join(app.config['FAVICON_FOLDER'], cfg.value)
+            if os.path.exists(filepath):
+                return send_file(filepath)
     return Response('', status=204)
 
 
@@ -4398,18 +4467,9 @@ def init_app():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-        # Migrate file-based logo to base64 data URL
-        import base64 as _b64
-        logo_cfg = Config.query.filter_by(key='logo_filename').first()
-        if logo_cfg and logo_cfg.value and not logo_cfg.value.startswith('data:'):
-            old_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(logo_cfg.value))
-            if os.path.exists(old_path):
-                with open(old_path, 'rb') as _f:
-                    _data = _b64.b64encode(_f.read()).decode('ascii')
-                _ext = logo_cfg.value.rsplit('.', 1)[1].lower() if '.' in logo_cfg.value else 'png'
-                _mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(_ext, 'image/png')
-                logo_cfg.value = f'data:{_mime};base64,{_data}'
-                db.session.commit()
+        # Migrate base64 images to file storage
+        _migrate_base64_to_file('logo_filename', 'logo')
+        _migrate_base64_to_file('favicon_data', 'favicon')
 
         # Create missing indexes for performance
         for idx_name, table, cols in [
@@ -4419,6 +4479,11 @@ def init_app():
             ('ix_sale_item_product_id', 'sale_item', 'product_id'),
             ('ix_log_created_at', 'movement_log', 'created_at'),
             ('ix_product_stock', 'product', 'stock'),
+            ('ix_product_name', 'product', 'name'),
+            ('ix_sale_user_id', 'sale', 'user_id'),
+            ('ix_movement_log_user_id', 'movement_log', 'user_id'),
+            ('ix_sale_item_subtotal', 'sale_item', 'subtotal'),
+            ('ix_deleted_record_type', 'deleted_record', 'record_type'),
         ]:
             try:
                 db.session.execute(db.text(f'CREATE INDEX IF NOT EXISTS {idx_name} ON {table} ({cols})'))
