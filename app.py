@@ -144,11 +144,52 @@ def _migrate_base64_to_file(config_key, subfolder):
         data = _b64lib.b64decode(b64data)
         with open(filepath, 'wb') as f:
             f.write(data)
+        backup_key = f'{config_key}_b64_backup'
+        bkp = Config.query.filter_by(key=backup_key).first()
+        if bkp:
+            bkp.value = cfg.value
+        else:
+            db.session.add(Config(key=backup_key, value=cfg.value))
         cfg.value = filename
         db.session.commit()
         return filename
     except Exception:
         return None
+
+def _ensure_uploaded_file(config_key, subfolder):
+    cfg = Config.query.filter_by(key=config_key).first()
+    if not cfg or not cfg.value or cfg.value.startswith('data:'):
+        return None
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], subfolder)
+    os.makedirs(folder, exist_ok=True)
+    filepath = os.path.join(folder, cfg.value)
+    if os.path.exists(filepath):
+        return cfg.value
+    backup_key = f'{config_key}_b64_backup'
+    bkp = Config.query.filter_by(key=backup_key).first()
+    if bkp and bkp.value and bkp.value.startswith('data:'):
+        try:
+            header, b64data = bkp.value.split(',', 1)
+            data = _b64lib.b64decode(b64data)
+            with open(filepath, 'wb') as f:
+                f.write(data)
+            return cfg.value
+        except Exception:
+            pass
+    bkp_file = os.path.join(folder, f'{config_key}_b64_backup.txt')
+    if os.path.exists(bkp_file):
+        try:
+            with open(bkp_file) as f:
+                raw = f.read().strip()
+            if raw.startswith('data:'):
+                header, b64data = raw.split(',', 1)
+                data = _b64lib.b64decode(b64data)
+                with open(filepath, 'wb') as fw:
+                    fw.write(data)
+                return cfg.value
+        except Exception:
+            pass
+    return None
 
 
 
@@ -207,7 +248,8 @@ def inject_globals():
                 g._configs_cached['logo_filename'] = fn
                 logo_src = url_for('static', filename=f'uploads/logo/{fn}')
         else:
-            logo_src = url_for('static', filename=f'uploads/logo/{logo_val}')
+            if _ensure_uploaded_file('logo_filename', 'logo'):
+                logo_src = url_for('static', filename=f'uploads/logo/{logo_val}')
     fav_val = cfg.get('favicon_data', '')
     fav_src = ''
     if fav_val:
@@ -217,7 +259,8 @@ def inject_globals():
                 g._configs_cached['favicon_data'] = fn
                 fav_src = url_for('static', filename=f'uploads/favicon/{fn}')
         else:
-            fav_src = url_for('static', filename=f'uploads/favicon/{fav_val}')
+            if _ensure_uploaded_file('favicon_data', 'favicon'):
+                fav_src = url_for('static', filename=f'uploads/favicon/{fav_val}')
     return {
         'business_name': cfg.get('business_name', 'NexoControl'),
         'local_name': cfg.get('local_name', ''),
@@ -3638,6 +3681,7 @@ def favicon_ico():
             except Exception:
                 pass
         else:
+            _ensure_uploaded_file('favicon_data', 'favicon')
             filepath = os.path.join(app.config['FAVICON_FOLDER'], cfg.value)
             if os.path.exists(filepath):
                 return send_file(filepath)
