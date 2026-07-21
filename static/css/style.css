@@ -108,7 +108,7 @@ body.dark-mode .card-header-primary { background: #1e2335 !important; color: #8a
     .mobile-menu-btn { display: block; }
     .desktop-only { display: none !important; }
     .mobile-nav {
-        position: fixed; top: 0; left: -280px; width: 280px; height: 100vh;
+        position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; height: 100dvh;
         background: var(--dark); z-index: 301; display: flex; flex-direction: column;
         transition: left 0.25s ease; padding: 0;
     }
@@ -131,10 +131,10 @@ body.dark-mode .card-header-primary { background: #1e2335 !important; color: #8a
     .mobile-nav hr { border-color: rgba(255,255,255,0.1); margin: 4px 16px; }
     .mobile-nav .text-danger { color: var(--accent) !important; }
     .mobile-nav-footer {
-        padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08);
-        display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+        padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.08);
+        display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     }
-    .mobile-nav-footer .user-name { color: rgba(255,255,255,0.7); font-size: 0.8rem; font-weight: 500; }
+    .mobile-nav-footer .user-name { color: rgba(255,255,255,0.7); font-size: 0.8rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     .mobile-nav-footer .user-role { background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; }
 }
 

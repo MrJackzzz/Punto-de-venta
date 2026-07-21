@@ -163,9 +163,11 @@
                     {% endif %}
                 </div>
                 <div class="mobile-nav-footer">
-                    <span class="user-name">{{ current_user.get_full_name() }}</span>
-                    <span class="user-role">{{ current_user.role }}</span>
-                    <a href="{{ url_for('logout') }}" style="margin-left:auto;color:var(--accent);font-size:1.2rem;" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></a>
+                    <div class="user-meta" style="min-width:0;overflow:hidden;">
+                        <span class="user-name">{{ current_user.get_full_name() }}</span>
+                        <span class="user-role">{{ current_user.role }}</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" style="margin-left:auto;color:var(--accent);font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;gap:6px;" title="Cerrar sesión"><i class="bi bi-box-arrow-right" style="font-size:1.2rem;"></i> Salir</a>
                 </div>
             </nav>
             <div class="user-info desktop-only d-flex align-items-center gap-3 small">
