@@ -136,9 +136,9 @@ function renderChart(d) {
 (function initDashboard() {
     {% if current_user.can_view_charts() %}
     // Defer chart loading aggressively - wait for idle + extra delay
-    (window.requestIdleCallback || setTimeout)(function() {
+    (window.requestIdleCallback ? function(cb){ window.requestIdleCallback(cb); } : function(cb){ setTimeout(cb, 0); })(function() {
         setTimeout(loadSalesChart, 500);
-    }, 500);
+    });
     {% endif %}
 })();
 </script>

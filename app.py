@@ -157,6 +157,11 @@ def _migrate_base64_to_file(config_key, subfolder):
         return None
 
 def _ensure_uploaded_file(config_key, subfolder):
+    _cache_key = f'{config_key}_{subfolder}'
+    if not hasattr(_ensure_uploaded_file, '_verified'):
+        _ensure_uploaded_file._verified = set()
+    if _cache_key in _ensure_uploaded_file._verified:
+        return Config.query.filter_by(key=config_key).first().value if Config.query.filter_by(key=config_key).first() else None
     cfg = Config.query.filter_by(key=config_key).first()
     if not cfg or not cfg.value or cfg.value.startswith('data:'):
         return None
@@ -164,6 +169,7 @@ def _ensure_uploaded_file(config_key, subfolder):
     os.makedirs(folder, exist_ok=True)
     filepath = os.path.join(folder, cfg.value)
     if os.path.exists(filepath):
+        _ensure_uploaded_file._verified.add(_cache_key)
         return cfg.value
     backup_key = f'{config_key}_b64_backup'
     bkp = Config.query.filter_by(key=backup_key).first()
@@ -173,6 +179,7 @@ def _ensure_uploaded_file(config_key, subfolder):
             data = _b64lib.b64decode(b64data)
             with open(filepath, 'wb') as f:
                 f.write(data)
+            _ensure_uploaded_file._verified.add(_cache_key)
             return cfg.value
         except Exception:
             pass
@@ -186,6 +193,7 @@ def _ensure_uploaded_file(config_key, subfolder):
                 data = _b64lib.b64decode(b64data)
                 with open(filepath, 'wb') as fw:
                     fw.write(data)
+                _ensure_uploaded_file._verified.add(_cache_key)
                 return cfg.value
         except Exception:
             pass
@@ -274,6 +282,14 @@ def inject_globals():
 _last_bg_check = 0
 _BG_INTERVAL = 300  # 5 minutes
 
+def _run_bg_tasks_async():
+    try:
+        check_critical_stock()
+        auto_backup_check()
+        demo_auto_reset_check()
+    except Exception:
+        pass
+
 @app.before_request
 def run_bg_tasks():
     global _last_bg_check
@@ -281,12 +297,8 @@ def run_bg_tasks():
     if now - _last_bg_check < _BG_INTERVAL:
         return
     _last_bg_check = now
-    try:
-        check_critical_stock()
-        auto_backup_check()
-        demo_auto_reset_check()
-    except Exception:
-        pass
+    import threading
+    threading.Thread(target=_run_bg_tasks_async, daemon=True).start()
 
 db.init_app(app)
 login_manager = LoginManager(app)
@@ -1214,14 +1226,26 @@ def sse_events():
         _sse_clients.append(q)
     def stream():
         try:
+            last_heartbeat = time.time()
             while True:
-                code = q.get()
+                try:
+                    code = q.get(timeout=30)
+                except queue.Empty:
+                    if time.time() - last_heartbeat > 60:
+                        break
+                    yield f": heartbeat\n\n"
+                    last_heartbeat = time.time()
+                    continue
+                last_heartbeat = time.time()
                 yield f"data: {json.dumps({'code': code})}\n\n"
         except GeneratorExit:
+            pass
+        finally:
             with _sse_lock:
                 if q in _sse_clients:
                     _sse_clients.remove(q)
-    return Response(stream(), mimetype='text/event-stream')
+    return Response(stream(), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
 @app.route('/inventory-scan')

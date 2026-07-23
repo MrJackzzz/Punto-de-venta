@@ -363,7 +363,7 @@ function pollRemoteScan() {
         })
         .catch(function() {});
 }
-setInterval(pollRemoteScan, 1200);
+    setInterval(pollRemoteScan, 3000);
 
 document.getElementById('manualCode').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); addByCode(); }
