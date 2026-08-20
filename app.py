@@ -4639,8 +4639,8 @@ def stock_import_page():
         flash('No tenés permiso para acceder a esta sección.', 'danger')
         return redirect(url_for('dashboard'))
     history = StockImport.query.filter_by(user_id=current_user.id).order_by(StockImport.created_at.desc()).limit(50).all()
-    suppliers = Supplier.query.order_by(Supplier.name).all()
-    categories = Category.query.order_by(Category.name).all()
+    suppliers = [{'id': s.id, 'name': s.name} for s in Supplier.query.order_by(Supplier.name).all()]
+    categories = [{'id': c.id, 'name': c.name} for c in Category.query.order_by(Category.name).all()]
     default_markup = float(get_config('default_markup', '30'))
     return render_template('stock_import.html',
                            history=history, suppliers=suppliers, categories=categories,
