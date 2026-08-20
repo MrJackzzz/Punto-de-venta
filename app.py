@@ -4963,6 +4963,15 @@ def product_image_delete(product_id):
 
 def init_app():
     with app.app_context():
+        # Pre-cleanup: drop orphaned stock_import sequence if table doesn't exist
+        try:
+            db.session.execute(db.text("SELECT 1 FROM stock_import LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(db.text("DROP SEQUENCE IF EXISTS stock_import_id_seq"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         db.create_all()
         # Add new columns for existing databases (safe to run multiple times)
         for col, col_type in [('mp_payment_id', 'VARCHAR(100)'), ('mp_status', 'VARCHAR(20)'), ('customer_name', 'VARCHAR(100)')]:
@@ -5115,31 +5124,6 @@ def init_app():
         # Migrate base64 images to file storage
         _migrate_base64_to_file('logo_filename', 'logo')
         _migrate_base64_to_file('favicon_data', 'favicon')
-
-        # Ensure StockImport table exists
-        try:
-            db.session.execute(db.text("SELECT 1 FROM stock_import LIMIT 1"))
-        except Exception:
-            try:
-                db.session.execute(db.text('''
-                    CREATE TABLE stock_import (
-                        id SERIAL PRIMARY KEY,
-                        user_id INTEGER NOT NULL REFERENCES "user"(id),
-                        supplier_name VARCHAR(200) DEFAULT '',
-                        invoice_number VARCHAR(100) DEFAULT '',
-                        invoice_date VARCHAR(50) DEFAULT '',
-                        source_image VARCHAR(500) DEFAULT '',
-                        status VARCHAR(20) DEFAULT 'draft',
-                        ocr_raw_text TEXT DEFAULT '',
-                        total_amount FLOAT DEFAULT 0,
-                        items_json TEXT DEFAULT '[]',
-                        created_at TIMESTAMP,
-                        confirmed_at TIMESTAMP
-                    )
-                '''))
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
 
         # Add image_filename to Product if missing
         try:
