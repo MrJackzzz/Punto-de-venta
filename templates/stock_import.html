@@ -1,0 +1,774 @@
+{% extends "base.html" %}
+{% block title %}Ingreso Inteligente de Mercadería{% endblock %}
+{% block content %}
+<style>
+    .upload-zone {
+        border: 3px dashed #ccc;
+        border-radius: 16px;
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #f8f9fa;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: var(--accent, #ee6c4d);
+        background: #fff5f2;
+    }
+    .upload-zone .upload-icon {
+        font-size: 3rem;
+        color: var(--accent, #ee6c4d);
+        margin-bottom: 0.5rem;
+    }
+    .match-badge {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .match-existing { background: #d1e7dd; color: #0f5132; }
+    .match-new { background: #cff4fc; color: #055160; }
+    .match-fuzzy { background: #fff3cd; color: #664d03; }
+    .confidence-high { color: #198754; }
+    .confidence-medium { color: #ffc107; }
+    .confidence-low { color: #dc3545; }
+    .margin-up { color: #198754; font-weight: 600; }
+    .margin-down { color: #dc3545; font-weight: 600; }
+    .margin-same { color: #6c757d; }
+    .item-row-new { background-color: #f0f9ff; }
+    .item-row-existing { background-color: #f0fdf4; }
+    .item-row-fuzzy { background-color: #fffbeb; }
+    .summary-card {
+        background: linear-gradient(135deg, #ee6c4d 0%, #d63447 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.2rem;
+    }
+    .btn-confirm-big {
+        background: linear-gradient(135deg, #198754 0%, #157347 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 32px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        width: 100%;
+        transition: transform 0.2s;
+    }
+    .btn-confirm-big:hover { transform: scale(1.02); color: white; }
+    .processing-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.6);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 9999;
+    }
+    .processing-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        max-width: 320px;
+        width: 90%;
+    }
+    .processing-spinner {
+        width: 48px; height: 48px;
+        border: 4px solid #eee;
+        border-top-color: var(--accent, #ee6c4d);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .table-review { font-size: 0.85rem; }
+    .table-review th { font-size: 0.78rem; white-space: nowrap; }
+    .table-review td { vertical-align: middle; }
+    .table-review input, .table-review select {
+        font-size: 0.82rem;
+        padding: 2px 6px;
+        max-width: 100px;
+    }
+    .history-item {
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .history-item:hover { background: #f8f9fa; }
+    .status-draft { color: #ffc107; }
+    .status-confirmed { color: #198754; }
+    .status-cancelled { color: #dc3545; }
+    .img-preview-thumb {
+        width: 36px; height: 36px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+    }
+    @media (max-width: 768px) {
+        .table-review { font-size: 0.78rem; }
+        .table-review input, .table-review select { max-width: 70px; font-size: 0.75rem; }
+        .hide-mobile { display: none !important; }
+    }
+</style>
+
+<div id="processingOverlay" class="processing-overlay" style="display:none;">
+    <div class="processing-card">
+        <div class="processing-spinner"></div>
+        <h5>🤖 Analizando documento...</h5>
+        <p class="text-muted small mb-0">La IA está reconociendo los productos</p>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-primary"><i class="bi bi-box-seam"></i> Ingreso Inteligente</h2>
+    <button class="btn btn-outline-secondary btn-sm" onclick="showSection('upload')"><i class="bi bi-clock-history"></i> Historial</button>
+</div>
+
+<div id="sectionUpload">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon"><i class="bi bi-camera"></i></div>
+                        <h5 class="mb-1">Tomá una foto o subí una imagen</h5>
+                        <p class="text-muted small mb-2">Factura, remito, lista de precios o documento</p>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <span class="badge bg-primary"><i class="bi bi-camera"></i> Cámara</span>
+                            <span class="badge bg-secondary"><i class="bi bi-image"></i> Galería</span>
+                            <span class="badge bg-info"><i class="bi bi-file-earmark"></i> Archivo</span>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" capture="environment"
+                           style="display:none" onchange="handleFileSelect(this)">
+                </div>
+                <div class="col-12" id="previewArea" style="display:none;">
+                    <div class="text-center">
+                        <img id="previewImg" class="img-fluid rounded" style="max-height:300px;" alt="Vista previa">
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearUpload()"><i class="bi bi-x"></i> Quitar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="historyList" style="display:none;">
+        <h5 class="mb-3"><i class="bi bi-clock-history"></i> Historial de ingresos</h5>
+        <div id="historyContainer"></div>
+        <button class="btn btn-outline-primary mt-2" onclick="showSection('upload')"><i class="bi bi-arrow-left"></i> Volver</button>
+    </div>
+</div>
+
+<div id="sectionReview" style="display:none;">
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <img id="reviewImage" class="img-preview-thumb" style="display:none;" alt="">
+                </div>
+                <div class="col">
+                    <input type="text" id="draftSupplier" class="form-control form-control-sm" placeholder="Proveedor detectado...">
+                </div>
+                <div class="col-auto">
+                    <input type="text" id="draftInvoice" class="form-control form-control-sm" placeholder="Comprobante" style="width:120px;">
+                </div>
+                <div class="col-auto">
+                    <input type="text" id="draftDate" class="form-control form-control-sm" placeholder="Fecha" style="width:110px;">
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-outline-primary" onclick="uploadNew()"><i class="bi bi-arrow-left"></i> Otra foto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-review">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:36px;"></th>
+                            <th>Producto</th>
+                            <th class="hide-mobile">Código</th>
+                            <th class="text-center">Stock</th>
+                            <th class="text-center">Ingresa</th>
+                            <th class="text-center">Nuevo</th>
+                            <th>Costo</th>
+                            <th class="hide-mobile">Precio</th>
+                            <th class="text-center hide-mobile">Gan.</th>
+                            <th class="text-center">Conf.</th>
+                            <th style="width:36px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-2">
+                <div class="fs-4 fw-bold text-primary" id="totalCount">0</div>
+                <div class="small text-muted">Productos</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-2">
+                <div class="fs-4 fw-bold text-success" id="existingCount">0</div>
+                <div class="small text-muted">Existentes</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-2">
+                <div class="fs-4 fw-bold text-info" id="newCount">0</div>
+                <div class="small text-muted">Nuevos</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-2">
+                <div class="fs-4 fw-bold text-warning" id="fuzzyCount">0</div>
+                <div class="small text-muted">Revisar</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-card mb-3">
+        <div class="row text-center">
+            <div class="col-4">
+                <div class="fs-5 fw-bold" id="totalUnits">0</div>
+                <div class="small opacity-75">Unidades</div>
+            </div>
+            <div class="col-4">
+                <div class="fs-5 fw-bold" id="totalAmount">$0</div>
+                <div class="small opacity-75">Total</div>
+            </div>
+            <div class="col-4">
+                <div class="fs-5 fw-bold" id="costChanges">0</div>
+                <div class="small opacity-75">Cambios costo</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-confirm-big mb-3" onclick="confirmImport()">
+        <i class="bi bi-check-circle"></i> INGRESAR PRODUCTOS AL LOCAL
+    </button>
+    <button class="btn btn-outline-danger w-100 mb-4" onclick="cancelDraft()"><i class="bi bi-x-circle"></i> Cancelar</button>
+</div>
+
+<div id="sectionDone" style="display:none;">
+    <div class="card shadow-sm text-center p-4">
+        <div class="fs-1 text-success mb-3"><i class="bi bi-check-circle-fill"></i></div>
+        <h3>Ingreso completado</h3>
+        <p id="doneSummary" class="text-muted"></p>
+        <button class="btn btn-primary" onclick="resetAll()"><i class="bi bi-plus-circle"></i> Nuevo ingreso</button>
+        <a href="{{ url_for('products') }}" class="btn btn-outline-secondary ms-2"><i class="bi bi-box"></i> Ver productos</a>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-check-circle"></i> Confirmar ingreso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                <p>¿Estás seguro de que deseas ingresar los productos al inventario?</p>
+                <div id="confirmDetails"></div>
+                <div class="alert alert-warning small mt-3">
+                    <i class="bi bi-exclamation-triangle"></i> Esta acción modificará el inventario permanentemente.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" id="btnDoConfirm" onclick="doConfirm()">
+                    <i class="bi bi-check-circle"></i> Confirmar ingreso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="fuzzyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-question-circle"></i> Coincidencia dudosa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Este producto corresponde a:</p>
+                <div class="card p-3 mb-3">
+                    <strong id="fuzzyProductName"></strong>
+                    <span class="text-muted small" id="fuzzyProductDetail"></span>
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" id="fuzzyBtnYes" onclick="resolveFuzzy(true)">
+                        <i class="bi bi-check"></i> Sí, es el mismo producto
+                    </button>
+                    <button class="btn btn-outline-primary" id="fuzzyBtnNo" onclick="resolveFuzzy(false)">
+                        <i class="bi bi-plus-circle"></i> No, crear como nuevo
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="resolveFuzzy('other')">
+                        <i class="bi bi-search"></i> Seleccionar otro producto
+                    </button>
+                </div>
+                <div id="fuzzySearchArea" style="display:none;" class="mt-3">
+                    <input type="text" id="fuzzySearchInput" class="form-control" placeholder="Buscar producto..."
+                           oninput="searchFuzzyProducts(this.value)">
+                    <div id="fuzzySearchResults" class="list-group mt-2" style="max-height:200px;overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const SUPPLIERS = {{ suppliers | tojson }};
+const CATEGORIES = {{ categories | tojson }};
+const DEFAULT_MARKUP = {{ default_markup }};
+let draftId = null;
+let items = [];
+let currentFuzzyIdx = -1;
+
+function fmt(amount) {
+    return '$' + Math.round(amount).toLocaleString('es-AR');
+}
+
+function fmtPct(val) {
+    return Math.round(val) + '%';
+}
+
+function showSection(name) {
+    document.getElementById('sectionUpload').style.display = name === 'upload' ? '' : 'none';
+    document.getElementById('sectionReview').style.display = name === 'review' ? '' : 'none';
+    document.getElementById('sectionDone').style.display = name === 'done' ? '' : 'none';
+    if (name === 'upload') {
+        document.getElementById('historyList').style.display = 'none';
+    }
+}
+
+function showHistory() {
+    document.getElementById('historyList').style.display = '';
+    document.getElementById('uploadZone').parentElement.parentElement.style.display = 'none';
+    fetch('/api/stock-imports')
+        .then(r => r.json())
+        .then(data => {
+            const c = document.getElementById('historyContainer');
+            if (!data.length) {
+                c.innerHTML = '<p class="text-muted">No hay ingresos registrados.</p>';
+                return;
+            }
+            c.innerHTML = data.map(h => `
+                <div class="history-item" onclick="loadDraft(${h.id})">
+                    <div class="d-flex justify-content-between">
+                        <strong>#${h.id} ${h.supplier_name || 'Sin proveedor'}</strong>
+                        <span class="status-${h.status} fw-bold">${h.status.toUpperCase()}</span>
+                    </div>
+                    <div class="small text-muted">
+                        ${h.items_count} productos &middot; ${fmt(h.total_amount)} &middot; ${h.invoice_number || ''}
+                    </div>
+                    <div class="small text-muted">${h.created_at ? new Date(h.created_at).toLocaleString('es-AR') : ''}</div>
+                </div>
+            `).join('');
+        });
+}
+
+function uploadNew() {
+    showSection('upload');
+    clearUpload();
+}
+
+function clearUpload() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('previewArea').style.display = 'none';
+}
+
+function handleFileSelect(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+        alert('Archivo muy grande. Máximo 10MB.');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('previewArea').style.display = '';
+    };
+    reader.readAsDataURL(file);
+    uploadFile(file);
+}
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        document.getElementById('fileInput').files = e.dataTransfer.files;
+        handleFileSelect(document.getElementById('fileInput'));
+    }
+});
+
+function uploadFile(file) {
+    document.getElementById('processingOverlay').style.display = '';
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/stock-import/upload', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('processingOverlay').style.display = 'none';
+            if (data.error) {
+                alert(data.error);
+                clearUpload();
+                return;
+            }
+            draftId = data.draft_id;
+            items = data.items;
+            document.getElementById('draftSupplier').value = data.supplier || '';
+            document.getElementById('draftInvoice').value = data.invoice_number || '';
+            document.getElementById('draftDate').value = data.invoice_date || '';
+            if (data.image) {
+                const img = document.getElementById('reviewImage');
+                img.src = '/static/uploads/imports/' + data.image;
+                img.style.display = '';
+            }
+            renderReview();
+            showSection('review');
+        })
+        .catch(err => {
+            document.getElementById('processingOverlay').style.display = 'none';
+            alert('Error de conexión. Intentá de nuevo.');
+        });
+}
+
+function renderReview() {
+    const tbody = document.getElementById('reviewBody');
+    let html = '';
+    let totalU = 0, totalA = 0, newC = 0, existC = 0, fuzzyC = 0, costCh = 0;
+    items.forEach((item, idx) => {
+        const rowClass = item.status === 'existing' ? 'item-row-existing' : item.status === 'fuzzy' ? 'item-row-fuzzy' : 'item-row-new';
+        const statusIcon = item.status === 'existing' ? '🔄' : item.status === 'fuzzy' ? '⚠️' : '🆕';
+        const confClass = 'confidence-' + (item.confidence || 'medium');
+        const newStock = item.status === 'existing' || item.status === 'fuzzy'
+            ? (item.current_stock || 0) + item.quantity : item.quantity;
+        const margin = item.price > 0 ? ((item.price - item.unit_price) / item.price * 100) : 0;
+        const prevMargin = item.current_price > 0 ? ((item.current_price - item.current_cost) / item.current_price * 100) : 0;
+        let marginIcon = '⚪';
+        if (item.cost_changed) {
+            if (margin < prevMargin - 0.5) marginIcon = '🔴';
+            else if (margin > prevMargin + 0.5) marginIcon = '🟢';
+        }
+        const supplierOpts = SUPPLIERS.map(s =>
+            `<option value="${s.id}" ${item.supplier_id == s.id ? 'selected' : ''}>${s.name}</option>`
+        ).join('');
+        const catOpts = CATEGORIES.map(c =>
+            `<option value="${c.id}" ${item.category_id == c.id ? 'selected' : ''}>${c.name}</option>`
+        ).join('');
+        const price = item.price || (item.unit_price > 0 ? Math.round(item.unit_price * (1 + (item.current_markup || DEFAULT_MARKUP) / 100)) : 0);
+        items[idx].price = price;
+        html += `<tr class="${rowClass}" data-idx="${idx}">
+            <td class="text-center">${statusIcon}</td>
+            <td>
+                <input type="text" class="form-control form-control-sm" value="${esc(item.name)}" onchange="updateItem(${idx},'name',this.value)" placeholder="Nombre">
+                <div class="small text-muted d-flex gap-1 mt-1">
+                    <select class="form-select form-select-sm" style="width:auto;font-size:0.72rem;" onchange="updateItem(${idx},'supplier_id',this.value)">
+                        <option value="">Proveedor</option>${supplierOpts}
+                    </select>
+                    <select class="form-select form-select-sm" style="width:auto;font-size:0.72rem;" onchange="updateItem(${idx},'category_id',this.value)">
+                        <option value="">Categoría</option>${catOpts}
+                    </select>
+                </div>
+            </td>
+            <td class="hide-mobile"><input type="text" class="form-control form-control-sm" value="${esc(item.code || '')}" onchange="updateItem(${idx},'code',this.value)" placeholder="SKU" style="width:80px;"></td>
+            <td class="text-center">${item.status === 'existing' || item.status === 'fuzzy' ? '<span class="badge bg-secondary">' + (item.current_stock || 0) + '</span>' : '<span class="text-muted">—</span>'}</td>
+            <td class="text-center"><input type="number" class="form-control form-control-sm text-center" value="${item.quantity}" min="1" onchange="updateItem(${idx},'quantity',parseInt(this.value)||1)" style="width:60px;"></td>
+            <td class="text-center fw-bold">${newStock}</td>
+            <td><input type="number" class="form-control form-control-sm" value="${item.unit_price || ''}" step="0.01" min="0" onchange="updateItem(${idx},'unit_price',parseFloat(this.value)||0)" placeholder="Costo" style="width:90px;"></td>
+            <td class="hide-mobile"><input type="number" class="form-control form-control-sm" value="${price || ''}" step="0.01" min="0" onchange="updateItem(${idx},'price',parseFloat(this.value)||0)" placeholder="Precio" style="width:90px;"></td>
+            <td class="text-center hide-mobile">${marginIcon} ${fmtPct(margin)}</td>
+            <td class="text-center"><span class="${confClass} fw-bold">${item.confidence === 'high' ? '🟢' : item.confidence === 'low' ? '🔴' : '🟡'}</span></td>
+            <td><button class="btn btn-sm btn-outline-danger p-0 px-1" onclick="removeItem(${idx})" title="Eliminar"><i class="bi bi-trash"></i></button></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+    updateSummary();
+}
+
+function esc(s) {
+    return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function updateItem(idx, field, value) {
+    if (!items[idx]) return;
+    items[idx][field] = value;
+    if (field === 'unit_price' || field === 'quantity' || field === 'price') {
+        const item = items[idx];
+        if (field === 'unit_price' && item.price > 0) {
+            const newMargin = item.price > 0 ? ((item.price - value) / item.price * 100) : 0;
+            const oldMargin = item.current_price > 0 ? ((item.current_price - item.current_cost) / item.current_price * 100) : 0;
+            if (value > 0 && Math.abs(value - (item.current_cost || 0)) > 0.01) {
+                item.cost_changed = true;
+                item.margin_changed = true;
+                item.margin_direction = newMargin < oldMargin - 0.5 ? 'down' : newMargin > oldMargin + 0.5 ? 'up' : 'same';
+            } else {
+                item.cost_changed = false;
+                item.margin_changed = false;
+            }
+        }
+        if (field === 'unit_price' && !item.price) {
+            item.price = Math.round(value * (1 + (item.current_markup || DEFAULT_MARKUP) / 100));
+        }
+        if (field === 'price') {
+            if (value > 0 && item.unit_price > 0) {
+                item.markup_percentage = ((value - item.unit_price) / item.unit_price * 100);
+            }
+        }
+    }
+    if (field === 'supplier_id' || field === 'category_id') {
+        items[idx][field] = value ? parseInt(value) : null;
+    }
+    renderReview();
+}
+
+function removeItem(idx) {
+    items.splice(idx, 1);
+    renderReview();
+}
+
+function updateSummary() {
+    let totalU = 0, totalA = 0, newC = 0, existC = 0, fuzzyC = 0, costCh = 0;
+    items.forEach(item => {
+        totalU += item.quantity;
+        totalA += (item.unit_price || 0) * item.quantity;
+        if (item.status === 'existing') existC++;
+        else if (item.status === 'fuzzy') fuzzyC++;
+        else newC++;
+        if (item.cost_changed) costCh++;
+    });
+    document.getElementById('totalCount').textContent = items.length;
+    document.getElementById('existingCount').textContent = existC;
+    document.getElementById('newCount').textContent = newC;
+    document.getElementById('fuzzyCount').textContent = fuzzyC;
+    document.getElementById('totalUnits').textContent = totalU;
+    document.getElementById('totalAmount').textContent = fmt(totalA);
+    document.getElementById('costChanges').textContent = costCh;
+}
+
+function confirmImport() {
+    const fuzzyItems = items.filter(i => i.status === 'fuzzy');
+    if (fuzzyItems.length > 0) {
+        showFuzzyModal(0);
+        return;
+    }
+    showConfirmModal();
+}
+
+function showFuzzyModal(idx) {
+    currentFuzzyIdx = idx;
+    const fuzzyItems = items.filter(i => i.status === 'fuzzy');
+    if (idx >= fuzzyItems.length) {
+        showConfirmModal();
+        return;
+    }
+    const item = fuzzyItems[idx];
+    document.getElementById('fuzzyProductName').textContent = item.product_name || item.name;
+    document.getElementById('fuzzyProductDetail').textContent =
+        `Stock: ${item.current_stock} | Costo: ${fmt(item.current_cost)} | Precio: ${fmt(item.current_price)}`;
+    document.getElementById('fuzzySearchArea').style.display = 'none';
+    new bootstrap.Modal(document.getElementById('fuzzyModal')).show();
+}
+
+function resolveFuzzy(choice) {
+    const fuzzyItems = items.filter(i => i.status === 'fuzzy');
+    const item = fuzzyItems[currentFuzzyIdx];
+    if (!item) return;
+    if (choice === true) {
+        item.status = 'existing';
+        item.action = 'confirm';
+    } else if (choice === false) {
+        item.status = 'new';
+        item.product_id = null;
+        item.product_name = null;
+        item.current_stock = 0;
+        item.current_cost = 0;
+        item.current_price = 0;
+        item.action = 'confirm';
+    } else {
+        document.getElementById('fuzzySearchArea').style.display = '';
+        return;
+    }
+    bootstrap.Modal.getInstance(document.getElementById('fuzzyModal')).hide();
+    renderReview();
+    showFuzzyModal(currentFuzzyIdx + 1);
+}
+
+function searchFuzzyProducts(query) {
+    if (query.length < 2) {
+        document.getElementById('fuzzySearchResults').innerHTML = '';
+        return;
+    }
+    fetch(`/api/products?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(data => {
+            const c = document.getElementById('fuzzySearchResults');
+            c.innerHTML = (data.products || []).slice(0, 10).map(p =>
+                `<button type="button" class="list-group-item list-group-item-action" onclick="selectFuzzyProduct(${p.id})">
+                    <strong>${esc(p.name)}</strong> <span class="text-muted small">${p.code}</span>
+                </button>`
+            ).join('') || '<div class="list-group-item text-muted">Sin resultados</div>';
+        });
+}
+
+function selectFuzzyProduct(pid) {
+    const fuzzyItems = items.filter(i => i.status === 'fuzzy');
+    const item = fuzzyItems[currentFuzzyIdx];
+    if (!item) return;
+    fetch(`/api/products?q=`)
+        .then(r => r.json())
+        .then(data => {
+            const p = (data.products || []).find(x => x.id === pid);
+            if (p) {
+                item.product_id = p.id;
+                item.product_name = p.name;
+                item.current_stock = p.stock;
+                item.current_cost = p.cost;
+                item.current_price = p.price;
+                item.current_markup = p.markup_percentage;
+                item.current_image = p.image_filename;
+                item.supplier_id = p.supplier_id;
+                item.category_id = p.category_id;
+                item.status = 'existing';
+                item.action = 'confirm';
+            }
+        });
+    bootstrap.Modal.getInstance(document.getElementById('fuzzyModal')).hide();
+    renderReview();
+    showFuzzyModal(currentFuzzyIdx + 1);
+}
+
+function showConfirmModal() {
+    const activeItems = items.filter(i => i.action !== 'skip');
+    const newC = activeItems.filter(i => i.status === 'new').length;
+    const existC = activeItems.filter(i => i.status === 'existing').length;
+    const totalU = activeItems.reduce((s, i) => s + i.quantity, 0);
+    const totalA = activeItems.reduce((s, i) => s + (i.unit_price || 0) * i.quantity, 0);
+    const costCh = activeItems.filter(i => i.cost_changed).length;
+    document.getElementById('confirmDetails').innerHTML = `
+        <div class="row text-center g-2">
+            <div class="col-4"><div class="fw-bold fs-5">${activeItems.length}</div><div class="small text-muted">Productos</div></div>
+            <div class="col-4"><div class="fw-bold fs-5 text-success">${existC}</div><div class="small text-muted">Existentes</div></div>
+            <div class="col-4"><div class="fw-bold fs-5 text-info">${newC}</div><div class="small text-muted">Nuevos</div></div>
+            <div class="col-4"><div class="fw-bold fs-5">${totalU}</div><div class="small text-muted">Unidades</div></div>
+            <div class="col-4"><div class="fw-bold fs-5">${fmt(totalA)}</div><div class="small text-muted">Total</div></div>
+            <div class="col-4"><div class="fw-bold fs-5 text-warning">${costCh}</div><div class="small text-muted">Cambios costo</div></div>
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+function doConfirm() {
+    const btn = document.getElementById('btnDoConfirm');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
+    const activeItems = items.filter(i => i.action !== 'skip');
+    fetch(`/stock-import/save-draft`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            draft_id: draftId,
+            supplier_name: document.getElementById('draftSupplier').value,
+            invoice_number: document.getElementById('draftInvoice').value,
+            invoice_date: document.getElementById('draftDate').value,
+            items: activeItems,
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.error) {
+            alert(data.error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar ingreso';
+            return;
+        }
+        draftId = data.draft_id;
+        fetch(`/stock-import/confirm/${draftId}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(result => {
+                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                if (result.error) {
+                    alert(result.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar ingreso';
+                    return;
+                }
+                document.getElementById('doneSummary').innerHTML =
+                    `<strong>${result.existing_products}</strong> existentes + <strong>${result.new_products}</strong> nuevos = <strong>${result.total_units}</strong> unidades<br>
+                     Total: <strong>${fmt(result.total_amount)}</strong>`;
+                showSection('done');
+            })
+            .catch(err => {
+                alert('Error de conexión. El inventario NO fue modificado.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar ingreso';
+            });
+    }).catch(err => {
+        alert('Error de conexión.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar ingreso';
+    });
+}
+
+function cancelDraft() {
+    if (!draftId) { showSection('upload'); return; }
+    if (!confirm('¿Cancelar este ingreso? No se modificará el inventario.')) return;
+    fetch(`/stock-import/cancel/${draftId}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(() => { resetAll(); });
+}
+
+function resetAll() {
+    draftId = null;
+    items = [];
+    clearUpload();
+    showSection('upload');
+}
+
+function loadDraft(id) {
+    fetch(`/api/stock-import/${id}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { alert(data.error); return; }
+            if (data.status !== 'draft') {
+                alert('Este registro ya fue procesado.');
+                return;
+            }
+            draftId = data.id;
+            items = data.items;
+            document.getElementById('draftSupplier').value = data.supplier_name || '';
+            document.getElementById('draftInvoice').value = data.invoice_number || '';
+            document.getElementById('draftDate').value = data.invoice_date || '';
+            if (data.source_image) {
+                const img = document.getElementById('reviewImage');
+                img.src = '/static/uploads/imports/' + data.source_image;
+                img.style.display = '';
+            }
+            renderReview();
+            showSection('review');
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('[onclick="showSection(\'upload\')"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        showHistory();
+    });
+});
+</script>
+{% endblock %}

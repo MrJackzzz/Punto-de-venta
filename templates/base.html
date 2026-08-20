@@ -52,6 +52,9 @@
             {% if current_user.can_view_suppliers() %}
             <a href="{{ url_for('suppliers') }}" class="sidebar-link"><span class="si"><i class="bi bi-building"></i></span><span class="st">Proveedores</span></a>
             {% endif %}
+            {% if current_user.can_manage_products() %}
+            <a href="{{ url_for('stock_import_page') }}" class="sidebar-link"><span class="si"><i class="bi bi-box-arrow-in-down"></i></span><span class="st">Ingreso IA</span></a>
+            {% endif %}
             <a href="{{ url_for('sell') }}" class="sidebar-link"><span class="si"><i class="bi bi-cart"></i></span><span class="st">Vender</span></a>
             {% if current_user.can_take_orders() %}
             <a href="{{ url_for('orders') }}" class="sidebar-link"><span class="si"><i class="bi bi-clipboard"></i></span><span class="st">Pedidos</span></a>
@@ -129,6 +132,7 @@
                     <a href="{{ url_for('manual') }}"><i class="bi bi-book"></i> Manual</a>
                     {% if current_user.can_view_products() %}<a href="{{ url_for('products') }}"><i class="bi bi-box"></i> Productos</a>{% endif %}
                     <a href="{{ url_for('sell') }}"><i class="bi bi-cart"></i> Vender</a>
+                    {% if current_user.can_manage_products() %}<a href="{{ url_for('stock_import_page') }}"><i class="bi bi-box-arrow-in-down"></i> Ingreso IA</a>{% endif %}
                     {% if current_user.can_take_orders() %}<a href="{{ url_for('orders') }}"><i class="bi bi-clipboard"></i> Pedidos</a>{% endif %}
                     {% if current_user.can_view_suppliers() %}<a href="{{ url_for('suppliers') }}"><i class="bi bi-truck"></i> Proveedores</a>{% endif %}
                     {% if current_user.can_view_categories() %}<a href="{{ url_for('categories') }}"><i class="bi bi-tags"></i> Categorías</a>{% endif %}

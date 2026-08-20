@@ -1309,6 +1309,24 @@ def api_products_search():
     } for p in products_list])
 
 
+@app.route('/api/products')
+@login_required
+def api_products_all():
+    q = request.args.get('q', '')
+    if not q or len(q) < 1:
+        return jsonify({'products': []})
+    products_list = Product.query.filter(
+        Product.name.ilike(f'%{q}%') | Product.code.ilike(f'%{q}%')
+    ).limit(30).all()
+    return jsonify({'products': [{
+        'id': p.id, 'code': p.code, 'name': p.name,
+        'price': p.price, 'cost': p.cost, 'stock': p.stock,
+        'markup_percentage': p.markup_percentage,
+        'supplier_id': p.supplier_id, 'category_id': p.category_id,
+        'image_filename': p.image_filename,
+    } for p in products_list]})
+
+
 @app.route('/sell/checkout', methods=['POST'])
 @login_required
 def checkout():
