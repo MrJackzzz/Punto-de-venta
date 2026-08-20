@@ -4388,6 +4388,561 @@ def admin_systems_delete(id):
     return redirect(url_for('admin_systems'))
 
 
+# =============================================================================
+# STOCK IMPORT - Smart merchandise entry via OCR/AI
+# =============================================================================
+
+ALLOWED_IMPORT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'pdf'}
+ALLOWED_PRODUCT_IMG_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+
+def _parse_ar_number(text):
+    """Parse Argentine number format: 1.250,50 -> 1250.50"""
+    if not text:
+        return 0.0
+    s = str(text).strip()
+    s = s.replace('$', '').replace('ARS', '').strip()
+    s = s.replace('.', '').replace(',', '.')
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return 0.0
+
+def _ai_confidence_label(ratio):
+    if ratio >= 0.85:
+        return 'high', 'alta'
+    if ratio >= 0.65:
+        return 'medium', 'media'
+    return 'low', 'baja'
+
+def _get_gemini_client():
+    api_key = os.environ.get('GEMINI_API_KEY', '')
+    if not api_key:
+        return None
+    try:
+        from google import genai
+        return genai.Client(api_key=api_key)
+    except Exception:
+        return None
+
+GEMINI_PROMPT = """Analiza esta imagen de factura, remito o documento de mercadería argentino.
+Extrae TODOS los productos visibles. Devuelve SOLO JSON válido (sin markdown, sin explicaciones).
+
+Estructura:
+{
+  "supplier": "nombre del proveedor si aparece",
+  "invoice_number": "número de comprobante si aparece",
+  "date": "fecha si aparece (formato YYYY-MM-DD)",
+  "items": [
+    {
+      "name": "nombre del producto",
+      "code": "código/SKU si aparece, sino null",
+      "quantity": 0,
+      "unit_price": 0,
+      "confidence": "high|medium|low"
+    }
+  ]
+}
+
+Reglas:
+- quantity siempre numérico entero
+- unit_price es el precio unitario final (con IVA si es precio de venta)
+- Si el precio es "1.250,50" interpreta como 1250.50
+- Si un dato no aparece, usar null
+- Marcar confidence low cuando haya duda
+- No inventes datos
+- No agregues texto fuera del JSON
+"""
+
+def _process_with_gemini(image_bytes, mime_type):
+    """Send image to Gemini and return parsed JSON."""
+    client = _get_gemini_client()
+    if not client:
+        return None, 'No se configuró la API Key de Gemini (GEMINI_API_KEY).'
+    import base64 as _b64
+    img_b64 = _b64.b64encode(image_bytes).decode('utf-8')
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=[
+                {
+                    'inline_data': {
+                        'mime_type': mime_type,
+                        'data': img_b64
+                    }
+                },
+                GEMINI_PROMPT
+            ]
+        )
+        text = response.text.strip()
+        if text.startswith('```'):
+            text = text.split('\n', 1)[1]
+            if text.endswith('```'):
+                text = text[:-3]
+            text = text.strip()
+        return json.loads(text), None
+    except json.JSONDecodeError:
+        return None, 'La IA no devolvió JSON válido. Intentá con otra imagen.'
+    except Exception as e:
+        err = str(e)
+        if 'API_KEY_INVALID' in err or '403' in err:
+            return None, 'API Key de Gemini inválida. Verificá la configuración.'
+        if 'QUOTA' in err or '429' in err:
+            return None, 'Límite de la API alcanzado. Esperá unos minutos y intentá de nuevo.'
+        return None, f'Error de la IA: {err[:200]}'
+
+def _match_products(items):
+    """Match detected items against existing products. Returns enriched items."""
+    all_products = Product.query.all()
+    prod_by_code = {p.code.upper(): p for p in all_products if p.code}
+    prod_by_name = {}
+    for p in all_products:
+        key = ' '.join(p.name.lower().split())
+        prod_by_name[key] = p
+    all_names = [(p.id, p.name) for p in all_products]
+    from difflib import SequenceMatcher
+    matched = []
+    for item in items:
+        result = {
+            'name': item.get('name', '').strip(),
+            'code': (item.get('code') or '').strip(),
+            'quantity': max(1, int(float(item.get('quantity', 1) or 1))),
+            'unit_price': float(item.get('unit_price', 0) or 0),
+            'confidence': item.get('confidence', 'medium'),
+            'match_type': 'new',
+            'product_id': None,
+            'product_name': None,
+            'current_stock': 0,
+            'current_cost': 0,
+            'current_price': 0,
+            'current_markup': 0,
+            'current_image': None,
+            'cost_changed': False,
+            'margin_changed': False,
+            'margin_direction': 'same',
+            'status': 'new',
+            'supplier_id': None,
+            'category_id': None,
+        }
+        code_upper = result['code'].upper()
+        if code_upper and code_upper in prod_by_code:
+            p = prod_by_code[code_upper]
+            result['match_type'] = 'code_exact'
+            result['product_id'] = p.id
+            result['product_name'] = p.name
+            result['current_stock'] = p.stock
+            result['current_cost'] = p.cost
+            result['current_price'] = p.price
+            result['current_markup'] = p.markup_percentage
+            result['current_image'] = p.image_filename
+            result['supplier_id'] = p.supplier_id
+            result['category_id'] = p.category_id
+            result['status'] = 'existing'
+            if result['unit_price'] > 0 and abs(result['unit_price'] - p.cost) > 0.01:
+                result['cost_changed'] = True
+                old_margin = ((p.price - p.cost) / p.price * 100) if p.price > 0 else 0
+                new_margin = ((p.price - result['unit_price']) / p.price * 100) if p.price > 0 and result['unit_price'] > 0 else 0
+                if new_margin < old_margin - 0.5:
+                    result['margin_changed'] = True
+                    result['margin_direction'] = 'down'
+                elif new_margin > old_margin + 0.5:
+                    result['margin_changed'] = True
+                    result['margin_direction'] = 'up'
+            matched.append(result)
+            continue
+        name_key = ' '.join(result['name'].lower().split())
+        if name_key in prod_by_name:
+            p = prod_by_name[name_key]
+            result['match_type'] = 'name_exact'
+            result['product_id'] = p.id
+            result['product_name'] = p.name
+            result['current_stock'] = p.stock
+            result['current_cost'] = p.cost
+            result['current_price'] = p.price
+            result['current_markup'] = p.markup_percentage
+            result['current_image'] = p.image_filename
+            result['supplier_id'] = p.supplier_id
+            result['category_id'] = p.category_id
+            result['status'] = 'existing'
+            if result['unit_price'] > 0 and abs(result['unit_price'] - p.cost) > 0.01:
+                result['cost_changed'] = True
+                old_margin = ((p.price - p.cost) / p.price * 100) if p.price > 0 else 0
+                new_margin = ((p.price - result['unit_price']) / p.price * 100) if p.price > 0 and result['unit_price'] > 0 else 0
+                if new_margin < old_margin - 0.5:
+                    result['margin_changed'] = True
+                    result['margin_direction'] = 'down'
+                elif new_margin > old_margin + 0.5:
+                    result['margin_changed'] = True
+                    result['margin_direction'] = 'up'
+            matched.append(result)
+            continue
+        best_ratio = 0
+        best_prod = None
+        for pid, pname in all_names:
+            ratio = SequenceMatcher(None, result['name'].lower(), pname.lower()).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_prod = (pid, pname)
+        if best_ratio >= 0.65:
+            conf_label, conf_label_es = _ai_confidence_label(best_ratio)
+            p = db.session.get(Product, best_prod[0])
+            result['match_type'] = f'fuzzy_{best_ratio:.0%}'
+            result['product_id'] = p.id
+            result['product_name'] = p.name
+            result['current_stock'] = p.stock
+            result['current_cost'] = p.cost
+            result['current_price'] = p.price
+            result['current_markup'] = p.markup_percentage
+            result['current_image'] = p.image_filename
+            result['supplier_id'] = p.supplier_id
+            result['category_id'] = p.category_id
+            result['status'] = 'fuzzy'
+            result['fuzzy_ratio'] = best_ratio
+            result['fuzzy_label'] = conf_label_es
+            if result['unit_price'] > 0 and abs(result['unit_price'] - p.cost) > 0.01:
+                result['cost_changed'] = True
+                old_margin = ((p.price - p.cost) / p.price * 100) if p.price > 0 else 0
+                new_margin = ((p.price - result['unit_price']) / p.price * 100) if p.price > 0 and result['unit_price'] > 0 else 0
+                if new_margin < old_margin - 0.5:
+                    result['margin_changed'] = True
+                    result['margin_direction'] = 'down'
+                elif new_margin > old_margin + 0.5:
+                    result['margin_changed'] = True
+                    result['margin_direction'] = 'up'
+            matched.append(result)
+            continue
+        matched.append(result)
+    return matched
+
+
+@app.route('/stock-import')
+@login_required
+def stock_import_page():
+    if not current_user.can_manage_stock_import():
+        flash('No tenés permiso para acceder a esta sección.', 'danger')
+        return redirect(url_for('dashboard'))
+    history = StockImport.query.filter_by(user_id=current_user.id).order_by(StockImport.created_at.desc()).limit(50).all()
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    categories = Category.query.order_by(Category.name).all()
+    default_markup = float(get_config('default_markup', '30'))
+    return render_template('stock_import.html',
+                           history=history, suppliers=suppliers, categories=categories,
+                           default_markup=default_markup)
+
+
+@app.route('/stock-import/upload', methods=['POST'])
+@login_required
+def stock_import_upload():
+    if not current_user.can_manage_stock_import():
+        return jsonify({'error': 'Sin permiso'}), 403
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se envió ningún archivo.'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'error': 'Archivo vacío.'}), 400
+    ext = f.filename.rsplit('.', 1)[1].lower() if '.' in f.filename else ''
+    if ext not in ALLOWED_IMPORT_EXTENSIONS:
+        return jsonify({'error': f'Extensión no permitida: .{ext}. Use JPG, PNG, WEBP o PDF.'}), 400
+    mime_map = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+                'webp': 'image/webp', 'gif': 'image/gif', 'pdf': 'application/pdf'}
+    mime_type = mime_map.get(ext, 'image/jpeg')
+    file_bytes = f.read()
+    if len(file_bytes) > 10 * 1024 * 1024:
+        return jsonify({'error': 'Archivo muy grande. Máximo 10MB.'}), 400
+    filename = f'import_{uuid.uuid4().hex[:12]}.{ext}'
+    filepath = os.path.join(app.config['IMPORTS_FOLDER'], filename)
+    os.makedirs(app.config['IMPORTS_FOLDER'], exist_ok=True)
+    with open(filepath, 'wb') as fw:
+        fw.write(file_bytes)
+    if ext == 'pdf':
+        return jsonify({'error': 'Los PDFs aún no son soportados directamente. Sacá una foto del documento y subila como imagen.'}), 400
+    data, error = _process_with_gemini(file_bytes, mime_type)
+    if error:
+        return jsonify({'error': error, 'image': filename}), 400
+    items = data.get('items', [])
+    if not items:
+        return jsonify({'error': 'No se detectaron productos en la imagen. Intentá con otra foto más clara.', 'image': filename}), 400
+    for item in items:
+        item['unit_price'] = _parse_ar_number(item.get('unit_price', 0))
+        item['quantity'] = max(1, int(float(item.get('quantity', 1) or 1)))
+    matched = _match_products(items)
+    draft = StockImport(
+        user_id=current_user.id,
+        supplier_name=data.get('supplier', ''),
+        invoice_number=data.get('invoice_number', ''),
+        invoice_date=data.get('date', ''),
+        source_image=filename,
+        status='draft',
+        ocr_raw_text=json.dumps(data, ensure_ascii=False),
+        items_json=json.dumps(matched, ensure_ascii=False),
+    )
+    db.session.add(draft)
+    db.session.commit()
+    total = sum(i['unit_price'] * i['quantity'] for i in matched)
+    return jsonify({
+        'success': True,
+        'draft_id': draft.id,
+        'supplier': draft.supplier_name,
+        'invoice_number': draft.invoice_number,
+        'invoice_date': draft.invoice_date,
+        'items': matched,
+        'total': total,
+        'image': filename,
+    })
+
+
+@app.route('/stock-import/save-draft', methods=['POST'])
+@login_required
+def stock_import_save_draft():
+    if not current_user.can_manage_stock_import():
+        return jsonify({'error': 'Sin permiso'}), 403
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos inválidos'}), 400
+    draft_id = data.get('draft_id')
+    if draft_id:
+        draft = db.session.get(StockImport, draft_id)
+        if not draft or draft.user_id != current_user.id:
+            return jsonify({'error': 'Borrador no encontrado'}), 404
+        if draft.status != 'draft':
+            return jsonify({'error': 'Este borrador ya fue procesado'}), 400
+    else:
+        draft = StockImport(user_id=current_user.id, status='draft')
+        db.session.add(draft)
+    draft.supplier_name = data.get('supplier_name', draft.supplier_name or '')
+    draft.invoice_number = data.get('invoice_number', draft.invoice_number or '')
+    draft.invoice_date = data.get('invoice_date', draft.invoice_date or '')
+    items = data.get('items', [])
+    for item in items:
+        item['unit_price'] = float(item.get('unit_price', 0) or 0)
+        item['quantity'] = max(1, int(float(item.get('quantity', 1) or 1)))
+    draft.items_json = json.dumps(items, ensure_ascii=False)
+    draft.total_amount = sum(i['unit_price'] * i['quantity'] for i in items)
+    db.session.commit()
+    return jsonify({'success': True, 'draft_id': draft.id})
+
+
+@app.route('/stock-import/confirm/<int:draft_id>', methods=['POST'])
+@login_required
+def stock_import_confirm(draft_id):
+    if not current_user.can_manage_stock_import():
+        return jsonify({'error': 'Sin permiso'}), 403
+    draft = db.session.get(StockImport, draft_id)
+    if not draft or draft.user_id != current_user.id:
+        return jsonify({'error': 'Borrador no encontrado'}), 404
+    if draft.status != 'draft':
+        return jsonify({'error': 'Este borrador ya fue procesado'}), 400
+    items = json.loads(draft.items_json or '[]')
+    if not items:
+        return jsonify({'error': 'No hay productos para ingresar'}), 400
+    default_markup = float(get_config('default_markup', '30'))
+    new_count = 0
+    existing_count = 0
+    total_units = 0
+    changes = []
+    try:
+        for item in items:
+            action = item.get('action', 'confirm')
+            if action == 'skip':
+                continue
+            product_id = item.get('product_id')
+            qty = max(0, int(float(item.get('quantity', 0) or 0)))
+            new_cost = float(item.get('unit_price', 0) or 0)
+            new_price = float(item.get('price', 0) or 0)
+            new_markup = float(item.get('markup', default_markup) or default_markup)
+            if product_id:
+                product = db.session.get(Product, product_id)
+                if not product:
+                    continue
+                old_stock = product.stock
+                old_cost = product.cost
+                old_price = product.price
+                product.stock += qty
+                if new_cost > 0:
+                    product.cost = new_cost
+                if new_price > 0:
+                    product.price = new_price
+                elif new_cost > 0:
+                    product.markup_percentage = new_markup
+                    product.price = round(new_cost * (1 + new_markup / 100), 2)
+                existing_count += 1
+                total_units += qty
+                changes.append({
+                    'product': product.name,
+                    'old_stock': old_stock,
+                    'new_stock': product.stock,
+                    'old_cost': old_cost,
+                    'new_cost': product.cost,
+                    'old_price': old_price,
+                    'new_price': product.price,
+                })
+                log_movement(current_user, 'stock_import_update',
+                    f'Ingreso #{draft.id}: {product.name} ({old_stock} → {product.stock})')
+            else:
+                name = item.get('name', '').strip()
+                code = item.get('code', '').strip()
+                if not name:
+                    continue
+                if not code:
+                    code = f'NEW-{uuid.uuid4().hex[:6].upper()}'
+                existing_code = Product.query.filter(func.lower(Product.code) == code.lower()).first()
+                if existing_code:
+                    existing_code.stock += qty
+                    if new_cost > 0:
+                        existing_code.cost = new_cost
+                    if new_price > 0:
+                        existing_code.price = new_price
+                    product = existing_code
+                else:
+                    if new_cost > 0 and new_price == 0:
+                        new_price = round(new_cost * (1 + new_markup / 100), 2)
+                    product = Product(
+                        code=code,
+                        name=name,
+                        cost=new_cost,
+                        markup_percentage=new_markup,
+                        price=new_price,
+                        stock=qty,
+                        supplier_id=item.get('supplier_id'),
+                        category_id=item.get('category_id'),
+                    )
+                    db.session.add(product)
+                    db.session.flush()
+                new_count += 1
+                total_units += qty
+                log_movement(current_user, 'stock_import_new',
+                    f'Ingreso #{draft.id}: Nuevo producto {name} (stock: {qty})')
+        draft.status = 'confirmed'
+        draft.confirmed_at = datetime.now(timezone.utc)
+        draft.total_amount = sum(i.get('unit_price', 0) * i.get('quantity', 0) for i in items)
+        draft.items_json = json.dumps(items, ensure_ascii=False)
+        db.session.commit()
+        log_movement(current_user, 'stock_import',
+            f'Ingreso inteligente #{draft.id}: {new_count} nuevos, {existing_count} existentes, {total_units} unidades, ${draft.total_amount:.2f}')
+        return jsonify({
+            'success': True,
+            'new_products': new_count,
+            'existing_products': existing_count,
+            'total_units': total_units,
+            'total_amount': draft.total_amount,
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al procesar: {str(e)[:200]}. No se modificó el inventario.'}), 500
+
+
+@app.route('/stock-import/cancel/<int:draft_id>', methods=['POST'])
+@login_required
+def stock_import_cancel(draft_id):
+    if not current_user.can_manage_stock_import():
+        return jsonify({'error': 'Sin permiso'}), 403
+    draft = db.session.get(StockImport, draft_id)
+    if not draft or draft.user_id != current_user.id:
+        return jsonify({'error': 'Borrador no encontrado'}), 404
+    if draft.status != 'draft':
+        return jsonify({'error': 'Solo se pueden cancelar borradores'}), 400
+    draft.status = 'cancelled'
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/api/stock-imports')
+@login_required
+def api_stock_imports():
+    if not current_user.can_manage_stock_import():
+        return jsonify({'error': 'Sin permiso'}), 403
+    imports = StockImport.query.filter_by(user_id=current_user.id).order_by(StockImport.created_at.desc()).limit(100).all()
+    result = []
+    for imp in imports:
+        items = json.loads(imp.items_json or '[]')
+        result.append({
+            'id': imp.id,
+            'supplier_name': imp.supplier_name,
+            'invoice_number': imp.invoice_number,
+            'status': imp.status,
+            'total_amount': imp.total_amount,
+            'items_count': len(items),
+            'created_at': imp.created_at.isoformat() if imp.created_at else None,
+            'confirmed_at': imp.confirmed_at.isoformat() if imp.confirmed_at else None,
+        })
+    return jsonify(result)
+
+
+@app.route('/api/stock-import/<int:import_id>')
+@login_required
+def api_stock_import_detail(import_id):
+    if not current_user.can_manage_stock_import():
+        return jsonify({'error': 'Sin permiso'}), 403
+    imp = db.session.get(StockImport, import_id)
+    if not imp or imp.user_id != current_user.id:
+        return jsonify({'error': 'No encontrado'}), 404
+    items = json.loads(imp.items_json or '[]')
+    return jsonify({
+        'id': imp.id,
+        'supplier_name': imp.supplier_name,
+        'invoice_number': imp.invoice_number,
+        'invoice_date': imp.invoice_date,
+        'source_image': imp.source_image,
+        'status': imp.status,
+        'total_amount': imp.total_amount,
+        'items': items,
+        'created_at': imp.created_at.isoformat() if imp.created_at else None,
+        'confirmed_at': imp.confirmed_at.isoformat() if imp.confirmed_at else None,
+    })
+
+
+# Product image upload/delete
+@app.route('/api/product/<int:product_id>/image', methods=['POST'])
+@login_required
+def product_image_upload(product_id):
+    if not current_user.can_edit_products():
+        return jsonify({'error': 'Sin permiso'}), 403
+    product = db.session.get(Product, product_id)
+    if not product:
+        return jsonify({'error': 'Producto no encontrado'}), 404
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se envió archivo'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'error': 'Archivo vacío'}), 400
+    ext = f.filename.rsplit('.', 1)[1].lower() if '.' in f.filename else ''
+    if ext not in ALLOWED_PRODUCT_IMG_EXTENSIONS:
+        return jsonify({'error': f'Extensión no permitida: .{ext}'}), 400
+    if product.image_filename:
+        old_path = os.path.join(app.config['PRODUCTS_IMG_FOLDER'], product.image_filename)
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
+    filename = f'product_{product_id}_{uuid.uuid4().hex[:8]}.{ext}'
+    filepath = os.path.join(app.config['PRODUCTS_IMG_FOLDER'], filename)
+    os.makedirs(app.config['PRODUCTS_IMG_FOLDER'], exist_ok=True)
+    f.save(filepath)
+    product.image_filename = filename
+    db.session.commit()
+    return jsonify({'success': True, 'image_url': url_for('static', filename=f'uploads/products/{filename}')})
+
+
+@app.route('/api/product/<int:product_id>/image', methods=['DELETE'])
+@login_required
+def product_image_delete(product_id):
+    if not current_user.can_edit_products():
+        return jsonify({'error': 'Sin permiso'}), 403
+    product = db.session.get(Product, product_id)
+    if not product:
+        return jsonify({'error': 'Producto no encontrado'}), 404
+    if product.image_filename:
+        path = os.path.join(app.config['PRODUCTS_IMG_FOLDER'], product.image_filename)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        product.image_filename = None
+        db.session.commit()
+    return jsonify({'success': True})
+
+
 def init_app():
     with app.app_context():
         db.create_all()
