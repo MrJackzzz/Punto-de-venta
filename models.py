@@ -139,6 +139,9 @@ class User(UserMixin, db.Model):
     def can_manage_purchases(self):
         return self._role_perm('can_manage_purchases', self.role in ('admin', 'supervisor'))
 
+    def can_manage_stock_import(self):
+        return self._role_perm('can_manage_stock_import', self.role in ('admin', 'supervisor'))
+
 
 class PendingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -177,6 +180,7 @@ class Product(db.Model):
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     wholesale_qty = db.Column(db.Float, default=0)
     wholesale_price = db.Column(db.Float, default=0)
+    image_filename = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
@@ -312,3 +316,20 @@ class PurchaseOrder(db.Model):
 
     user = db.relationship('User', backref='purchase_orders')
     supplier = db.relationship('Supplier', backref='purchase_orders')
+
+
+class StockImport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    supplier_name = db.Column(db.String(200), default='')
+    invoice_number = db.Column(db.String(100), default='')
+    invoice_date = db.Column(db.String(50), default='')
+    source_image = db.Column(db.String(500), default='')
+    status = db.Column(db.String(20), default='draft')
+    ocr_raw_text = db.Column(db.Text, default='')
+    total_amount = db.Column(db.Float, default=0)
+    items_json = db.Column(db.Text, default='[]')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    confirmed_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship('User', backref='stock_imports')

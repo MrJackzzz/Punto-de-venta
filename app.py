@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file, make_response, abort, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, AnonymousUserMixin
-from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord, CashClose, PurchaseOrder
+from models import db, User, Product, Supplier, Sale, SaleItem, MovementLog, Config, Category, PendingOrder, System, DeletedRecord, CashClose, PurchaseOrder, StockImport
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 AR_TZ = ZoneInfo('America/Argentina/Buenos_Aires')
@@ -71,6 +71,8 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 app.config['LOGO_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'logo')
 app.config['FAVICON_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'favicon')
 app.config['BACKUP_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
+app.config['IMPORTS_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'imports')
+app.config['PRODUCTS_IMG_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'products')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 @app.errorhandler(413)
@@ -82,6 +84,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['LOGO_FOLDER'], exist_ok=True)
 os.makedirs(app.config['FAVICON_FOLDER'], exist_ok=True)
 os.makedirs(app.config['BACKUP_FOLDER'], exist_ok=True)
+os.makedirs(app.config['IMPORTS_FOLDER'], exist_ok=True)
+os.makedirs(app.config['PRODUCTS_IMG_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 import base64 as _b64lib
@@ -4539,6 +4543,38 @@ def init_app():
         _migrate_base64_to_file('logo_filename', 'logo')
         _migrate_base64_to_file('favicon_data', 'favicon')
 
+        # Ensure StockImport table exists
+        try:
+            db.session.execute(db.text("SELECT 1 FROM stock_import LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(db.text('''
+                    CREATE TABLE stock_import (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL REFERENCES "user"(id),
+                        supplier_name VARCHAR(200) DEFAULT '',
+                        invoice_number VARCHAR(100) DEFAULT '',
+                        invoice_date VARCHAR(50) DEFAULT '',
+                        source_image VARCHAR(500) DEFAULT '',
+                        status VARCHAR(20) DEFAULT 'draft',
+                        ocr_raw_text TEXT DEFAULT '',
+                        total_amount FLOAT DEFAULT 0,
+                        items_json TEXT DEFAULT '[]',
+                        created_at TIMESTAMP,
+                        confirmed_at TIMESTAMP
+                    )
+                '''))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        # Add image_filename to Product if missing
+        try:
+            db.session.execute(db.text("ALTER TABLE product ADD COLUMN image_filename VARCHAR(500)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Create missing indexes for performance
         for idx_name, table, cols in [
             ('ix_sale_created_at', 'sale', 'created_at'),
@@ -4552,6 +4588,8 @@ def init_app():
             ('ix_movement_log_user_id', 'movement_log', 'user_id'),
             ('ix_sale_item_subtotal', 'sale_item', 'subtotal'),
             ('ix_deleted_record_type', 'deleted_record', 'record_type'),
+            ('ix_stock_import_user_id', 'stock_import', 'user_id'),
+            ('ix_stock_import_status', 'stock_import', 'status'),
         ]:
             try:
                 db.session.execute(db.text(f'CREATE INDEX IF NOT EXISTS {idx_name} ON {table} ({cols})'))
@@ -4605,7 +4643,8 @@ def init_app():
                          'can_view_barcodes','can_view_trash','can_refund_sales',
                          'can_close_cash','can_void_cash_close',
                          'can_view_pending_sales','can_confirm_payment',
-                         'can_view_backups','can_manage_purchases']
+                         'can_view_backups','can_manage_purchases',
+                         'can_manage_stock_import']
         default_perms = {
             'admin': {k: True for k in all_perm_keys},
             'supervisor': {k: k not in ('can_toggle_users','can_reset_user_password','can_delete_users','can_view_trash','can_void_cash_close','can_confirm_payment') for k in all_perm_keys},
