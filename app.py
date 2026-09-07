@@ -4477,7 +4477,7 @@ def _process_with_gemini(image_bytes, mime_type):
     if not client:
         return None, 'No se configuró la API Key de Gemini (GEMINI_API_KEY).'
     import base64 as _b64
-    img_b64 = _b64.b64encode(image_bytes).decode('utf-8')
+    img_b64, mime_type = _compress_for_ai(image_bytes, mime_type)
     try:
         response = client.models.generate_content(
             model='gemini-3.6-flash',
@@ -4489,7 +4489,11 @@ def _process_with_gemini(image_bytes, mime_type):
                     }
                 },
                 GEMINI_PROMPT
-            ]
+            ],
+            config={
+                'temperature': 0.0,
+                'max_output_tokens': 6000,
+            }
         )
         text = response.text.strip()
         if text.startswith('```'):
@@ -4507,6 +4511,32 @@ def _process_with_gemini(image_bytes, mime_type):
         if 'QUOTA' in err or '429' in err:
             return None, 'Límite de la API alcanzado. Esperá unos minutos y intentá de nuevo.'
         return None, f'Error de la IA: {err[:200]}'
+
+def _compress_for_ai(image_bytes, mime_type):
+    """Resize and compress image to speed up AI processing."""
+    import base64 as _b64
+    if mime_type.startswith('image/'):
+        try:
+            from PIL import Image
+            import io as _io
+            img = Image.open(_io.BytesIO(image_bytes))
+            img = img.convert('RGB')
+            max_dim = 1280
+            if max(img.size) > max_dim:
+                ratio = max_dim / float(max(img.size))
+                img = img.resize((int(img.width * ratio), int(img.height * ratio)), Image.LANCZOS)
+            buf = _io.BytesIO()
+            img.save(buf, format='JPEG', quality=82, optimize=True)
+            data = buf.getvalue()
+            if len(data) >= len(image_bytes) * 0.95:
+                data = image_bytes
+                mime_type = mime_type
+            else:
+                mime_type = 'image/jpeg'
+            return _b64.b64encode(data).decode('utf-8'), mime_type
+        except Exception:
+            pass
+    return _b64.b64encode(image_bytes).decode('utf-8'), mime_type
 
 def _match_products(items):
     """Match detected items against existing products. Returns enriched items."""
