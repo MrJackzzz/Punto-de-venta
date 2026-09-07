@@ -4480,7 +4480,7 @@ def _process_with_gemini(image_bytes, mime_type):
     img_b64 = _b64.b64encode(image_bytes).decode('utf-8')
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-3.6-flash',
             contents=[
                 {
                     'inline_data': {
